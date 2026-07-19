@@ -1,0 +1,25 @@
+{
+  "topology": {
+    "dependencies": [
+      {
+        "from": "ProductDetected",
+        "to": "ActuatorCommand"
+      },
+      {
+        "from": "ActuatorCommand",
+        "to": "ProductTransfer"
+      }
+    ]
+  },
+  "temporal_rules": [
+    {
+      "rule_id": "transfer-delay",
+      "start_event": "ActuatorCommand",
+      "end_event": "ProductTransfer",
+      "min_delay_seconds": 2.0,
+      "max_delay_seconds": 4.0,
+      "topology_from": "ActuatorCommand",
+      "topology_to": "ProductTransfer"
+    }
+  ]
+}
