@@ -322,9 +322,9 @@ class DiagnosticProjectionEngine:
             retained_uncertainty=(
                 "This projection ranks expert-authored checks against the supplied "
                 "operator report, individual timing findings, and optional timing "
-                "history patterns. It does not establish a root cause, treat a "
-                "candidate statistical change point as the proven start of "
-                "degradation, or approve a new normal."
+                "history patterns. It does not establish a root cause, infer when "
+                "degradation began, treat a candidate statistical change point as "
+                "the proven start of degradation, or approve a new normal."
             ),
             signal_assessments=signal_assessments,
             primary_signal_assessment=primary_signal,
