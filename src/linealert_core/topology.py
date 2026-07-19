@@ -52,6 +52,12 @@ class TopologyGraph:
         self._order = self._topological_order()
         self._rank = {node: index for index, node in enumerate(self._order)}
 
+    @property
+    def edges(self) -> tuple[DependencyEdge, ...]:
+        """Return the approved process dependencies in declared order."""
+
+        return self._edges
+
     def has_edge(self, upstream: str, downstream: str) -> bool:
         return downstream in self._adjacency.get(upstream, set())
 
