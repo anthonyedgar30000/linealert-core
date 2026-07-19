@@ -10,6 +10,14 @@ from .mosaic import (
     Subscription,
 )
 from .pipeline import LineAlertCore, PipelineResult
+from .replay import (
+    ReplayInputError,
+    ReplaySummary,
+    build_core_from_config,
+    load_events,
+    replay_events,
+    summary_to_dict,
+)
 from .timing import TemporalRule, TimingFinding, TimingMonitor, TimingStatus
 from .topology import DependencyEdge, TopologyContext, TopologyGraph
 
@@ -25,6 +33,8 @@ __all__ = [
     "LineAlertCore",
     "MachineEvent",
     "PipelineResult",
+    "ReplayInputError",
+    "ReplaySummary",
     "Subscription",
     "TemporalRule",
     "TimingFinding",
@@ -32,4 +42,8 @@ __all__ = [
     "TimingStatus",
     "TopologyContext",
     "TopologyGraph",
+    "build_core_from_config",
+    "load_events",
+    "replay_events",
+    "summary_to_dict",
 ]
