@@ -7,6 +7,7 @@ from datetime import datetime
 from enum import StrEnum
 
 from .machine import MachineProfile
+from .signal_processing import SignalPattern, TimingSeriesAssessment
 from .timing import TimingFinding, TimingStatus
 from .topology import DependencyEdge, TopologyContext, TopologyGraph
 
@@ -16,7 +17,7 @@ class DiagnosticProjectionError(ValueError):
 
 
 class CheckDisposition(StrEnum):
-    """How supplied timing evidence affects one guide-authored check."""
+    """How supplied evidence affects one guide-authored check."""
 
     EVIDENCE_ALIGNED = "evidence_aligned"
     GUIDE_ONLY = "guide_only"
@@ -182,7 +183,7 @@ class OperatorReport:
 
 @dataclass(frozen=True, slots=True)
 class DiagnosticCheckAssessment:
-    """One guide check ranked against the supplied timing evidence."""
+    """One guide check ranked against supplied operational evidence."""
 
     check_id: str
     prompt: str
@@ -209,6 +210,8 @@ class DiagnosticProjection:
     check_assessments: tuple[DiagnosticCheckAssessment, ...]
     escalation_triggers: tuple[str, ...]
     retained_uncertainty: str
+    signal_assessments: tuple[TimingSeriesAssessment, ...] = ()
+    primary_signal_assessment: TimingSeriesAssessment | None = None
 
 
 class DiagnosticProjectionEngine:
@@ -234,6 +237,7 @@ class DiagnosticProjectionEngine:
         *,
         operator_report: OperatorReport,
         timing_findings: tuple[TimingFinding, ...],
+        signal_assessments: tuple[TimingSeriesAssessment, ...] = (),
     ) -> DiagnosticProjection:
         """Build one deterministic diagnostic view without inferring causality."""
 
@@ -269,19 +273,30 @@ class DiagnosticProjectionEngine:
             )
         )
         first = abnormal[0] if abnormal else None
-        region = (
-            self.topology.context_for_edge(
-                first.topology_from,
-                first.topology_to,
-            )
+        primary_signal = _primary_signal_assessment(signal_assessments)
+        region_edge = (
+            (first.topology_from, first.topology_to)
             if first is not None
+            else (
+                (primary_signal.topology_from, primary_signal.topology_to)
+                if primary_signal is not None
+                else None
+            )
+        )
+        region = (
+            self.topology.context_for_edge(*region_edge)
+            if region_edge is not None
             else None
         )
 
         assessments = tuple(
             sorted(
                 (
-                    self._assess_check(check, timing_findings)
+                    self._assess_check(
+                        check,
+                        timing_findings,
+                        signal_assessments,
+                    )
                     for check in symptom.checks
                 ),
                 key=lambda assessment: (
@@ -306,9 +321,13 @@ class DiagnosticProjectionEngine:
             escalation_triggers=symptom.escalation_triggers,
             retained_uncertainty=(
                 "This projection ranks expert-authored checks against the supplied "
-                "operator report and timing findings. It does not establish a root "
-                "cause, infer when degradation began, or approve a new normal."
+                "operator report, individual timing findings, and optional timing "
+                "history patterns. It does not establish a root cause, treat a "
+                "candidate statistical change point as the proven start of "
+                "degradation, or approve a new normal."
             ),
+            signal_assessments=signal_assessments,
+            primary_signal_assessment=primary_signal,
         )
 
     def _validate_report(self, report: OperatorReport) -> None:
@@ -327,25 +346,43 @@ class DiagnosticProjectionEngine:
         self,
         check: DiagnosticCheck,
         findings: tuple[TimingFinding, ...],
+        signal_assessments: tuple[TimingSeriesAssessment, ...],
     ) -> DiagnosticCheckAssessment:
-        matching = tuple(
+        matching_findings = tuple(
             finding
             for finding in findings
-            if any(
-                finding.topology_from == edge.upstream
-                and finding.topology_to == edge.downstream
-                for edge in check.related_edges
+            if _matches_any_edge(
+                finding.topology_from,
+                finding.topology_to,
+                check.related_edges,
             )
         )
-        abnormal = tuple(
+        abnormal_findings = tuple(
             finding
-            for finding in matching
+            for finding in matching_findings
             if finding.status is not TimingStatus.WITHIN
         )
+        matching_signals = tuple(
+            assessment
+            for assessment in signal_assessments
+            if _matches_any_edge(
+                assessment.topology_from,
+                assessment.topology_to,
+                check.related_edges,
+            )
+        )
+        actionable_signals = tuple(
+            assessment
+            for assessment in matching_signals
+            if assessment.has_actionable_pattern
+        )
 
-        if abnormal:
+        if actionable_signals or abnormal_findings:
             disposition = CheckDisposition.EVIDENCE_ALIGNED
             evidence = tuple(
+                _signal_evidence(assessment)
+                for assessment in actionable_signals
+            ) + tuple(
                 (
                     f"{finding.topology_from} -> {finding.topology_to} observed "
                     f"{finding.delay_seconds:.3f}s against "
@@ -353,16 +390,19 @@ class DiagnosticProjectionEngine:
                     f"{finding.max_delay_seconds:.3f}s "
                     f"({finding.status.value})."
                 )
-                for finding in abnormal
+                for finding in abnormal_findings
             )
-        elif matching:
+        elif matching_signals or matching_findings:
             disposition = CheckDisposition.DEPRIORITIZED_BY_HEALTHY_EVIDENCE
             evidence = tuple(
+                _stable_signal_evidence(assessment)
+                for assessment in matching_signals
+            ) + tuple(
                 (
                     f"{finding.topology_from} -> {finding.topology_to} remained "
                     f"within its supplied timing envelope."
                 )
-                for finding in matching
+                for finding in matching_findings
             )
         else:
             disposition = CheckDisposition.GUIDE_ONLY
@@ -387,10 +427,71 @@ _DISPOSITION_ORDER = {
     CheckDisposition.DEPRIORITIZED_BY_HEALTHY_EVIDENCE: 2,
 }
 
+_PATTERN_PRIORITY = {
+    SignalPattern.SUSTAINED_SHIFT: 0,
+    SignalPattern.GRADUAL_DRIFT: 1,
+    SignalPattern.RISING_VARIABILITY: 2,
+    SignalPattern.RECURRING_EXCURSIONS: 3,
+    SignalPattern.ISOLATED_EXCURSION: 4,
+    SignalPattern.STABLE: 5,
+    SignalPattern.INSUFFICIENT_DATA: 6,
+}
+
 
 def _check_order(symptom: SymptomDefinition, check_id: str) -> int:
     return next(
         index
         for index, check in enumerate(symptom.checks)
         if check.check_id == check_id
+    )
+
+
+def _matches_any_edge(
+    upstream: str,
+    downstream: str,
+    edges: tuple[DependencyEdge, ...],
+) -> bool:
+    return any(
+        upstream == edge.upstream and downstream == edge.downstream
+        for edge in edges
+    )
+
+
+def _primary_signal_assessment(
+    assessments: tuple[TimingSeriesAssessment, ...],
+) -> TimingSeriesAssessment | None:
+    actionable = tuple(
+        assessment for assessment in assessments if assessment.has_actionable_pattern
+    )
+    if not actionable:
+        return None
+    return min(
+        actionable,
+        key=lambda assessment: (
+            min(_PATTERN_PRIORITY[pattern] for pattern in assessment.patterns),
+            assessment.candidate_change_timestamp or assessment.last_timestamp,
+            assessment.rule_id,
+        ),
+    )
+
+
+def _signal_evidence(assessment: TimingSeriesAssessment) -> str:
+    patterns = ", ".join(pattern.value for pattern in assessment.patterns)
+    change = (
+        assessment.candidate_change_timestamp.isoformat()
+        if assessment.candidate_change_timestamp is not None
+        else "not resolved"
+    )
+    return (
+        f"{assessment.topology_from} -> {assessment.topology_to}: "
+        f"{patterns} across {assessment.sample_count} observations; "
+        f"candidate statistical change boundary {change}."
+    )
+
+
+def _stable_signal_evidence(assessment: TimingSeriesAssessment) -> str:
+    patterns = ", ".join(pattern.value for pattern in assessment.patterns)
+    return (
+        f"{assessment.topology_from} -> {assessment.topology_to}: "
+        f"{patterns} across {assessment.sample_count} supplied observations."
     )
