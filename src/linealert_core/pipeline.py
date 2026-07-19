@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from .diagnostics import DiagnosticEngine, DiagnosticRecommendation
 from .events import MachineEvent
+from .machine import MachineProfile
 from .mosaic import EventReceipt, FusionMosaic, Subscription
 from .timing import TemporalRule, TimingFinding, TimingMonitor
 from .topology import TopologyGraph
@@ -21,14 +22,17 @@ class PipelineResult:
 
 
 class LineAlertCore:
-    """Typed event routing, timing evaluation, and bounded recommendations."""
+    """Typed event routing, applicability checks, and bounded recommendations."""
 
     def __init__(
         self,
         *,
         rules: list[TemporalRule],
         topology: TopologyGraph,
+        machine_profile: MachineProfile | None = None,
     ) -> None:
+        self.machine_profile = machine_profile
+        self.topology = topology
         self.mosaic = FusionMosaic()
         self.timing_monitor = TimingMonitor(rules)
         self.diagnostics = DiagnosticEngine(topology)
@@ -42,6 +46,9 @@ class LineAlertCore:
         )
 
     def ingest(self, event: MachineEvent) -> PipelineResult:
+        if self.machine_profile is not None:
+            self.machine_profile.validate_event(event)
+
         receipt = self.mosaic.publish(event)
         findings = tuple(
             output.value
