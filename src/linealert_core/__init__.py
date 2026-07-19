@@ -1,5 +1,11 @@
 """Public API for LineAlert Core."""
 
+from .diagnostic_io import (
+    collect_timing_findings,
+    load_diagnostic_engine,
+    load_operator_report,
+    projection_to_dict,
+)
 from .diagnostic_projection import (
     CheckDisposition,
     DiagnosticCheck,
@@ -28,12 +34,6 @@ from .mosaic import (
     Subscription,
 )
 from .pipeline import LineAlertCore, PipelineResult
-from .diagnostic_io import (
-    collect_timing_findings,
-    load_diagnostic_engine,
-    load_operator_report,
-    projection_to_dict,
-)
 from .replay import (
     ReplayInputError,
     ReplaySummary,
