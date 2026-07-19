@@ -448,7 +448,8 @@ def _directional_fraction(values: tuple[float, ...], slope: float) -> float:
         return 0.0
     expected_positive = slope > 0.0
     deltas = tuple(
-        current - previous for previous, current in zip(values, values[1:])
+        values[index] - values[index - 1]
+        for index in range(1, len(values))
     )
     directional = sum(
         (delta > 0.0) if expected_positive else (delta < 0.0)
