@@ -175,6 +175,6 @@ def _required_float(
     path: Path,
 ) -> float:
     value = raw.get(field)
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
+    if isinstance(value, bool) or not isinstance(value, int | float):
         raise SignalAnalysisError(f"{path}: {field} must be numeric")
     return float(value)
