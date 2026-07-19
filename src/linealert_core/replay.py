@@ -11,6 +11,13 @@ from pathlib import Path
 from typing import Any
 
 from .events import EventQuality, MachineEvent
+from .machine import (
+    ComponentDefinition,
+    ComponentDependency,
+    EventBinding,
+    MachineProfile,
+    MachineProfileError,
+)
 from .pipeline import LineAlertCore, PipelineResult
 from .timing import TemporalRule
 from .topology import DependencyEdge, TopologyGraph
@@ -22,9 +29,11 @@ class ReplayInputError(ValueError):
 
 @dataclass(frozen=True, slots=True)
 class ReplaySummary:
-    """Deterministic results from replaying an ordered event stream."""
+    """Deterministic results and machine context from one ordered replay."""
 
     results: tuple[PipelineResult, ...]
+    machine_profile: MachineProfile | None
+    topology_edges: tuple[DependencyEdge, ...]
 
     @property
     def total_events(self) -> int:
@@ -69,6 +78,8 @@ def build_core_from_config(path: str | Path) -> LineAlertCore:
     if not isinstance(raw, dict):
         raise ReplayInputError(f"{config_path}: configuration must be a JSON object")
 
+    machine_profile = _parse_machine_profile(raw.get("machine_profile"), config_path)
+
     topology_raw = raw.get("topology")
     if not isinstance(topology_raw, dict):
         raise ReplayInputError(f"{config_path}: topology must be an object")
@@ -83,6 +94,15 @@ def build_core_from_config(path: str | Path) -> LineAlertCore:
         )
         for index, item in enumerate(dependencies_raw, start=1)
     ]
+
+    if machine_profile is not None:
+        for edge in edges:
+            for event_type in (edge.upstream, edge.downstream):
+                if event_type not in machine_profile.event_types:
+                    raise ReplayInputError(
+                        f"{config_path}: topology event {event_type!r} is not declared "
+                        f"by machine profile {machine_profile.profile_id!r}"
+                    )
 
     rules_raw = raw.get("temporal_rules")
     if not isinstance(rules_raw, list) or not rules_raw:
@@ -124,20 +144,42 @@ def build_core_from_config(path: str | Path) -> LineAlertCore:
                 f"{config_path}: rule {rule.rule_id!r} references unknown topology edge "
                 f"{rule.topology_from} -> {rule.topology_to}"
             )
+        if machine_profile is not None:
+            for event_type in (rule.start_event, rule.end_event):
+                if event_type not in machine_profile.event_types:
+                    raise ReplayInputError(
+                        f"{config_path}: rule {rule.rule_id!r} references undeclared "
+                        f"event type {event_type!r}"
+                    )
 
-    return LineAlertCore(rules=rules, topology=topology)
+    return LineAlertCore(
+        rules=rules,
+        topology=topology,
+        machine_profile=machine_profile,
+    )
 
 
 def replay_events(core: LineAlertCore, events: Iterable[MachineEvent]) -> ReplaySummary:
     """Ingest events in supplied order and retain every deterministic result."""
 
-    return ReplaySummary(results=tuple(core.ingest(event) for event in events))
+    return ReplaySummary(
+        results=tuple(core.ingest(event) for event in events),
+        machine_profile=core.machine_profile,
+        topology_edges=core.topology.edges,
+    )
 
 
 def summary_to_dict(summary: ReplaySummary) -> dict[str, Any]:
-    """Return a JSON-compatible replay report."""
+    """Return a JSON-compatible, self-describing replay report."""
 
     return {
+        "machine_profile": _profile_to_dict(summary.machine_profile),
+        "process_topology": {
+            "dependencies": [
+                {"from": edge.upstream, "to": edge.downstream}
+                for edge in summary.topology_edges
+            ]
+        },
         "summary": {
             "total_events": summary.total_events,
             "duplicate_events": summary.duplicate_events,
@@ -146,6 +188,86 @@ def summary_to_dict(summary: ReplaySummary) -> dict[str, Any]:
         },
         "events": [_result_to_dict(result) for result in summary.results],
     }
+
+
+def _parse_machine_profile(raw: object, config_path: Path) -> MachineProfile | None:
+    if raw is None:
+        return None
+    if not isinstance(raw, Mapping):
+        raise ReplayInputError(f"{config_path}: machine_profile must be an object")
+
+    components_raw = raw.get("components")
+    if not isinstance(components_raw, list) or not components_raw:
+        raise ReplayInputError(
+            f"{config_path}: machine_profile.components must be a non-empty list"
+        )
+    components = tuple(
+        ComponentDefinition(
+            component_id=_required_text(item, "component_id", f"component {index}"),
+            name=_required_text(item, "name", f"component {index}"),
+            component_type=_required_text(item, "component_type", f"component {index}"),
+        )
+        for index, item in enumerate(components_raw, start=1)
+    )
+
+    dependencies_raw = raw.get("component_dependencies", [])
+    if not isinstance(dependencies_raw, list):
+        raise ReplayInputError(
+            f"{config_path}: machine_profile.component_dependencies must be a list"
+        )
+    component_dependencies = tuple(
+        ComponentDependency(
+            upstream_component=_required_text(
+                item,
+                "from",
+                f"component dependency {index}",
+            ),
+            downstream_component=_required_text(
+                item,
+                "to",
+                f"component dependency {index}",
+            ),
+            relationship=_required_text(
+                item,
+                "relationship",
+                f"component dependency {index}",
+            ),
+        )
+        for index, item in enumerate(dependencies_raw, start=1)
+    )
+
+    bindings_raw = raw.get("event_bindings")
+    if not isinstance(bindings_raw, list) or not bindings_raw:
+        raise ReplayInputError(
+            f"{config_path}: machine_profile.event_bindings must be a non-empty list"
+        )
+    event_bindings = tuple(
+        EventBinding(
+            event_type=_required_text(item, "event_type", f"event binding {index}"),
+            component_id=_required_text(item, "component_id", f"event binding {index}"),
+        )
+        for index, item in enumerate(bindings_raw, start=1)
+    )
+
+    operating_modes_raw = raw.get("operating_modes", [])
+    if not isinstance(operating_modes_raw, list) or any(
+        not isinstance(mode, str) for mode in operating_modes_raw
+    ):
+        raise ReplayInputError(
+            f"{config_path}: machine_profile.operating_modes must be a list of strings"
+        )
+
+    try:
+        return MachineProfile(
+            profile_id=_required_text(raw, "profile_id", "machine profile"),
+            asset_id=_required_text(raw, "asset_id", "machine profile"),
+            components=components,
+            component_dependencies=component_dependencies,
+            event_bindings=event_bindings,
+            operating_modes=frozenset(mode.strip() for mode in operating_modes_raw),
+        )
+    except MachineProfileError as exc:
+        raise ReplayInputError(f"{config_path}: {exc}") from exc
 
 
 def _load_jsonl_events(path: Path) -> tuple[MachineEvent, ...]:
@@ -277,6 +399,39 @@ def _optional_number(raw: Mapping[str, object], field: str, location: str) -> fl
         return float(value)
     except (TypeError, ValueError) as exc:
         raise ReplayInputError(f"{location}: {field} must be numeric when supplied") from exc
+
+
+def _profile_to_dict(profile: MachineProfile | None) -> dict[str, Any] | None:
+    if profile is None:
+        return None
+    return {
+        "profile_id": profile.profile_id,
+        "asset_id": profile.asset_id,
+        "operating_modes": sorted(profile.operating_modes),
+        "components": [
+            {
+                "component_id": component.component_id,
+                "name": component.name,
+                "component_type": component.component_type,
+            }
+            for component in profile.components
+        ],
+        "component_dependencies": [
+            {
+                "from": dependency.upstream_component,
+                "to": dependency.downstream_component,
+                "relationship": dependency.relationship,
+            }
+            for dependency in profile.component_dependencies
+        ],
+        "event_bindings": [
+            {
+                "event_type": binding.event_type,
+                "component_id": binding.component_id,
+            }
+            for binding in profile.event_bindings
+        ],
+    }
 
 
 def _result_to_dict(result: PipelineResult) -> dict[str, Any]:
