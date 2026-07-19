@@ -10,7 +10,6 @@ from linealert_core.replay import (
     summary_to_dict,
 )
 
-
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 
 
