@@ -1,0 +1,2 @@
+{"event_id":"evt-1001","source_id":"plc-labeler-04","asset_id":"LABELER-04","component_id":"label-feed","event_type":"ActuatorCommand","timestamp":"2026-07-19T12:00:00Z","correlation_id":"cycle-827","quality":"good","attributes":{"recipe":"500ml"}}
+{"event_id":"evt-1002","source_id":"plc-labeler-04","asset_id":"LABELER-04","component_id":"transfer","event_type":"ProductTransfer","timestamp":"2026-07-19T12:00:05Z","correlation_id":"cycle-827","quality":"good","attributes":{"recipe":"500ml"}}
