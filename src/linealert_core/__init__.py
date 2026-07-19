@@ -42,6 +42,14 @@ from .replay import (
     replay_events,
     summary_to_dict,
 )
+from .signal_io import load_signal_policy, signal_assessments_to_dict
+from .signal_processing import (
+    SignalAnalysisError,
+    SignalAnalysisPolicy,
+    SignalPattern,
+    TimingSeriesAssessment,
+    TimingSignalAnalyzer,
+)
 from .timing import TemporalRule, TimingFinding, TimingMonitor, TimingStatus
 from .topology import DependencyEdge, TopologyContext, TopologyGraph
 
@@ -72,11 +80,16 @@ __all__ = [
     "PipelineResult",
     "ReplayInputError",
     "ReplaySummary",
+    "SignalAnalysisError",
+    "SignalAnalysisPolicy",
+    "SignalPattern",
     "Subscription",
     "SymptomDefinition",
     "TemporalRule",
     "TimingFinding",
     "TimingMonitor",
+    "TimingSeriesAssessment",
+    "TimingSignalAnalyzer",
     "TimingStatus",
     "TopologyContext",
     "TopologyGraph",
@@ -85,7 +98,9 @@ __all__ = [
     "load_diagnostic_engine",
     "load_events",
     "load_operator_report",
+    "load_signal_policy",
     "projection_to_dict",
     "replay_events",
+    "signal_assessments_to_dict",
     "summary_to_dict",
 ]
