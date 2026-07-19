@@ -1,0 +1,293 @@
+{
+  "machine_profile": {
+    "profile_id": "generic-pressure-sensitive-labeler-demo-v1",
+    "asset_id": "LABELER-DEMO-01",
+    "operating_modes": [
+      "500ml-round-bottle"
+    ],
+    "components": [
+      {
+        "component_id": "infeed-photoeye",
+        "name": "Infeed bottle photoeye",
+        "component_type": "sensor"
+      },
+      {
+        "component_id": "spacing-conveyor",
+        "name": "Bottle spacing conveyor",
+        "component_type": "conveyor"
+      },
+      {
+        "component_id": "alignment-guides",
+        "name": "Bottle alignment guides",
+        "component_type": "mechanical-guide"
+      },
+      {
+        "component_id": "unwind-brake",
+        "name": "Label web unwind brake",
+        "component_type": "mechanical-brake"
+      },
+      {
+        "component_id": "web-tension-dancer",
+        "name": "Label web tension dancer",
+        "component_type": "mechanical-sensor"
+      },
+      {
+        "component_id": "label-feed-servo",
+        "name": "Label feed servo",
+        "component_type": "actuator"
+      },
+      {
+        "component_id": "label-present-sensor",
+        "name": "Label-present sensor",
+        "component_type": "sensor"
+      },
+      {
+        "component_id": "peel-plate",
+        "name": "Peel plate and initial-contact point",
+        "component_type": "mechanical-interface"
+      },
+      {
+        "component_id": "hold-down-belt",
+        "name": "Bottle hold-down belt",
+        "component_type": "actuator"
+      },
+      {
+        "component_id": "wipe-down-station",
+        "name": "Label wipe-down station",
+        "component_type": "mechanical-process"
+      },
+      {
+        "component_id": "vision-inspection",
+        "name": "Final label vision inspection",
+        "component_type": "inspection-sensor"
+      },
+      {
+        "component_id": "outfeed-conveyor",
+        "name": "Outfeed conveyor",
+        "component_type": "conveyor"
+      }
+    ],
+    "component_dependencies": [
+      {
+        "from": "infeed-photoeye",
+        "to": "spacing-conveyor",
+        "relationship": "triggers bottle spacing"
+      },
+      {
+        "from": "spacing-conveyor",
+        "to": "alignment-guides",
+        "relationship": "positions bottle for alignment"
+      },
+      {
+        "from": "alignment-guides",
+        "to": "peel-plate",
+        "relationship": "stabilizes bottle at application point"
+      },
+      {
+        "from": "unwind-brake",
+        "to": "web-tension-dancer",
+        "relationship": "controls web resistance and tension"
+      },
+      {
+        "from": "web-tension-dancer",
+        "to": "label-feed-servo",
+        "relationship": "conditions web before feed"
+      },
+      {
+        "from": "label-feed-servo",
+        "to": "label-present-sensor",
+        "relationship": "advances label to presentation point"
+      },
+      {
+        "from": "label-present-sensor",
+        "to": "peel-plate",
+        "relationship": "confirms label availability for contact"
+      },
+      {
+        "from": "peel-plate",
+        "to": "hold-down-belt",
+        "relationship": "initiates contact before stabilization"
+      },
+      {
+        "from": "hold-down-belt",
+        "to": "wipe-down-station",
+        "relationship": "stabilizes bottle during wipe-down"
+      },
+      {
+        "from": "wipe-down-station",
+        "to": "vision-inspection",
+        "relationship": "completes application before inspection"
+      },
+      {
+        "from": "vision-inspection",
+        "to": "outfeed-conveyor",
+        "relationship": "releases inspected product"
+      }
+    ],
+    "event_bindings": [
+      {
+        "event_type": "BottleDetected",
+        "component_id": "infeed-photoeye"
+      },
+      {
+        "event_type": "SpacingConfirmed",
+        "component_id": "spacing-conveyor"
+      },
+      {
+        "event_type": "AlignmentConfirmed",
+        "component_id": "alignment-guides"
+      },
+      {
+        "event_type": "WebTensionStable",
+        "component_id": "web-tension-dancer"
+      },
+      {
+        "event_type": "LabelFeedCommand",
+        "component_id": "label-feed-servo"
+      },
+      {
+        "event_type": "LabelAtPeelPoint",
+        "component_id": "label-present-sensor"
+      },
+      {
+        "event_type": "InitialContact",
+        "component_id": "peel-plate"
+      },
+      {
+        "event_type": "WipeDownComplete",
+        "component_id": "wipe-down-station"
+      },
+      {
+        "event_type": "InspectionComplete",
+        "component_id": "vision-inspection"
+      },
+      {
+        "event_type": "ProductReleased",
+        "component_id": "outfeed-conveyor"
+      }
+    ]
+  },
+  "topology": {
+    "dependencies": [
+      {
+        "from": "BottleDetected",
+        "to": "SpacingConfirmed"
+      },
+      {
+        "from": "SpacingConfirmed",
+        "to": "AlignmentConfirmed"
+      },
+      {
+        "from": "AlignmentConfirmed",
+        "to": "LabelFeedCommand"
+      },
+      {
+        "from": "WebTensionStable",
+        "to": "LabelFeedCommand"
+      },
+      {
+        "from": "LabelFeedCommand",
+        "to": "LabelAtPeelPoint"
+      },
+      {
+        "from": "LabelAtPeelPoint",
+        "to": "InitialContact"
+      },
+      {
+        "from": "InitialContact",
+        "to": "WipeDownComplete"
+      },
+      {
+        "from": "WipeDownComplete",
+        "to": "InspectionComplete"
+      },
+      {
+        "from": "InspectionComplete",
+        "to": "ProductReleased"
+      }
+    ]
+  },
+  "temporal_rules": [
+    {
+      "rule_id": "bottle-spacing-delay",
+      "start_event": "BottleDetected",
+      "end_event": "SpacingConfirmed",
+      "min_delay_seconds": 0.1,
+      "max_delay_seconds": 0.4,
+      "topology_from": "BottleDetected",
+      "topology_to": "SpacingConfirmed"
+    },
+    {
+      "rule_id": "spacing-alignment-delay",
+      "start_event": "SpacingConfirmed",
+      "end_event": "AlignmentConfirmed",
+      "min_delay_seconds": 0.05,
+      "max_delay_seconds": 0.5,
+      "topology_from": "SpacingConfirmed",
+      "topology_to": "AlignmentConfirmed"
+    },
+    {
+      "rule_id": "alignment-feed-command-delay",
+      "start_event": "AlignmentConfirmed",
+      "end_event": "LabelFeedCommand",
+      "min_delay_seconds": 0.0,
+      "max_delay_seconds": 0.2,
+      "topology_from": "AlignmentConfirmed",
+      "topology_to": "LabelFeedCommand"
+    },
+    {
+      "rule_id": "web-ready-feed-command-delay",
+      "start_event": "WebTensionStable",
+      "end_event": "LabelFeedCommand",
+      "min_delay_seconds": 0.0,
+      "max_delay_seconds": 1.0,
+      "topology_from": "WebTensionStable",
+      "topology_to": "LabelFeedCommand"
+    },
+    {
+      "rule_id": "label-presentation-delay",
+      "start_event": "LabelFeedCommand",
+      "end_event": "LabelAtPeelPoint",
+      "min_delay_seconds": 0.05,
+      "max_delay_seconds": 0.35,
+      "topology_from": "LabelFeedCommand",
+      "topology_to": "LabelAtPeelPoint"
+    },
+    {
+      "rule_id": "initial-contact-delay",
+      "start_event": "LabelAtPeelPoint",
+      "end_event": "InitialContact",
+      "min_delay_seconds": 0.0,
+      "max_delay_seconds": 0.15,
+      "topology_from": "LabelAtPeelPoint",
+      "topology_to": "InitialContact"
+    },
+    {
+      "rule_id": "wipe-down-duration",
+      "start_event": "InitialContact",
+      "end_event": "WipeDownComplete",
+      "min_delay_seconds": 0.1,
+      "max_delay_seconds": 0.6,
+      "topology_from": "InitialContact",
+      "topology_to": "WipeDownComplete"
+    },
+    {
+      "rule_id": "inspection-delay",
+      "start_event": "WipeDownComplete",
+      "end_event": "InspectionComplete",
+      "min_delay_seconds": 0.0,
+      "max_delay_seconds": 0.5,
+      "topology_from": "WipeDownComplete",
+      "topology_to": "InspectionComplete"
+    },
+    {
+      "rule_id": "product-release-delay",
+      "start_event": "InspectionComplete",
+      "end_event": "ProductReleased",
+      "min_delay_seconds": 0.0,
+      "max_delay_seconds": 0.3,
+      "topology_from": "InspectionComplete",
+      "topology_to": "ProductReleased"
+    }
+  ]
+}

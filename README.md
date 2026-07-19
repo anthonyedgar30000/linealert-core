@@ -102,7 +102,7 @@ The replay adapter accepts an ordered event stream in JSON Lines or CSV. A sourc
 therefore export PLC, Node-RED, MQTT, historian, or simulated observations without being coupled
 to the reasoning core.
 
-Run the included example:
+Run the small smoke-test example:
 
 ```bash
 linealert-replay \
@@ -113,6 +113,8 @@ linealert-replay \
 
 The command processes records in file order and writes a machine-readable JSON report containing:
 
+- the loaded machine profile, when one is supplied;
+- the approved process topology;
 - exact Fusion Mosaic delivery receipts;
 - duplicate-event status;
 - timing findings;
@@ -165,6 +167,64 @@ A replay configuration defines the approved topology and timing envelopes:
   ]
 }
 ```
+
+## Full pressure-sensitive labeler demo
+
+The full demo requires an explicit machine profile rather than treating structurally valid events
+as automatically applicable. The profile declares:
+
+- the asset identity;
+- twelve physical and logical components;
+- functional dependencies between those components;
+- event-to-component bindings;
+- the approved operating mode;
+- the forward process graph;
+- nine timing envelopes.
+
+Run it with:
+
+```bash
+linealert-replay \
+  --config examples/labeler_demo_config.json \
+  --input examples/labeler_demo_events.jsonl \
+  --output labeler-demo-report.json
+```
+
+The demo process topology is:
+
+```text
+BottleDetected
+      ↓
+SpacingConfirmed
+      ↓
+AlignmentConfirmed ───────────────┐
+      ↓                           │
+LabelFeedCommand ← WebTensionStable
+      ↓
+LabelAtPeelPoint
+      ↓
+InitialContact
+      ↓
+WipeDownComplete
+      ↓
+InspectionComplete
+      ↓
+ProductReleased
+```
+
+The sample cycle keeps every approved relationship within its envelope except
+`LabelFeedCommand → LabelAtPeelPoint`. That relationship takes 0.55 seconds against an approved
+0.05–0.35 second envelope. The core localizes the observed deviation to the label-presentation
+handoff and recommends bounded checks without declaring a root cause.
+
+When a machine profile is loaded, the core rejects:
+
+- events for another asset;
+- undeclared components;
+- undeclared event types;
+- event types emitted by the wrong component;
+- operating modes outside the approved profile;
+- topology or timing rules that reference undeclared events.
 
 ## Development workflow
 

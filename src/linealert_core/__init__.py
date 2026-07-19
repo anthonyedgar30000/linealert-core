@@ -2,6 +2,13 @@
 
 from .diagnostics import DiagnosticEngine, DiagnosticRecommendation
 from .events import EventQuality, MachineEvent
+from .machine import (
+    ComponentDefinition,
+    ComponentDependency,
+    EventBinding,
+    MachineProfile,
+    MachineProfileError,
+)
 from .mosaic import (
     ConsumerOutput,
     EventIdentityCollision,
@@ -22,16 +29,21 @@ from .timing import TemporalRule, TimingFinding, TimingMonitor, TimingStatus
 from .topology import DependencyEdge, TopologyContext, TopologyGraph
 
 __all__ = [
+    "ComponentDefinition",
+    "ComponentDependency",
     "ConsumerOutput",
     "DependencyEdge",
     "DiagnosticEngine",
     "DiagnosticRecommendation",
+    "EventBinding",
     "EventIdentityCollision",
     "EventQuality",
     "EventReceipt",
     "FusionMosaic",
     "LineAlertCore",
     "MachineEvent",
+    "MachineProfile",
+    "MachineProfileError",
     "PipelineResult",
     "ReplayInputError",
     "ReplaySummary",
