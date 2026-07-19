@@ -39,13 +39,21 @@ class DiagnosticCheck:
             if not value.strip():
                 raise DiagnosticProjectionError(f"{field_name} must not be empty")
         if not self.component_ids:
-            raise DiagnosticProjectionError("diagnostic check requires at least one component")
+            raise DiagnosticProjectionError(
+                "diagnostic check requires at least one component"
+            )
         if any(not component_id.strip() for component_id in self.component_ids):
-            raise DiagnosticProjectionError("diagnostic component IDs must not be empty")
+            raise DiagnosticProjectionError(
+                "diagnostic component IDs must not be empty"
+            )
         if len(self.component_ids) != len(set(self.component_ids)):
-            raise DiagnosticProjectionError("diagnostic component IDs must be unique")
+            raise DiagnosticProjectionError(
+                "diagnostic component IDs must be unique"
+            )
         if len(self.related_edges) != len(set(self.related_edges)):
-            raise DiagnosticProjectionError("diagnostic related edges must be unique")
+            raise DiagnosticProjectionError(
+                "diagnostic related edges must be unique"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,16 +68,24 @@ class SymptomDefinition:
 
     def __post_init__(self) -> None:
         if not self.symptom_id.strip() or not self.title.strip():
-            raise DiagnosticProjectionError("symptom_id and title must not be empty")
+            raise DiagnosticProjectionError(
+                "symptom_id and title must not be empty"
+            )
         if not self.checks:
-            raise DiagnosticProjectionError("symptom requires at least one diagnostic check")
+            raise DiagnosticProjectionError(
+                "symptom requires at least one diagnostic check"
+            )
         check_ids = [check.check_id for check in self.checks]
         if len(check_ids) != len(set(check_ids)):
-            raise DiagnosticProjectionError("diagnostic check IDs must be unique per symptom")
+            raise DiagnosticProjectionError(
+                "diagnostic check IDs must be unique per symptom"
+            )
         if any(not example.strip() for example in self.examples):
             raise DiagnosticProjectionError("symptom examples must not be empty")
         if any(not trigger.strip() for trigger in self.escalation_triggers):
-            raise DiagnosticProjectionError("escalation triggers must not be empty")
+            raise DiagnosticProjectionError(
+                "escalation triggers must not be empty"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,12 +98,18 @@ class DiagnosticGuide:
 
     def __post_init__(self) -> None:
         if not self.guide_id.strip() or not self.version.strip():
-            raise DiagnosticProjectionError("guide_id and version must not be empty")
+            raise DiagnosticProjectionError(
+                "guide_id and version must not be empty"
+            )
         if not self.symptoms:
-            raise DiagnosticProjectionError("diagnostic guide requires at least one symptom")
+            raise DiagnosticProjectionError(
+                "diagnostic guide requires at least one symptom"
+            )
         symptom_ids = [symptom.symptom_id for symptom in self.symptoms]
         if len(symptom_ids) != len(set(symptom_ids)):
-            raise DiagnosticProjectionError("diagnostic symptom IDs must be unique")
+            raise DiagnosticProjectionError(
+                "diagnostic symptom IDs must be unique"
+            )
 
     def symptom(self, symptom_id: str) -> SymptomDefinition:
         """Return one declared symptom or fail explicitly."""
@@ -96,7 +118,8 @@ class DiagnosticGuide:
             if symptom.symptom_id == symptom_id:
                 return symptom
         raise DiagnosticProjectionError(
-            f"symptom {symptom_id!r} is not declared by guide {self.guide_id!r}"
+            f"symptom {symptom_id!r} is not declared by guide "
+            f"{self.guide_id!r}"
         )
 
     def validate_against(
@@ -112,14 +135,14 @@ class DiagnosticGuide:
                 for component_id in check.component_ids:
                     if component_id not in machine_profile.component_ids:
                         raise DiagnosticProjectionError(
-                            f"check {check.check_id!r} references unknown component "
-                            f"{component_id!r}"
+                            f"check {check.check_id!r} references unknown "
+                            f"component {component_id!r}"
                         )
                 for edge in check.related_edges:
                     if not topology.has_edge(edge.upstream, edge.downstream):
                         raise DiagnosticProjectionError(
-                            f"check {check.check_id!r} references unknown topology edge "
-                            f"{edge.upstream} -> {edge.downstream}"
+                            f"check {check.check_id!r} references unknown "
+                            f"topology edge {edge.upstream} -> {edge.downstream}"
                         )
 
 
@@ -136,14 +159,23 @@ class OperatorReport:
 
     def __post_init__(self) -> None:
         if not self.symptom_id.strip() or not self.description.strip():
-            raise DiagnosticProjectionError("symptom_id and description must not be empty")
+            raise DiagnosticProjectionError(
+                "symptom_id and description must not be empty"
+            )
         if self.reported_start is not None:
-            if self.reported_start.tzinfo is None or self.reported_start.utcoffset() is None:
-                raise DiagnosticProjectionError("reported_start must be timezone-aware")
+            if (
+                self.reported_start.tzinfo is None
+                or self.reported_start.utcoffset() is None
+            ):
+                raise DiagnosticProjectionError(
+                    "reported_start must be timezone-aware"
+                )
         if self.operating_mode is not None and not self.operating_mode.strip():
             raise DiagnosticProjectionError("operating_mode must not be empty")
         if any(not observation.strip() for observation in self.observations):
-            raise DiagnosticProjectionError("operator observations must not be empty")
+            raise DiagnosticProjectionError(
+                "operator observations must not be empty"
+            )
         if any(not change.strip() for change in self.recent_changes):
             raise DiagnosticProjectionError("recent changes must not be empty")
 
@@ -189,7 +221,10 @@ class DiagnosticProjectionEngine:
         machine_profile: MachineProfile,
         topology: TopologyGraph,
     ) -> None:
-        guide.validate_against(machine_profile=machine_profile, topology=topology)
+        guide.validate_against(
+            machine_profile=machine_profile,
+            topology=topology,
+        )
         self.guide = guide
         self.machine_profile = machine_profile
         self.topology = topology
@@ -235,14 +270,20 @@ class DiagnosticProjectionEngine:
         )
         first = abnormal[0] if abnormal else None
         region = (
-            self.topology.context_for_edge(first.topology_from, first.topology_to)
+            self.topology.context_for_edge(
+                first.topology_from,
+                first.topology_to,
+            )
             if first is not None
             else None
         )
 
         assessments = tuple(
             sorted(
-                (self._assess_check(check, timing_findings) for check in symptom.checks),
+                (
+                    self._assess_check(check, timing_findings)
+                    for check in symptom.checks
+                ),
                 key=lambda assessment: (
                     _DISPOSITION_ORDER[assessment.disposition],
                     _check_order(symptom, assessment.check_id),
@@ -297,7 +338,9 @@ class DiagnosticProjectionEngine:
             )
         )
         abnormal = tuple(
-            finding for finding in matching if finding.status is not TimingStatus.WITHIN
+            finding
+            for finding in matching
+            if finding.status is not TimingStatus.WITHIN
         )
 
         if abnormal:
@@ -346,4 +389,8 @@ _DISPOSITION_ORDER = {
 
 
 def _check_order(symptom: SymptomDefinition, check_id: str) -> int:
-    return next(index for index, check in enumerate(symptom.checks) if check.check_id == check_id)
+    return next(
+        index
+        for index, check in enumerate(symptom.checks)
+        if check.check_id == check_id
+    )
