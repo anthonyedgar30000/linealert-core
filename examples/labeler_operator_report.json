@@ -1,0 +1,15 @@
+{
+  "symptom_id": "label-alignment-off",
+  "reported_start": "2026-07-19T13:40:00Z",
+  "description": "Operator reports that label placement began drifting intermittently during the 500 ml run and is now visible on most bottles.",
+  "operating_mode": "500ml-round-bottle",
+  "observations": [
+    "Bottle spacing appears consistent at the infeed.",
+    "The defect becomes easier to see after the machine has been running.",
+    "No unusual noise was reported."
+  ],
+  "recent_changes": [
+    "A new label roll was installed before the issue was noticed.",
+    "No guide adjustment was intentionally recorded."
+  ]
+}

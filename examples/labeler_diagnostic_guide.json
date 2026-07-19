@@ -1,0 +1,211 @@
+{
+  "guide_id": "generic-pressure-sensitive-labeler-troubleshooting-v1",
+  "version": "1.0.0",
+  "symptoms": [
+    {
+      "symptom_id": "label-alignment-off",
+      "title": "Label alignment is off",
+      "examples": ["Crooked label", "Rotated label", "Inconsistent placement", "Drifting placement", "Skewed left or right"],
+      "checks": [
+        {
+          "check_id": "inspect-label-presentation",
+          "prompt": "Inspect peel-point geometry, label presentation, and label-present sensor timing.",
+          "component_ids": ["label-feed-servo", "label-present-sensor", "peel-plate"],
+          "related_edges": [{"from": "LabelFeedCommand", "to": "LabelAtPeelPoint"}],
+          "safe_next_action": "Observe and measure the presentation handoff before changing peel angle, delay, or servo settings."
+        },
+        {
+          "check_id": "verify-web-path",
+          "prompt": "Inspect unwind resistance, dancer travel, web tracking, and feed response.",
+          "component_ids": ["unwind-brake", "web-tension-dancer", "label-feed-servo"],
+          "related_edges": [
+            {"from": "WebTensionStable", "to": "LabelFeedCommand"},
+            {"from": "LabelFeedCommand", "to": "LabelAtPeelPoint"}
+          ],
+          "safe_next_action": "Record as-found tension behavior and web tracking before making one bounded adjustment."
+        },
+        {
+          "check_id": "verify-bottle-positioning",
+          "prompt": "Verify bottle spacing, guide centering, and stability approaching the application point.",
+          "component_ids": ["spacing-conveyor", "alignment-guides", "hold-down-belt"],
+          "related_edges": [
+            {"from": "BottleDetected", "to": "SpacingConfirmed"},
+            {"from": "SpacingConfirmed", "to": "AlignmentConfirmed"},
+            {"from": "AlignmentConfirmed", "to": "LabelFeedCommand"}
+          ],
+          "safe_next_action": "Confirm bottle position and repeatability before adjusting guides or hold-down pressure."
+        },
+        {
+          "check_id": "verify-contact-and-wipe",
+          "prompt": "Verify initial contact and wipe-down remain stable after label presentation.",
+          "component_ids": ["peel-plate", "hold-down-belt", "wipe-down-station"],
+          "related_edges": [
+            {"from": "LabelAtPeelPoint", "to": "InitialContact"},
+            {"from": "InitialContact", "to": "WipeDownComplete"}
+          ],
+          "safe_next_action": "Inspect contact and wipe pressure without compensating for an unresolved upstream presentation issue."
+        }
+      ],
+      "escalation_triggers": [
+        "Alignment remains unstable after one controlled adjustment and verification cycle.",
+        "Multiple symptoms appear at the same time.",
+        "Mechanical damage, abnormal noise, or unsafe motion is observed.",
+        "The issue returns quickly after restoration."
+      ]
+    },
+    {
+      "symptom_id": "label-folds",
+      "title": "Label has folds",
+      "examples": ["Wrinkles", "Folded edges", "Label bunching", "Uneven application"],
+      "checks": [
+        {
+          "check_id": "verify-feed-speed-and-presentation",
+          "prompt": "Verify label feed speed and presentation timing are matched to product motion.",
+          "component_ids": ["label-feed-servo", "label-present-sensor", "peel-plate"],
+          "related_edges": [
+            {"from": "LabelFeedCommand", "to": "LabelAtPeelPoint"},
+            {"from": "LabelAtPeelPoint", "to": "InitialContact"}
+          ],
+          "safe_next_action": "Compare with a matched healthy cycle before reducing label speed."
+        },
+        {
+          "check_id": "verify-product-stability",
+          "prompt": "Verify bottle spacing, alignment, and hold-down stability during application.",
+          "component_ids": ["spacing-conveyor", "alignment-guides", "hold-down-belt"],
+          "related_edges": [
+            {"from": "BottleDetected", "to": "SpacingConfirmed"},
+            {"from": "SpacingConfirmed", "to": "AlignmentConfirmed"}
+          ],
+          "safe_next_action": "Observe bottle motion through several cycles before adjusting aligner speed or guides."
+        },
+        {
+          "check_id": "inspect-wipe-down",
+          "prompt": "Inspect wipe-down contact for uneven pressure or product movement.",
+          "component_ids": ["hold-down-belt", "wipe-down-station"],
+          "related_edges": [{"from": "InitialContact", "to": "WipeDownComplete"}],
+          "safe_next_action": "Record as-found contact pressure and make only one bounded change at a time."
+        }
+      ],
+      "escalation_triggers": [
+        "Folds continue across matched products after controlled speed and stability checks.",
+        "The web or label stock is visibly damaged.",
+        "The issue worsens rapidly with speed.",
+        "Multiple application defects occur together."
+      ]
+    },
+    {
+      "symptom_id": "label-stretch-lines",
+      "title": "Label has stretch lines",
+      "examples": ["Stretched label", "Tension marks", "Distorted print", "Label pulling"],
+      "checks": [
+        {
+          "check_id": "inspect-web-tension-path",
+          "prompt": "Inspect unwind brake resistance, dancer movement, and web tension stability.",
+          "component_ids": ["unwind-brake", "web-tension-dancer", "label-feed-servo"],
+          "related_edges": [
+            {"from": "WebTensionStable", "to": "LabelFeedCommand"},
+            {"from": "LabelFeedCommand", "to": "LabelAtPeelPoint"}
+          ],
+          "safe_next_action": "Measure and record the as-found web behavior before changing brake or feed settings."
+        },
+        {
+          "check_id": "inspect-feed-response",
+          "prompt": "Inspect feed-roller and servo response for pulling or uneven advance.",
+          "component_ids": ["label-feed-servo", "label-present-sensor"],
+          "related_edges": [{"from": "LabelFeedCommand", "to": "LabelAtPeelPoint"}],
+          "safe_next_action": "Compare commanded feed with observed label arrival before reducing speed."
+        },
+        {
+          "check_id": "check-speed-interaction",
+          "prompt": "Check whether stretch severity changes with conveyor or label speed.",
+          "component_ids": ["spacing-conveyor", "label-feed-servo"],
+          "related_edges": [],
+          "safe_next_action": "Use an approved temporary test speed and restore the original setting after comparison."
+        }
+      ],
+      "escalation_triggers": [
+        "Web tension cannot be stabilized within the approved operating range.",
+        "Feed rollers, brake, or dancer show mechanical damage.",
+        "Stretching persists at reduced approved test speed.",
+        "Print distortion creates a quality or compliance concern."
+      ]
+    },
+    {
+      "symptom_id": "bubbles-on-labels",
+      "title": "Bubbles on labels",
+      "examples": ["Trapped air bubbles", "Incomplete adhesion", "Lifting label edges"],
+      "checks": [
+        {
+          "check_id": "verify-contact-time-and-pressure",
+          "prompt": "Verify initial contact, hold-down stability, and wipe-down duration.",
+          "component_ids": ["peel-plate", "hold-down-belt", "wipe-down-station"],
+          "related_edges": [
+            {"from": "LabelAtPeelPoint", "to": "InitialContact"},
+            {"from": "InitialContact", "to": "WipeDownComplete"}
+          ],
+          "safe_next_action": "Inspect product contact and pressure before increasing run-on or bottle pressure."
+        },
+        {
+          "check_id": "verify-bottle-stability-for-adhesion",
+          "prompt": "Verify bottle spacing and alignment remain stable through application.",
+          "component_ids": ["spacing-conveyor", "alignment-guides", "hold-down-belt"],
+          "related_edges": [
+            {"from": "BottleDetected", "to": "SpacingConfirmed"},
+            {"from": "SpacingConfirmed", "to": "AlignmentConfirmed"}
+          ],
+          "safe_next_action": "Observe bottle movement across repeated cycles before changing guide or aligner settings."
+        },
+        {
+          "check_id": "inspect-label-arrival",
+          "prompt": "Inspect whether label presentation is late, skewed, or unstable before contact.",
+          "component_ids": ["label-feed-servo", "label-present-sensor", "peel-plate"],
+          "related_edges": [{"from": "LabelFeedCommand", "to": "LabelAtPeelPoint"}],
+          "safe_next_action": "Resolve a confirmed presentation issue before compensating with more contact pressure."
+        }
+      ],
+      "escalation_triggers": [
+        "Bubbles persist after contact and stability checks.",
+        "Adhesive or container-surface condition is uncertain.",
+        "The issue changes with label stock or supplier batch.",
+        "Product damage or unsafe pressure would be required to compensate."
+      ]
+    },
+    {
+      "symptom_id": "multiple-labels-applying",
+      "title": "Multiple labels applying",
+      "examples": ["Double labels", "Skipped gaps", "Overlapping labels"],
+      "checks": [
+        {
+          "check_id": "inspect-gap-detection",
+          "prompt": "Inspect label-present or gap detection, sensor position, and detection stability.",
+          "component_ids": ["label-present-sensor", "label-feed-servo"],
+          "related_edges": [{"from": "LabelFeedCommand", "to": "LabelAtPeelPoint"}],
+          "safe_next_action": "Verify sensor detection and record the as-found position before changing sensitivity."
+        },
+        {
+          "check_id": "verify-product-spacing",
+          "prompt": "Verify product detection and spacing remain consistent before label feed.",
+          "component_ids": ["infeed-photoeye", "spacing-conveyor"],
+          "related_edges": [{"from": "BottleDetected", "to": "SpacingConfirmed"}],
+          "safe_next_action": "Confirm product spacing over repeated cycles before repositioning sensors."
+        },
+        {
+          "check_id": "inspect-feed-timing",
+          "prompt": "Inspect feed-command timing and label arrival for repeated or mistimed advances.",
+          "component_ids": ["label-feed-servo", "label-present-sensor", "peel-plate"],
+          "related_edges": [
+            {"from": "AlignmentConfirmed", "to": "LabelFeedCommand"},
+            {"from": "LabelFeedCommand", "to": "LabelAtPeelPoint"}
+          ],
+          "safe_next_action": "Compare command and arrival events before changing label spacing or delay."
+        }
+      ],
+      "escalation_triggers": [
+        "Multiple labels continue after sensor and feed timing checks.",
+        "Sensor output is unstable or contradictory.",
+        "The feed mechanism advances without an applicable product event.",
+        "Repeated adjustments fail to restore controlled operation."
+      ]
+    }
+  ]
+}

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "linealert-core"
-version = "0.2.0"
+version = "0.3.0"
 description = "Deterministic machine-event reasoning core for LineAlert"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -16,6 +16,7 @@ dependencies = []
 
 [project.scripts]
 linealert-replay = "linealert_core.cli:main"
+linealert-diagnose = "linealert_core.diagnostic_cli:main"
 
 [project.optional-dependencies]
 dev = [
