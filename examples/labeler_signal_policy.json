@@ -1,0 +1,15 @@
+{
+  "policy_id": "labeler-timing-history-demo-v1",
+  "version": "1.0.0",
+  "minimum_points": 12,
+  "baseline_points": 6,
+  "recent_points": 5,
+  "sustained_outside_points": 3,
+  "recurring_excursion_count": 2,
+  "variability_ratio": 1.4,
+  "variability_min_envelope_fraction": 0.05,
+  "drift_min_envelope_fraction": 0.25,
+  "drift_min_directional_fraction": 0.65,
+  "change_point_min_segment_points": 4,
+  "change_point_min_mean_shift_fraction": 0.20
+}
