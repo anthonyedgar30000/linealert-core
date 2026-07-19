@@ -56,7 +56,9 @@ def load_operator_report(path: str | Path) -> OperatorReport:
     else:
         start_text = _required_text(raw, "reported_start", str(report_path))
         try:
-            reported_start = datetime.fromisoformat(start_text.replace("Z", "+00:00"))
+            reported_start = datetime.fromisoformat(
+                start_text.replace("Z", "+00:00")
+            )
         except ValueError as exc:
             raise DiagnosticProjectionError(
                 f"{report_path}: reported_start must be ISO 8601"
@@ -66,8 +68,16 @@ def load_operator_report(path: str | Path) -> OperatorReport:
         symptom_id=_required_text(raw, "symptom_id", str(report_path)),
         reported_start=reported_start,
         description=_required_text(raw, "description", str(report_path)),
-        operating_mode=_optional_text(raw, "operating_mode", str(report_path)),
-        observations=_string_tuple(raw.get("observations", []), "observations", report_path),
+        operating_mode=_optional_text(
+            raw,
+            "operating_mode",
+            str(report_path),
+        ),
+        observations=_string_tuple(
+            raw.get("observations", []),
+            "observations",
+            report_path,
+        ),
         recent_changes=_string_tuple(
             raw.get("recent_changes", []),
             "recent_changes",
@@ -81,7 +91,11 @@ def collect_timing_findings(
 ) -> tuple[TimingFinding, ...]:
     """Flatten timing findings from an ordered replay."""
 
-    return tuple(finding for result in results for finding in result.timing_findings)
+    return tuple(
+        finding
+        for result in results
+        for finding in result.timing_findings
+    )
 
 
 def projection_to_dict(projection: DiagnosticProjection) -> dict[str, Any]:
@@ -124,10 +138,12 @@ def projection_to_dict(projection: DiagnosticProjection) -> dict[str, Any]:
             else None
         ),
         "abnormal_relationships": [
-            _finding_to_dict(finding) for finding in projection.abnormal_relationships
+            _finding_to_dict(finding)
+            for finding in projection.abnormal_relationships
         ],
         "healthy_relationships": [
-            _finding_to_dict(finding) for finding in projection.healthy_relationships
+            _finding_to_dict(finding)
+            for finding in projection.healthy_relationships
         ],
         "ranked_checks": [
             {
@@ -145,10 +161,15 @@ def projection_to_dict(projection: DiagnosticProjection) -> dict[str, Any]:
     }
 
 
-def _parse_guide(raw: Mapping[str, object], path: Path) -> DiagnosticGuide:
+def _parse_guide(
+    raw: Mapping[str, object],
+    path: Path,
+) -> DiagnosticGuide:
     symptoms_raw = raw.get("symptoms")
     if not isinstance(symptoms_raw, list) or not symptoms_raw:
-        raise DiagnosticProjectionError(f"{path}: symptoms must be a non-empty list")
+        raise DiagnosticProjectionError(
+            f"{path}: symptoms must be a non-empty list"
+        )
 
     symptoms = tuple(
         _parse_symptom(item, index, path)
@@ -172,7 +193,9 @@ def _parse_symptom(
 
     checks_raw = raw.get("checks")
     if not isinstance(checks_raw, list) or not checks_raw:
-        raise DiagnosticProjectionError(f"{location}: checks must be a non-empty list")
+        raise DiagnosticProjectionError(
+            f"{location}: checks must be a non-empty list"
+        )
     checks = tuple(
         _parse_check(item, check_index, location)
         for check_index, item in enumerate(checks_raw, start=1)
@@ -180,7 +203,11 @@ def _parse_symptom(
     return SymptomDefinition(
         symptom_id=_required_text(raw, "symptom_id", location),
         title=_required_text(raw, "title", location),
-        examples=_string_tuple(raw.get("examples", []), "examples", path),
+        examples=_string_tuple(
+            raw.get("examples", []),
+            "examples",
+            path,
+        ),
         checks=checks,
         escalation_triggers=_string_tuple(
             raw.get("escalation_triggers", []),
@@ -201,11 +228,21 @@ def _parse_check(
 
     edges_raw = raw.get("related_edges", [])
     if not isinstance(edges_raw, list):
-        raise DiagnosticProjectionError(f"{location}: related_edges must be a list")
+        raise DiagnosticProjectionError(
+            f"{location}: related_edges must be a list"
+        )
     edges = tuple(
         DependencyEdge(
-            upstream=_required_text(item, "from", f"{location}, edge {edge_index}"),
-            downstream=_required_text(item, "to", f"{location}, edge {edge_index}"),
+            upstream=_required_text(
+                item,
+                "from",
+                f"{location}, edge {edge_index}",
+            ),
+            downstream=_required_text(
+                item,
+                "to",
+                f"{location}, edge {edge_index}",
+            ),
         )
         for edge_index, item in enumerate(edges_raw, start=1)
     )
@@ -220,11 +257,18 @@ def _parse_check(
         prompt=_required_text(raw, "prompt", location),
         component_ids=component_ids,
         related_edges=edges,
-        safe_next_action=_required_text(raw, "safe_next_action", location),
+        safe_next_action=_required_text(
+            raw,
+            "safe_next_action",
+            location,
+        ),
     )
 
 
-def _read_json_object(path: Path, description: str) -> Mapping[str, object]:
+def _read_json_object(
+    path: Path,
+    description: str,
+) -> Mapping[str, object]:
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
@@ -232,7 +276,9 @@ def _read_json_object(path: Path, description: str) -> Mapping[str, object]:
             f"{path}: invalid JSON at line {exc.lineno}, column {exc.colno}"
         ) from exc
     if not isinstance(raw, Mapping):
-        raise DiagnosticProjectionError(f"{path}: {description} must be an object")
+        raise DiagnosticProjectionError(
+            f"{path}: {description} must be an object"
+        )
     return raw
 
 
@@ -267,8 +313,13 @@ def _string_tuple(
     field: str,
     path: Path,
 ) -> tuple[str, ...]:
-    if not isinstance(raw, list) or any(not isinstance(value, str) for value in raw):
-        raise DiagnosticProjectionError(f"{path}: {field} must be a list of strings")
+    if not isinstance(raw, list) or any(
+        not isinstance(value, str)
+        for value in raw
+    ):
+        raise DiagnosticProjectionError(
+            f"{path}: {field} must be a list of strings"
+        )
     return tuple(value.strip() for value in raw)
 
 
