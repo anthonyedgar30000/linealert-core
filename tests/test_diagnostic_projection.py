@@ -47,9 +47,15 @@ def test_projection_combines_operator_timeline_guide_and_machine_evidence() -> N
         "2026-07-19T13:40:00+00:00"
     )
     assert projection.first_observed_deviation is not None
-    assert projection.first_observed_deviation.rule_id == "label-presentation-delay"
-    assert projection.first_observed_deviation.topology_from == "LabelFeedCommand"
-    assert projection.first_observed_deviation.topology_to == "LabelAtPeelPoint"
+    assert projection.first_observed_deviation.rule_id == (
+        "label-presentation-delay"
+    )
+    assert projection.first_observed_deviation.topology_from == (
+        "LabelFeedCommand"
+    )
+    assert projection.first_observed_deviation.topology_to == (
+        "LabelAtPeelPoint"
+    )
 
     assert len(projection.abnormal_relationships) == 1
     assert len(projection.healthy_relationships) == 8
@@ -57,7 +63,9 @@ def test_projection_combines_operator_timeline_guide_and_machine_evidence() -> N
     assert projection.investigation_region.upstream == "LabelFeedCommand"
     assert projection.investigation_region.downstream == "LabelAtPeelPoint"
 
-    assert projection.check_assessments[0].check_id == "inspect-label-presentation"
+    assert projection.check_assessments[0].check_id == (
+        "inspect-label-presentation"
+    )
     assert (
         projection.check_assessments[0].disposition
         is CheckDisposition.EVIDENCE_ALIGNED
@@ -67,13 +75,17 @@ def test_projection_combines_operator_timeline_guide_and_machine_evidence() -> N
         projection.check_assessments[2].disposition
         is CheckDisposition.DEPRIORITIZED_BY_HEALTHY_EVIDENCE
     )
-    assert "does not establish a root cause" in projection.retained_uncertainty
+    assert "does not establish a root cause" in (
+        projection.retained_uncertainty
+    )
     assert "infer when degradation began" in projection.retained_uncertainty
 
     assert report["operator_report"]["recent_changes"][0].startswith(
         "A new label roll"
     )
-    assert report["first_observed_deviation"]["delay_seconds"] == pytest.approx(0.55)
+    assert report["first_observed_deviation"]["delay_seconds"] == (
+        pytest.approx(0.55)
+    )
     assert report["ranked_checks"][0]["disposition"] == "evidence_aligned"
 
 
@@ -116,9 +128,13 @@ def test_guide_only_check_remains_visible_without_invented_evidence() -> None:
     assert "does not directly assess" in speed_check.evidence[0]
 
 
-def test_diagnostic_guide_rejects_unknown_machine_reference(tmp_path: Path) -> None:
+def test_diagnostic_guide_rejects_unknown_machine_reference(
+    tmp_path: Path,
+) -> None:
     raw = json.loads(GUIDE_PATH.read_text(encoding="utf-8"))
-    raw["symptoms"][0]["checks"][0]["component_ids"].append("unknown-component")
+    raw["symptoms"][0]["checks"][0]["component_ids"].append(
+        "unknown-component"
+    )
     guide_path = tmp_path / "invalid-guide.json"
     guide_path.write_text(json.dumps(raw), encoding="utf-8")
 
@@ -178,6 +194,6 @@ def test_diagnostic_cli_writes_combined_report(tmp_path: Path) -> None:
     assert report["diagnostic_projection"]["symptom"]["symptom_id"] == (
         "label-alignment-off"
     )
-    assert report["diagnostic_projection"]["first_observed_deviation"]["status"] == (
-        "late"
-    )
+    assert report["diagnostic_projection"]["first_observed_deviation"][
+        "status"
+    ] == "late"
