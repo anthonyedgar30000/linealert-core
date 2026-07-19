@@ -22,6 +22,8 @@ from .replay import (
     replay_events,
     summary_to_dict,
 )
+from .signal_io import load_signal_policy, signal_assessments_to_dict
+from .signal_processing import SignalAnalysisError, TimingSignalAnalyzer
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -34,9 +36,24 @@ def build_parser() -> argparse.ArgumentParser:
             "governed troubleshooting knowledge onto the supplied findings."
         ),
     )
-    parser.add_argument("--config", required=True, type=Path, help="machine replay config")
-    parser.add_argument("--input", required=True, type=Path, help="JSONL or CSV event file")
-    parser.add_argument("--guide", required=True, type=Path, help="diagnostic guide JSON")
+    parser.add_argument(
+        "--config",
+        required=True,
+        type=Path,
+        help="machine replay config",
+    )
+    parser.add_argument(
+        "--input",
+        required=True,
+        type=Path,
+        help="JSONL or CSV event file",
+    )
+    parser.add_argument(
+        "--guide",
+        required=True,
+        type=Path,
+        help="diagnostic guide JSON",
+    )
     parser.add_argument(
         "--operator-report",
         required=True,
@@ -44,12 +61,24 @@ def build_parser() -> argparse.ArgumentParser:
         help="operator issue timeline JSON",
     )
     parser.add_argument(
+        "--signal-policy",
+        type=Path,
+        help=(
+            "optional explicit timing-series policy; when supplied, repeated "
+            "relationships are assessed for drift, variability, and sustained shift"
+        ),
+    )
+    parser.add_argument(
         "--format",
         choices=("auto", "jsonl", "csv"),
         default="auto",
         help="input format; inferred from the file extension by default",
     )
-    parser.add_argument("--output", type=Path, help="write the JSON report to this file")
+    parser.add_argument(
+        "--output",
+        type=Path,
+        help="write the JSON report to this file",
+    )
     return parser
 
 
@@ -68,16 +97,46 @@ def main(argv: Sequence[str] | None = None) -> int:
             topology=core.topology,
         )
         operator_report = load_operator_report(args.operator_report)
+        timing_findings = collect_timing_findings(summary.results)
+
+        signal_assessments = ()
+        if args.signal_policy is not None:
+            policy = load_signal_policy(args.signal_policy)
+            signal_assessments = TimingSignalAnalyzer(policy).analyze(
+                timing_findings,
+                operator_reported_start=operator_report.reported_start,
+            )
+
         projection = engine.project(
             operator_report=operator_report,
-            timing_findings=collect_timing_findings(summary.results),
+            timing_findings=timing_findings,
+            signal_assessments=signal_assessments,
         )
         report = summary_to_dict(summary)
-        report["diagnostic_projection"] = projection_to_dict(projection)
+        projection_report = projection_to_dict(projection)
+        projection_report["signal_assessment_count"] = len(signal_assessments)
+        projection_report["primary_signal_relationship"] = (
+            {
+                "rule_id": projection.primary_signal_assessment.rule_id,
+                "from": projection.primary_signal_assessment.topology_from,
+                "to": projection.primary_signal_assessment.topology_to,
+                "patterns": [
+                    pattern.value
+                    for pattern in projection.primary_signal_assessment.patterns
+                ],
+            }
+            if projection.primary_signal_assessment is not None
+            else None
+        )
+        report["diagnostic_projection"] = projection_report
+        report["timing_signal_analysis"] = signal_assessments_to_dict(
+            signal_assessments
+        )
     except (
         OSError,
         DiagnosticProjectionError,
         ReplayInputError,
+        SignalAnalysisError,
         ValueError,
     ) as exc:
         print(f"linealert-diagnose: {exc}", file=sys.stderr)
