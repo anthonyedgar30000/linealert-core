@@ -101,7 +101,20 @@ def test_signal_patterns_improve_diagnostic_projection_ranking() -> None:
 
 def test_isolated_excursion_remains_distinct_from_sustained_shift() -> None:
     start = datetime(2026, 7, 19, 12, 0, tzinfo=UTC)
-    values = (0.20, 0.21, 0.19, 0.20, 0.22, 0.20, 0.21, 0.40, 0.20, 0.19, 0.21, 0.20)
+    values = (
+        0.20,
+        0.21,
+        0.19,
+        0.20,
+        0.22,
+        0.20,
+        0.40,
+        0.21,
+        0.20,
+        0.19,
+        0.21,
+        0.20,
+    )
     findings = tuple(
         _finding(start + timedelta(minutes=index), value, index)
         for index, value in enumerate(values)
