@@ -7,6 +7,7 @@ from typing import Any
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PROJECT_STATE = PROJECT_ROOT / ".project" / "active-work.json"
 PROJECT_GUIDANCE = PROJECT_ROOT / ".project" / "README.md"
+ROOT_README = PROJECT_ROOT / "README.md"
 LINEAGE_GUIDANCE = PROJECT_ROOT / "docs" / "repository-lineage.md"
 
 
@@ -41,6 +42,7 @@ def test_workstream_scope_is_bounded_and_protects_runtime_paths() -> None:
     assert permitted == {
         ".project/README.md",
         ".project/active-work.json",
+        "README.md",
         "docs/repository-lineage.md",
         "tests/test_project_state.py",
     }
@@ -89,8 +91,14 @@ def test_lineage_has_one_authoritative_repo_and_formal_archaeology() -> None:
         "anthonyedgar30000/HelixMemoryService",
     }
     assert archaeology["anthonyedgar30000/LineAlertDemo"]["open_pull_requests"] == [2, 3]
+    assert archaeology["anthonyedgar30000/linealert-analysis-engine"][
+        "open_pull_requests"
+    ] == [1]
     assert "Do not merge or copy wholesale" in archaeology[
         "anthonyedgar30000/LineAlertDemo"
+    ]["disposition"]
+    assert "not current LineAlert persistence" in archaeology[
+        "anthonyedgar30000/HelixMemoryService"
     ]["disposition"]
 
 
@@ -99,6 +107,16 @@ def test_lineage_guidance_preserves_current_authority_boundaries() -> None:
 
     assert "`anthonyedgar30000/linealert-core` is the authoritative implementation" in guidance
     assert "Open PR #2 and PR #3 are non-current prototype work" in guidance
+    assert "Open PR #1, **Implement Phase 1 backend analysis**, is non-current" in guidance
     assert "must not be merged" in guidance
     assert "historical_pattern != current_root_cause" in guidance
     assert "successful_test != safe_production_change" in guidance
+
+
+def test_root_readme_agrees_with_repository_lineage() -> None:
+    readme = ROOT_README.read_text(encoding="utf-8")
+
+    assert "**`linealert-core`**: authoritative current LineAlert implementation" in readme
+    assert "**`ContextOS`**: separate execution-containment" in readme
+    assert "**`HelixMemoryService`**: early memory-service prototype" in readme
+    assert "it is not\n  the current LineAlert persistence" in readme
