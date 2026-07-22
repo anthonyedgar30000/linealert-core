@@ -31,7 +31,7 @@
     {
       "workstream_id": "post-pr13-state-release-v0.1",
       "branch": "chore/reconcile-state-after-pr13",
-      "pull_request": 0,
+      "pull_request": 14,
       "write_owner": "LineAlert authoritative workspace / post-pr13-state-release conversation",
       "objective": "Release the merged PR #13 reconciliation ownership, advance the verified baseline, record the missing independent-review gate, and replace self-staling open-PR assertions with live-resolved lifecycle semantics.",
       "status_resolution": "resolve_from_live_pull_request",
@@ -172,7 +172,7 @@
   },
   "tracked_pull_requests": [
     {
-      "pull_request": 0,
+      "pull_request": 14,
       "title": "Release project state after PR 13",
       "state_resolution": "live_github_required",
       "ownership_resolution": {
