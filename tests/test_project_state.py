@@ -16,53 +16,29 @@ def load_project_state() -> dict[str, Any]:
     return value
 
 
-def test_active_work_resolves_authoritative_repository_and_owned_branch() -> None:
+def test_reconciled_state_resolves_authoritative_repository() -> None:
     state = load_project_state()
 
     assert state["schema_version"] == "project.active-work.v1"
     assert state["repository"]["full_name"] == "anthonyedgar30000/linealert-core"
     assert state["repository"]["role"] == "authoritative_linealert_implementation"
     assert state["trusted_baseline"]["branch"] == "main"
-    assert state["trusted_baseline"]["commit"] == (
-        "9051f324edf59f88a13e1649dda49a5dd78715f1"
-    )
-    assert len(state["workstreams"]) == 1
-
-    workstream = state["workstreams"][0]
-    assert workstream["workstream_id"] == "governed-baseline-resolution-v0.1"
-    assert workstream["branch"] == "feature/governed-baseline-resolution"
-    assert workstream["write_owner"]
+    assert state["workstreams"] == []
+    assert state["known_open_pull_requests"] == []
 
 
-def test_baseline_workstream_scope_and_authority_are_bounded() -> None:
-    workstream = load_project_state()["workstreams"][0]
-    permitted = set(workstream["permitted_paths"])
-    capabilities = workstream["capability_boundary"]
+def test_reconciled_baseline_records_pr9_merge() -> None:
+    state = load_project_state()
+    baseline = state["trusted_baseline"]
+    completed = baseline["last_completed_increment"]
 
-    assert permitted == {
-        ".project/active-work.json",
-        "docs/baseline_resolution.md",
-        "examples/labeler_baseline_registry.json",
-        "src/linealert_core/__init__.py",
-        "src/linealert_core/baseline.py",
-        "src/linealert_core/baseline_io.py",
-        "tests/test_baseline.py",
-        "tests/test_project_state.py",
+    assert baseline["commit"] == "fa7ad9c09b99a594108a41bb6d09471fbd1a0dc6"
+    assert completed == {
+        "pull_request": 9,
+        "title": "Add governed baseline resolution and drift assessment",
+        "merge_commit": "fa7ad9c09b99a594108a41bb6d09471fbd1a0dc6",
     }
-    assert capabilities["baseline_record_and_resolution_logic"] is True
-    assert capabilities["baseline_json_loading"] is True
-    assert capabilities["automatic_rebaselining"] is False
-    assert capabilities["telemetry_adapter_implementation"] is False
-    assert capabilities["diagnostic_rule_changes"] is False
-    assert capabilities["deployment_mutation"] is False
-    assert capabilities["equipment_control"] is False
-    assert capabilities["credential_use"] is False
-    assert state_has_unique_paths(workstream)
-
-
-def state_has_unique_paths(workstream: dict[str, Any]) -> bool:
-    permitted = workstream["permitted_paths"]
-    return len(permitted) == len(set(permitted))
+    assert state["deployment_state"]["status"] == "not_deployed"
 
 
 def test_project_lookup_requires_repository_resolution() -> None:
