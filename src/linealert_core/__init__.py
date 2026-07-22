@@ -20,6 +20,15 @@ from .baseline import (
     compare_to_baseline,
 )
 from .baseline_io import baseline_evaluation_to_dict, load_baseline_registry
+from .baseline_replay import (
+    ReplayBaselineAssessment,
+    TimingBaselineContext,
+    TimingBaselineDisposition,
+    TimingBaselineResult,
+    assess_replay_timing_baselines,
+    load_timing_baseline_contexts,
+    timing_baseline_assessment_to_dict,
+)
 from .diagnostic_io import (
     collect_timing_findings,
     load_diagnostic_engine,
@@ -87,6 +96,7 @@ __all__ = [
     "BaselineRejection",
     "BaselineResolution",
     "BaselineResolutionStatus",
+    "ReplayBaselineAssessment",
     "CheckDisposition",
     "ComponentDefinition",
     "ComponentDependency",
@@ -122,6 +132,9 @@ __all__ = [
     "Subscription",
     "SymptomDefinition",
     "TemporalRule",
+    "TimingBaselineContext",
+    "TimingBaselineDisposition",
+    "TimingBaselineResult",
     "TimingFinding",
     "TimingMonitor",
     "TimingSeriesAssessment",
@@ -129,6 +142,7 @@ __all__ = [
     "TimingStatus",
     "TopologyContext",
     "TopologyGraph",
+    "assess_replay_timing_baselines",
     "baseline_evaluation_to_dict",
     "build_core_from_config",
     "collect_timing_findings",
@@ -138,8 +152,10 @@ __all__ = [
     "load_events",
     "load_operator_report",
     "load_signal_policy",
+    "load_timing_baseline_contexts",
     "projection_to_dict",
     "replay_events",
     "signal_assessments_to_dict",
     "summary_to_dict",
+    "timing_baseline_assessment_to_dict",
 ]
