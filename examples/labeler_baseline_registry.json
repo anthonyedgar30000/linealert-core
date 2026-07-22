@@ -1,0 +1,44 @@
+{
+  "records": [
+    {
+      "baseline_id": "labeler-demo-label-presentation-v1",
+      "version": "1.0.0",
+      "replaces_baseline_id": null,
+      "applicability": {
+        "asset_id": "LABELER-DEMO-01",
+        "component_id": "label-feed-servo",
+        "observation_key": "lag:LabelFeedCommand->LabelAtPeelPoint",
+        "operating_mode": "500ml-round-bottle",
+        "configuration_version": "plc-program-4.2.1",
+        "firmware_version": "servo-fw-3.7",
+        "calibration_id": "label-sensor-cal-2026-07-10",
+        "sampling_profile_id": "event-timing-v1",
+        "context_tags": {
+          "label_stock": "supplier-a-roll-42",
+          "load_class": "commissioning-nominal",
+          "speed_class": "approved-production"
+        }
+      },
+      "model": {
+        "mean": 0.2,
+        "stddev": 0.01,
+        "approved_min": 0.05,
+        "approved_max": 0.35
+      },
+      "evidence": {
+        "source_id": "commissioning-historian-export",
+        "source_reference": "FAT-2026-LABELER-01 rows 120-239",
+        "captured_start": "2026-07-10T14:00:00Z",
+        "captured_end": "2026-07-10T15:00:00Z",
+        "clock_quality": "ntp-synchronized-verified",
+        "engineering_unit": "s",
+        "sample_count": 120,
+        "test_conditions": "500 ml bottles at approved commissioning speed and nominal load",
+        "approved_by": "controls-engineer@example.test",
+        "approved_at": "2026-07-10T16:00:00Z",
+        "approval_reference": "commissioning-review-CR-1042"
+      }
+    }
+  ],
+  "invalidations": []
+}
