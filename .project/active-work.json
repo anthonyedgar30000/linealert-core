@@ -24,10 +24,10 @@
     {
       "workstream_id": "post-pr12-reality-reconciliation-v0.1",
       "branch": "chore/reconcile-state-after-pr12",
-      "pull_request": null,
+      "pull_request": 13,
       "write_owner": "LineAlert authoritative workspace / post-pr12-reality-reconciliation conversation",
       "objective": "Reconcile repository-local project state and lineage documentation after PR #12 merged despite a recorded blocking scope collision, while preserving all merged replay-baseline implementation behavior.",
-      "status": "implemented_on_branch_pr_pending",
+      "status": "implemented_on_branch_ci_pending",
       "permitted_paths": [
         ".project/active-work.json",
         "README.md",
@@ -61,6 +61,7 @@
         "ruff check passes",
         "the complete pytest suite passes",
         "the pull-request diff remains inside permitted_paths",
+        "the workstream branch and pull-request number match live PR #13",
         "the trusted baseline is merged PR #12 commit a1812ff69ef6cb05031bced9f4dc7577c6ae8d2a unless live main advances",
         "the merged replay-baseline implementation and its tests remain unchanged",
         "PR #12 is recorded as merged implementation reality and as a governance-gate violation",
@@ -73,10 +74,11 @@
       "verification_evidence": {
         "branch_base": "a1812ff69ef6cb05031bced9f4dc7577c6ae8d2a",
         "prior_exact_head_ci": "PR #12 head 04f4be06577d4ed94a9f0291330762006b01011a passed install, lint, and tests on Python 3.11 and 3.12 before merge.",
+        "current_head_ci": "Resolve from live GitHub for the exact current PR #13 head after all reconciliation commits.",
         "evidence_boundary": "Prior CI establishes test results for the merged implementation head, not authorization for the merge. This reconciliation requires new exact-head CI because project-state and tests change.",
         "superseded_pull_request": "PR #11 was closed without merge after main advanced through PR #12."
       },
-      "next_gate": "Create a draft pull request, record its exact number, obtain successful exact-current-head CI, perform independent read-only review of the exact four-file diff, and require explicit human approval before merge."
+      "next_gate": "Obtain successful exact-current-head CI, perform independent read-only review of the exact four-file diff, and require explicit human approval before merge."
     }
   ],
   "repository_lineage": {
@@ -140,5 +142,12 @@
     "status": "not_deployed",
     "evidence": "No current LineAlert Core deployment evidence is recorded in this repository state."
   },
-  "known_open_pull_requests": []
+  "known_open_pull_requests": [
+    {
+      "pull_request": 13,
+      "title": "Reconcile project state after blocked PR 12 merge",
+      "status": "draft_exact_head_ci_pending",
+      "action": "Keep draft pending successful exact-head CI, independent read-only review of the exact four-file diff, and explicit human merge approval."
+    }
+  ]
 }
