@@ -40,14 +40,16 @@ def test_active_work_resolves_current_main_and_owned_reconciliation() -> None:
     assert workstream["workstream_id"] == "post-pr12-reality-reconciliation-v0.1"
     assert workstream["branch"] == "chore/reconcile-state-after-pr12"
     assert workstream["pull_request"] == 13
+    assert workstream["status"] == "implemented_on_branch_requires_live_ci_lookup"
     assert state["known_open_pull_requests"] == [
         {
             "pull_request": 13,
             "title": "Reconcile project state after blocked PR 12 merge",
-            "status": "draft_exact_head_ci_pending",
+            "status": "draft_requires_live_exact_head_ci_and_review",
             "action": (
-                "Keep draft pending successful exact-head CI, independent read-only "
-                "review of the exact four-file diff, and explicit human merge approval."
+                "Keep draft. Resolve CI from live GitHub for the exact current head, "
+                "complete independent read-only review, and obtain explicit human "
+                "approval before merge."
             ),
         }
     ]
