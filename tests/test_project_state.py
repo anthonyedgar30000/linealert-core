@@ -16,52 +16,29 @@ def load_project_state() -> dict[str, Any]:
     return value
 
 
-def test_active_work_resolves_authoritative_repository_and_one_owned_branch() -> None:
+def test_reconciled_state_resolves_authoritative_repository() -> None:
     state = load_project_state()
 
     assert state["schema_version"] == "project.active-work.v1"
     assert state["repository"]["full_name"] == "anthonyedgar30000/linealert-core"
     assert state["repository"]["role"] == "authoritative_linealert_implementation"
     assert state["trusted_baseline"]["branch"] == "main"
-    assert len(state["workstreams"]) == 1
-
-    workstream = state["workstreams"][0]
-    assert workstream["workstream_id"] == "project-reality-control-v0.1"
-    assert workstream["branch"] == "agent/project-reality-control"
-    assert workstream["write_owner"]
+    assert state["workstreams"] == []
+    assert state["known_open_pull_requests"] == []
 
 
-def test_workstream_scope_is_bounded_and_protects_runtime_paths() -> None:
+def test_reconciled_baseline_records_pr7_merge() -> None:
     state = load_project_state()
-    workstream = state["workstreams"][0]
-    permitted = set(workstream["permitted_paths"])
-    protected = set(workstream["protected_paths"])
-    capabilities = workstream["capability_boundary"]
+    baseline = state["trusted_baseline"]
+    completed = baseline["last_completed_increment"]
 
-    assert permitted == {
-        ".project/README.md",
-        ".project/active-work.json",
-        "docs/repository-lineage.md",
-        "tests/test_project_state.py",
+    assert baseline["commit"] == "6ad47e604795d531585c84ea7f86aa1250ec8708"
+    assert completed == {
+        "pull_request": 7,
+        "title": "Establish LineAlert project reality control",
+        "merge_commit": "6ad47e604795d531585c84ea7f86aa1250ec8708",
     }
-    assert ".github/workflows/**" in protected
-    assert "src/**" in protected
-    assert "adapters/**" in protected
-    assert "deployment/**" in protected
-    assert capabilities["pull_request_merge"] is False
-    assert capabilities["runtime_code_changes"] is False
-    assert capabilities["telemetry_adapter_implementation"] is False
-    assert capabilities["diagnostic_rule_changes"] is False
-    assert capabilities["deployment_mutation"] is False
-    assert capabilities["equipment_control"] is False
-    assert capabilities["credential_use"] is False
-
-
-def test_permitted_paths_are_unique() -> None:
-    state = load_project_state()
-    permitted = state["workstreams"][0]["permitted_paths"]
-
-    assert len(permitted) == len(set(permitted))
+    assert state["deployment_state"]["status"] == "not_deployed"
 
 
 def test_project_lookup_requires_repository_resolution() -> None:
