@@ -16,29 +16,79 @@ def load_project_state() -> dict[str, Any]:
     return value
 
 
-def test_reconciled_state_resolves_authoritative_repository() -> None:
+def test_active_work_resolves_authoritative_repository_and_owned_branch() -> None:
     state = load_project_state()
 
     assert state["schema_version"] == "project.active-work.v1"
     assert state["repository"]["full_name"] == "anthonyedgar30000/linealert-core"
     assert state["repository"]["role"] == "authoritative_linealert_implementation"
     assert state["trusted_baseline"]["branch"] == "main"
-    assert state["workstreams"] == []
-    assert state["known_open_pull_requests"] == []
-
-
-def test_reconciled_baseline_records_pr9_merge() -> None:
-    state = load_project_state()
-    baseline = state["trusted_baseline"]
-    completed = baseline["last_completed_increment"]
-
-    assert baseline["commit"] == "fa7ad9c09b99a594108a41bb6d09471fbd1a0dc6"
-    assert completed == {
-        "pull_request": 9,
-        "title": "Add governed baseline resolution and drift assessment",
-        "merge_commit": "fa7ad9c09b99a594108a41bb6d09471fbd1a0dc6",
+    assert state["trusted_baseline"]["commit"] == (
+        "f991dfa72aa2967e54b8f69c18c2c91181c2e8cb"
+    )
+    assert state["trusted_baseline"]["last_completed_increment"] == {
+        "pull_request": 10,
+        "title": "Reconcile project state after PR 9",
+        "merge_commit": "f991dfa72aa2967e54b8f69c18c2c91181c2e8cb",
     }
+    assert len(state["workstreams"]) == 1
+
+    workstream = state["workstreams"][0]
+    assert workstream["workstream_id"] == "replay-baseline-assessment-v0.1"
+    assert workstream["branch"] == "feature/replay-baseline-assessment"
+    assert workstream["pull_request"] == 12
+    assert workstream["write_owner"]
+
+
+def test_replay_baseline_workstream_scope_and_authority_are_bounded() -> None:
+    state = load_project_state()
+    workstream = state["workstreams"][0]
+    permitted = set(workstream["permitted_paths"])
+    capabilities = workstream["capability_boundary"]
+
+    assert permitted == {
+        ".project/active-work.json",
+        "docs/replay_baseline_assessment.md",
+        "examples/labeler_timing_baseline_contexts.json",
+        "src/linealert_core/__init__.py",
+        "src/linealert_core/baseline_replay.py",
+        "src/linealert_core/cli.py",
+        "tests/test_baseline_replay.py",
+        "tests/test_project_state.py",
+    }
+    assert capabilities["replay_timing_baseline_assessment"] is True
+    assert capabilities["baseline_registry_loading"] is True
+    assert capabilities["timing_context_loading"] is True
+    assert capabilities["optional_cli_reporting"] is True
+    assert capabilities["timing_rule_changes"] is False
+    assert capabilities["diagnostic_rule_changes"] is False
+    assert capabilities["automatic_rebaselining"] is False
+    assert capabilities["live_telemetry_integration"] is False
+    assert capabilities["deployment_mutation"] is False
+    assert capabilities["equipment_control"] is False
+    assert capabilities["credential_use"] is False
+    assert len(permitted) == len(workstream["permitted_paths"])
     assert state["deployment_state"]["status"] == "not_deployed"
+    assert state["known_open_pull_requests"] == [
+        {
+            "pull_request": 11,
+            "title": "Reconcile LineAlert lineage boundaries",
+            "status": "draft_parallel_owner_of_overlapping_project_state_paths",
+            "action": (
+                "Resolve PR #11 before PR #12 proceeds because it owns "
+                ".project/active-work.json and tests/test_project_state.py."
+            ),
+        },
+        {
+            "pull_request": 12,
+            "title": "Assess replay timing against governed baselines",
+            "status": "draft_blocked_by_pr11_scope_collision",
+            "action": (
+                "Do not merge. Rebase and reconcile ownership only after PR #11 "
+                "resolves."
+            ),
+        },
+    ]
 
 
 def test_project_lookup_requires_repository_resolution() -> None:
