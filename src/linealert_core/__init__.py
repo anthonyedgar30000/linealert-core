@@ -1,5 +1,25 @@
 """Public API for LineAlert Core."""
 
+from .baseline import (
+    BaselineApplicability,
+    BaselineComparisonPolicy,
+    BaselineError,
+    BaselineEvaluation,
+    BaselineEvidence,
+    BaselineInvalidation,
+    BaselineModel,
+    BaselineObservation,
+    BaselineRecord,
+    BaselineRegistry,
+    BaselineRejection,
+    BaselineResolution,
+    BaselineResolutionStatus,
+    DriftAssessment,
+    DriftStatus,
+    EnvelopeStatus,
+    compare_to_baseline,
+)
+from .baseline_io import baseline_evaluation_to_dict, load_baseline_registry
 from .diagnostic_io import (
     collect_timing_findings,
     load_diagnostic_engine,
@@ -54,6 +74,19 @@ from .timing import TemporalRule, TimingFinding, TimingMonitor, TimingStatus
 from .topology import DependencyEdge, TopologyContext, TopologyGraph
 
 __all__ = [
+    "BaselineApplicability",
+    "BaselineComparisonPolicy",
+    "BaselineError",
+    "BaselineEvaluation",
+    "BaselineEvidence",
+    "BaselineInvalidation",
+    "BaselineModel",
+    "BaselineObservation",
+    "BaselineRecord",
+    "BaselineRegistry",
+    "BaselineRejection",
+    "BaselineResolution",
+    "BaselineResolutionStatus",
     "CheckDisposition",
     "ComponentDefinition",
     "ComponentDependency",
@@ -67,6 +100,9 @@ __all__ = [
     "DiagnosticProjectionEngine",
     "DiagnosticProjectionError",
     "DiagnosticRecommendation",
+    "DriftAssessment",
+    "DriftStatus",
+    "EnvelopeStatus",
     "EventBinding",
     "EventIdentityCollision",
     "EventQuality",
@@ -93,8 +129,11 @@ __all__ = [
     "TimingStatus",
     "TopologyContext",
     "TopologyGraph",
+    "baseline_evaluation_to_dict",
     "build_core_from_config",
     "collect_timing_findings",
+    "compare_to_baseline",
+    "load_baseline_registry",
     "load_diagnostic_engine",
     "load_events",
     "load_operator_report",
