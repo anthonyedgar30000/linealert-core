@@ -22,7 +22,7 @@
     {
       "workstream_id": "project-reality-control-v0.1",
       "branch": "agent/project-reality-control",
-      "pull_request": null,
+      "pull_request": 7,
       "write_owner": "LineAlert authoritative workspace / project-reality-control conversation",
       "objective": "Establish repository-local reality control and formally classify prior LineAlert repositories and pull requests without changing runtime, telemetry, diagnostic, deployment, or equipment behavior.",
       "status": "implemented_on_branch_ci_pending",
@@ -95,7 +95,10 @@
       {
         "repository": "anthonyedgar30000/LineAlertDemo",
         "classification": "legacy_prototype",
-        "open_pull_requests": [2, 3],
+        "open_pull_requests": [
+          2,
+          3
+        ],
         "disposition": "Do not merge or copy wholesale into linealert-core. Reuse requires a new bounded branch, explicit source attribution, current authority boundaries, focused tests, and review."
       },
       {
@@ -116,5 +119,12 @@
     "status": "not_deployed",
     "evidence": "No current LineAlert Core deployment evidence is recorded in this repository state."
   },
-  "known_open_pull_requests": []
+  "known_open_pull_requests": [
+    {
+      "pull_request": 7,
+      "title": "Establish LineAlert project reality control",
+      "status": "draft_exact_head_ci_pending",
+      "action": "Keep draft pending successful exact-head CI, independent read-only review of that exact head, and explicit human merge approval."
+    }
+  ]
 }
