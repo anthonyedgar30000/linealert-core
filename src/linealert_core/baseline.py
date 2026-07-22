@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from collections import Counter
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
 from types import MappingProxyType
@@ -51,7 +51,7 @@ class BaselineApplicability:
     firmware_version: str
     calibration_id: str
     sampling_profile_id: str
-    context_tags: Mapping[str, str] = MappingProxyType({})
+    context_tags: Mapping[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         for field_name in (
