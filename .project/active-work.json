@@ -10,76 +10,15 @@
   "updated_on": "2026-07-22",
   "trusted_baseline": {
     "branch": "main",
-    "commit": "9051f324edf59f88a13e1649dda49a5dd78715f1",
-    "commit_semantics": "Verified GitHub merge commit for PR #8 before the governed-baseline-resolution workstream was created; live GitHub state determines the current main head.",
+    "commit": "fa7ad9c09b99a594108a41bb6d09471fbd1a0dc6",
+    "commit_semantics": "Verified GitHub merge commit for PR #9. Live GitHub state determines the current main head if it advances after this reconciliation.",
     "last_completed_increment": {
-      "pull_request": 8,
-      "title": "Reconcile project state after PR 7",
-      "merge_commit": "9051f324edf59f88a13e1649dda49a5dd78715f1"
+      "pull_request": 9,
+      "title": "Add governed baseline resolution and drift assessment",
+      "merge_commit": "fa7ad9c09b99a594108a41bb6d09471fbd1a0dc6"
     }
   },
-  "workstreams": [
-    {
-      "workstream_id": "governed-baseline-resolution-v0.1",
-      "branch": "feature/governed-baseline-resolution",
-      "pull_request": 9,
-      "write_owner": "LineAlert authoritative workspace / governed-baseline-resolution conversation",
-      "objective": "Add immutable commissioned-baseline records, append-only replacement and invalidation evidence, exact applicability resolution, explicit rejection and ambiguity outcomes, and deterministic baseline-versus-envelope drift assessment without diagnosing faults or authorizing equipment action.",
-      "status": "implemented_on_branch_ci_pending",
-      "permitted_paths": [
-        ".project/active-work.json",
-        "docs/baseline_resolution.md",
-        "examples/labeler_baseline_registry.json",
-        "src/linealert_core/__init__.py",
-        "src/linealert_core/baseline.py",
-        "src/linealert_core/baseline_io.py",
-        "tests/test_baseline.py",
-        "tests/test_project_state.py"
-      ],
-      "protected_paths": [
-        ".github/workflows/**",
-        "src/linealert_core/diagnostic_*",
-        "src/linealert_core/signal_*",
-        "src/linealert_core/timing.py",
-        "src/linealert_core/pipeline.py",
-        "adapters/**",
-        "deployment/**",
-        "**/*credential*",
-        "**/*secret*"
-      ],
-      "capability_boundary": {
-        "repository_writes": "declared permitted paths only",
-        "pull_request_creation": true,
-        "pull_request_merge": false,
-        "baseline_record_and_resolution_logic": true,
-        "baseline_json_loading": true,
-        "telemetry_adapter_implementation": false,
-        "diagnostic_rule_changes": false,
-        "automatic_rebaselining": false,
-        "external_api_calls": false,
-        "deployment_mutation": false,
-        "equipment_control": false,
-        "credential_use": false
-      },
-      "verification_criteria": [
-        "active-work.json parses as JSON",
-        "ruff check passes",
-        "the complete pytest suite passes",
-        "the pull-request diff remains inside permitted_paths",
-        "baseline applicability requires exact asset, component, observation, operating mode, configuration, firmware, calibration, sampling profile, and context-tag agreement",
-        "no matching baseline and multiple matching baselines remain explicit outcomes rather than hidden fallback selection",
-        "replacement and invalidation evidence is append-only and preserves prior baseline records",
-        "baseline drift remains distinct from approved operating-envelope status",
-        "suspect or bad observations, mismatched units, and mismatched applicability are not compared",
-        "drift findings do not assert fault, root cause, safe production change, or authorization"
-      ],
-      "verification_evidence": {
-        "local_targeted_validation": "Ten focused baseline tests and syntax compilation passed before publication.",
-        "evidence_boundary": "Local validation is supporting evidence only. Live exact-current-head GitHub CI is authoritative for CI verification after the branch is published."
-      },
-      "next_gate": "Obtain successful exact-current-head CI, perform independent read-only review of the exact head and scope, then require explicit human approval before merge."
-    }
-  ],
+  "workstreams": [],
   "repository_lineage": {
     "authoritative": [
       {
@@ -128,12 +67,5 @@
     "status": "not_deployed",
     "evidence": "No current LineAlert Core deployment evidence is recorded in this repository state."
   },
-  "known_open_pull_requests": [
-    {
-      "pull_request": 9,
-      "title": "Add governed baseline resolution and drift assessment",
-      "status": "draft_exact_head_ci_pending",
-      "action": "Keep draft pending successful exact-head CI, independent read-only review of that exact head, and explicit human merge approval."
-    }
-  ]
+  "known_open_pull_requests": []
 }
