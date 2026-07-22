@@ -24,11 +24,12 @@
       "branch": "agent/project-reality-control",
       "pull_request": 7,
       "write_owner": "LineAlert authoritative workspace / project-reality-control conversation",
-      "objective": "Establish repository-local reality control and formally classify prior LineAlert repositories and pull requests without changing runtime, telemetry, diagnostic, deployment, or equipment behavior.",
-      "status": "implemented_on_branch_ci_pending",
+      "objective": "Establish repository-local reality control, align current repository-boundary documentation, and formally classify prior LineAlert repositories and pull requests without changing runtime, telemetry, diagnostic, deployment, or equipment behavior.",
+      "status": "implemented_on_branch_requires_live_ci_lookup",
       "permitted_paths": [
         ".project/README.md",
         ".project/active-work.json",
+        "README.md",
         "docs/repository-lineage.md",
         "tests/test_project_state.py"
       ],
@@ -61,14 +62,17 @@
         "project lookups resolve and state the exact owner/repository target before inspecting state or claiming ownership",
         "ambiguous repository scope stops without ownership or project-state conclusions",
         "linealert-core is the only authoritative LineAlert implementation repository",
-        "legacy LineAlert repositories and their open prototype pull requests remain classified as design archaeology",
+        "the root README and repository-lineage guidance agree on active boundaries and design archaeology",
+        "legacy LineAlert repositories and all currently open prototype pull requests remain classified as design archaeology",
         "no runtime, telemetry, diagnostic, workflow, deployment, credential, or equipment-control implementation is added"
       ],
       "verification_evidence": {
-        "local_targeted_validation": "Project-state tests and JSON parsing are validated before publication where tooling permits.",
-        "evidence_boundary": "Local validation is supporting evidence only. Live exact-current-head GitHub CI is authoritative for CI verification after the branch is published."
+        "prior_exact_head": "277d00e189284de1e3d1d69af45da8e65f13decc",
+        "prior_exact_head_ci": "GitHub Actions run 29896508827 passed install, lint, and test on Python 3.11 and 3.12 before this reconciliation increment.",
+        "current_head_ci": "Must be resolved from live GitHub for the exact current branch head; this field intentionally does not cache a pass or pending state that becomes stale after a state-only commit.",
+        "evidence_boundary": "Local or prior-head validation is supporting evidence only. Live exact-current-head GitHub CI is authoritative for CI verification."
       },
-      "next_gate": "Obtain successful exact-current-head CI, perform an independent read-only review of the exact head and declared scope, then require explicit human approval before merge."
+      "next_gate": "Confirm successful live exact-current-head CI, perform an independent read-only review of that exact head and declared five-file scope, then require explicit human approval before merge."
     }
   ],
   "repository_lineage": {
@@ -104,14 +108,16 @@
       {
         "repository": "anthonyedgar30000/linealert-analysis-engine",
         "classification": "legacy_placeholder",
-        "open_pull_requests": [],
-        "disposition": "Not an active implementation source. Preserve only as historical repository evidence."
+        "open_pull_requests": [
+          1
+        ],
+        "disposition": "Open PR #1 is non-current prototype work. Do not merge it into the current lineage or copy it wholesale. Preserve the repository only as historical evidence unless a bounded current increment deliberately re-derives selected behavior."
       },
       {
         "repository": "anthonyedgar30000/HelixMemoryService",
         "classification": "early_memory_prototype",
         "open_pull_requests": [],
-        "disposition": "Preserve as design archaeology. Persistence and retrieval integration require a separately governed current architecture and package boundary."
+        "disposition": "Preserve as design archaeology. It is not current LineAlert persistence, retrieval, or lifecycle-system authority. Any future persistence integration requires a separately governed current architecture and package boundary."
       }
     ]
   },
@@ -123,8 +129,8 @@
     {
       "pull_request": 7,
       "title": "Establish LineAlert project reality control",
-      "status": "draft_exact_head_ci_pending",
-      "action": "Keep draft pending successful exact-head CI, independent read-only review of that exact head, and explicit human merge approval."
+      "status": "draft_requires_live_exact_head_ci_and_review",
+      "action": "Keep draft. Resolve CI from live GitHub for the exact current head, complete independent read-only review, and obtain explicit human approval before merge."
     }
   ]
 }
