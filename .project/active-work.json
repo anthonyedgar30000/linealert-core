@@ -10,15 +10,68 @@
   "updated_on": "2026-07-22",
   "trusted_baseline": {
     "branch": "main",
-    "commit": "fa7ad9c09b99a594108a41bb6d09471fbd1a0dc6",
-    "commit_semantics": "Verified GitHub merge commit for PR #9. Live GitHub state determines the current main head if it advances after this reconciliation.",
+    "commit": "f991dfa72aa2967e54b8f69c18c2c91181c2e8cb",
+    "commit_semantics": "Verified GitHub merge commit for PR #10 and exact main head from which the lineage-reconciliation branch was created. Live GitHub state determines current main if it advances.",
     "last_completed_increment": {
-      "pull_request": 9,
-      "title": "Add governed baseline resolution and drift assessment",
-      "merge_commit": "fa7ad9c09b99a594108a41bb6d09471fbd1a0dc6"
+      "pull_request": 10,
+      "title": "Reconcile project state after PR 9",
+      "merge_commit": "f991dfa72aa2967e54b8f69c18c2c91181c2e8cb"
     }
   },
-  "workstreams": [],
+  "workstreams": [
+    {
+      "workstream_id": "lineage-boundary-reconciliation-v0.1",
+      "branch": "agent/reconcile-lineage-boundaries",
+      "pull_request": 11,
+      "write_owner": "LineAlert authoritative workspace / lineage-boundary-reconciliation conversation",
+      "objective": "Correct stale repository-lineage inventory and align current boundary documentation without changing runtime, telemetry, diagnostics, baseline logic, deployment, or equipment behavior.",
+      "status": "implemented_on_branch_requires_live_ci_lookup",
+      "permitted_paths": [
+        ".project/active-work.json",
+        "README.md",
+        "docs/repository-lineage.md",
+        "tests/test_project_state.py"
+      ],
+      "protected_paths": [
+        ".github/workflows/**",
+        "src/**",
+        "examples/**",
+        "adapters/**",
+        "deployment/**",
+        "**/*credential*",
+        "**/*secret*"
+      ],
+      "capability_boundary": {
+        "repository_writes": "declared permitted paths only",
+        "pull_request_creation": true,
+        "pull_request_merge": false,
+        "runtime_code_changes": false,
+        "baseline_logic_changes": false,
+        "telemetry_adapter_implementation": false,
+        "diagnostic_rule_changes": false,
+        "external_api_calls": false,
+        "deployment_mutation": false,
+        "equipment_control": false,
+        "credential_use": false
+      },
+      "verification_criteria": [
+        "active-work.json parses as JSON",
+        "ruff check passes",
+        "the complete pytest suite passes",
+        "the pull-request diff remains inside permitted_paths",
+        "the trusted baseline remains current main commit f991dfa72aa2967e54b8f69c18c2c91181c2e8cb unless live main advances",
+        "linealert-core remains the only authoritative LineAlert implementation repository",
+        "the root README and repository-lineage guidance agree that HelixMemoryService is design archaeology rather than current persistence authority",
+        "open linealert-analysis-engine PR #1 is recorded as non-current prototype work",
+        "no runtime, telemetry, diagnostic, baseline, workflow, deployment, credential, or equipment-control implementation is added"
+      ],
+      "verification_evidence": {
+        "current_head_ci": "Resolve from live GitHub for the exact current branch head; this state intentionally does not cache a pass or pending value that becomes stale after a state-only commit.",
+        "evidence_boundary": "Live exact-current-head GitHub CI is authoritative for CI verification. Passing tests do not establish deployment or operational verification."
+      },
+      "next_gate": "Confirm successful live exact-current-head CI, perform independent read-only review of that exact head and four-file scope, then require explicit human approval before merge."
+    }
+  ],
   "repository_lineage": {
     "authoritative": [
       {
@@ -52,14 +105,16 @@
       {
         "repository": "anthonyedgar30000/linealert-analysis-engine",
         "classification": "legacy_placeholder",
-        "open_pull_requests": [],
-        "disposition": "Not an active implementation source. Preserve only as historical repository evidence."
+        "open_pull_requests": [
+          1
+        ],
+        "disposition": "Open PR #1 is non-current prototype work. Do not merge it into the current lineage or copy it wholesale. Preserve the repository only as historical evidence unless a bounded current increment deliberately re-derives selected behavior."
       },
       {
         "repository": "anthonyedgar30000/HelixMemoryService",
         "classification": "early_memory_prototype",
         "open_pull_requests": [],
-        "disposition": "Preserve as design archaeology. Persistence and retrieval integration require a separately governed current architecture and package boundary."
+        "disposition": "Preserve as design archaeology. It is not current LineAlert persistence, retrieval, or lifecycle-system authority. Any future persistence integration requires a separately governed current architecture and package boundary."
       }
     ]
   },
@@ -67,5 +122,12 @@
     "status": "not_deployed",
     "evidence": "No current LineAlert Core deployment evidence is recorded in this repository state."
   },
-  "known_open_pull_requests": []
+  "known_open_pull_requests": [
+    {
+      "pull_request": 11,
+      "title": "Reconcile LineAlert lineage boundaries",
+      "status": "draft_requires_live_exact_head_ci_and_review",
+      "action": "Keep draft. Resolve CI from live GitHub for the exact current head, complete independent read-only review, and obtain explicit human approval before merge."
+    }
+  ]
 }
