@@ -124,4 +124,7 @@ def test_root_readme_agrees_with_repository_lineage() -> None:
     assert "`linealert-core`**: authoritative current LineAlert implementation" in readme
     assert "`ContextOS`**: separate execution-containment" in readme
     assert "`HelixMemoryService`**: early memory-service prototype" in readme
-    assert "not the current LineAlert persistence, retrieval, or lifecycle-system authority" in readme
+    assert (
+        "not the current LineAlert persistence, retrieval, or lifecycle-system authority"
+        in readme
+    )
