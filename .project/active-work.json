@@ -22,10 +22,10 @@
     {
       "workstream_id": "replay-baseline-assessment-v0.1",
       "branch": "feature/replay-baseline-assessment",
-      "pull_request": 11,
+      "pull_request": 12,
       "write_owner": "LineAlert authoritative workspace / replay-baseline-assessment conversation",
       "objective": "Connect replayed timing findings to governed commissioned-baseline resolution and deterministic drift assessment through explicit rule applicability contexts, while preserving temporal-rule status, baseline-envelope status, rejection evidence, and authority boundaries.",
-      "status": "implemented_on_branch_ci_pending",
+      "status": "blocked_by_overlapping_project_state_scope_pr11",
       "permitted_paths": [
         ".project/active-work.json",
         "docs/replay_baseline_assessment.md",
@@ -80,9 +80,10 @@
       ],
       "verification_evidence": {
         "local_targeted_validation": "Syntax and focused replay-baseline tests are validated before publication where local tooling permits.",
-        "evidence_boundary": "Local validation is supporting evidence only. Live exact-current-head GitHub CI is authoritative for CI verification after the branch is published."
+        "evidence_boundary": "Local validation is supporting evidence only. Live exact-current-head GitHub CI is authoritative for CI verification after the branch is published.",
+        "coordination_collision": "Live GitHub PR #11 was created after the initial open-PR lookup and owns .project/active-work.json and tests/test_project_state.py. PR #12 must not merge or continue overlapping work until PR #11 resolves and ownership is reconciled from the resulting main head."
       },
-      "next_gate": "Obtain successful exact-current-head CI, perform independent read-only review of the exact head and scope, then require explicit human approval before merge."
+      "next_gate": "Keep PR #12 draft and blocked. Resolve PR #11 first, then rebase from the new main head, reconcile project-state ownership, rerun exact-head CI, and perform read-only review before requesting merge approval."
     }
   ],
   "repository_lineage": {
@@ -136,9 +137,15 @@
   "known_open_pull_requests": [
     {
       "pull_request": 11,
+      "title": "Reconcile LineAlert lineage boundaries",
+      "status": "draft_parallel_owner_of_overlapping_project_state_paths",
+      "action": "Resolve PR #11 before PR #12 proceeds because it owns .project/active-work.json and tests/test_project_state.py."
+    },
+    {
+      "pull_request": 12,
       "title": "Assess replay timing against governed baselines",
-      "status": "draft_exact_head_ci_pending",
-      "action": "Keep draft pending successful exact-head CI, independent read-only review of that exact head, and explicit human merge approval."
+      "status": "draft_blocked_by_pr11_scope_collision",
+      "action": "Do not merge. Rebase and reconcile ownership only after PR #11 resolves."
     }
   ]
 }
