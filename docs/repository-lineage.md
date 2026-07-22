@@ -8,6 +8,8 @@ Its merged `main` branch is the trusted code baseline. Active work is governed b
 
 `anthonyedgar30000/helix-protocol-kernel` and `anthonyedgar30000/ContextOS` are active but separate boundaries. The protocol kernel owns governed evidence and transport contracts. ContextOS owns execution containment and policy enforcement. Neither repository is the LineAlert implementation lineage.
 
+No legacy repository is current persistence, retrieval, lifecycle, diagnostic, or deployment authority merely because an earlier document assigned it that role. The root `README.md` and this lineage document must remain consistent.
+
 ## Design archaeology
 
 The following repositories preserve useful history but are not current implementation authority:
@@ -29,11 +31,15 @@ A useful idea, fixture, simulator behavior, or test may be selectively reimpleme
 
 ### `anthonyedgar30000/linealert-analysis-engine`
 
-This is a legacy placeholder rather than an active analysis implementation. It is not a source of current LineAlert behavior.
+This is a legacy placeholder rather than an active analysis implementation. Open PR #1, **Implement Phase 1 backend analysis**, is non-current prototype work. It must not be merged into the current lineage or copied wholesale into `linealert-core`.
+
+Its ideas may be considered only through the same bounded migration rule, with special review of persistence contracts, confidence terminology, event identity, engineering units, timestamp quality, topology applicability, evidence provenance, and causal claims.
 
 ### `anthonyedgar30000/HelixMemoryService`
 
-This is an early memory-service prototype and outdated architecture reference. It may inform future persistence design, but it is not the current LineAlert persistence or lifecycle system and must not be copied wholesale.
+This is an early memory-service prototype and outdated architecture reference. It may inform future persistence design, but it is not current LineAlert persistence, retrieval, or lifecycle-system authority and must not be copied wholesale.
+
+A future persistence boundary requires a separately governed current architecture, explicit package and data contracts, provenance and supersession behavior, tests, deployment evidence, rollback, and review.
 
 ## Migration rule
 
