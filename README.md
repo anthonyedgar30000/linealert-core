@@ -19,14 +19,20 @@ to prove a root cause.
 
 ## Repository boundary
 
-- **`linealert-core`**: machine events, Fusion Mosaic, temporal relationships, topology,
-  expected-versus-observed reasoning, bounded recommendations, PMV, and rule promotion.
-- **`helix-protocol-kernel`**: governed evidence-package and transport contracts.
-- **`HelixMemoryService`**: persistence and retrieval services.
-- Legacy LineAlert repositories are design archaeology and sources of reusable tests or ideas.
+- **`linealert-core`**: authoritative current LineAlert implementation for machine events, Fusion
+  Mosaic, temporal relationships, topology, expected-versus-observed reasoning, governed baseline
+  resolution, replay-baseline assessment, bounded recommendations, PMV, and rule promotion.
+- **`helix-protocol-kernel`**: separate governed evidence-package and transport-contract boundary.
+- **`ContextOS`**: separate execution-containment and policy-enforcement boundary.
+- **`HelixMemoryService`**: early memory-service prototype retained as design archaeology; it is not
+  current LineAlert persistence, retrieval, or lifecycle-system authority.
+- Other legacy LineAlert repositories are design archaeology. Their code or ideas become current
+  only through bounded reimplementation, source attribution, tests, review, and explicit approval.
 
-The initial package does not directly install the private protocol repository, keeping public CI
-self-contained. Protocol integration will be added at explicit package boundaries.
+No current persistence or retrieval integration is established by installing a legacy repository.
+Future integration must use an explicit package boundary, current data and provenance contracts,
+tests, deployment evidence, rollback, and review. The initial package does not directly install the
+private protocol repository, keeping public CI self-contained.
 
 ## Quick start
 
