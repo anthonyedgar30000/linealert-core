@@ -8,34 +8,46 @@
     "role": "authoritative_linealert_implementation"
   },
   "updated_on": "2026-07-22",
+  "state_model": {
+    "record_type": "repository_coordination_snapshot",
+    "captured_from_main": "48d0a45875bd3aa6c87b51383d6b05e9e0e3fce1",
+    "current_reality_source": "live_github",
+    "semantics": "This file records bounded ownership and the verified main baseline at workstream creation. Live GitHub pull-request, commit, CI, review, and deployment evidence determines current state and supersedes cached status."
+  },
   "trusted_baseline": {
     "branch": "main",
-    "commit": "a1812ff69ef6cb05031bced9f4dc7577c6ae8d2a",
-    "commit_semantics": "Verified GitHub merge commit for PR #12 and exact main head from which this reconciliation branch was created. Live GitHub state supersedes this record if main advances.",
+    "commit": "48d0a45875bd3aa6c87b51383d6b05e9e0e3fce1",
+    "commit_role": "verified_main_head_at_reconciliation_start",
     "last_completed_increment": {
-      "pull_request": 12,
-      "title": "Assess replay timing against governed baselines",
-      "merge_commit": "a1812ff69ef6cb05031bced9f4dc7577c6ae8d2a",
+      "pull_request": 13,
+      "title": "Reconcile project state after blocked PR 12 merge",
+      "merge_commit": "48d0a45875bd3aa6c87b51383d6b05e9e0e3fce1",
       "implementation_status": "merged",
-      "governance_status": "merged_despite_recorded_blocking_scope_collision"
+      "review_status": "merged_with_zero_submitted_reviews",
+      "owner_merge_action_observed": true
     }
   },
   "workstreams": [
     {
-      "workstream_id": "post-pr12-reality-reconciliation-v0.1",
-      "branch": "chore/reconcile-state-after-pr12",
-      "pull_request": 13,
-      "write_owner": "LineAlert authoritative workspace / post-pr12-reality-reconciliation conversation",
-      "objective": "Reconcile repository-local project state and lineage documentation after PR #12 merged despite a recorded blocking scope collision, while preserving all merged replay-baseline implementation behavior.",
-      "status": "implemented_on_branch_requires_live_ci_lookup",
+      "workstream_id": "post-pr13-state-release-v0.1",
+      "branch": "chore/reconcile-state-after-pr13",
+      "pull_request": 0,
+      "write_owner": "LineAlert authoritative workspace / post-pr13-state-release conversation",
+      "objective": "Release the merged PR #13 reconciliation ownership, advance the verified baseline, record the missing independent-review gate, and replace self-staling open-PR assertions with live-resolved lifecycle semantics.",
+      "status_resolution": "resolve_from_live_pull_request",
+      "lifecycle_by_live_pr_state": {
+        "open": "active_bounded_state_reconciliation",
+        "merged": "completed_and_ownership_released",
+        "closed_unmerged": "closed_and_ownership_released"
+      },
       "permitted_paths": [
         ".project/active-work.json",
-        "README.md",
-        "docs/repository-lineage.md",
         "tests/test_project_state.py"
       ],
       "protected_paths": [
         ".github/workflows/**",
+        "README.md",
+        "docs/**",
         "src/**",
         "examples/**",
         "adapters/**",
@@ -48,10 +60,12 @@
         "pull_request_creation": true,
         "pull_request_merge": false,
         "runtime_code_changes": false,
+        "documentation_changes": false,
         "baseline_logic_changes": false,
         "replay_baseline_logic_changes": false,
         "telemetry_adapter_implementation": false,
         "diagnostic_rule_changes": false,
+        "workflow_changes": false,
         "deployment_mutation": false,
         "equipment_control": false,
         "credential_use": false
@@ -60,25 +74,22 @@
         "active-work.json parses as JSON",
         "ruff check passes",
         "the complete pytest suite passes",
-        "the pull-request diff remains inside permitted_paths",
-        "the workstream branch and pull-request number match live PR #13",
-        "the trusted baseline is merged PR #12 commit a1812ff69ef6cb05031bced9f4dc7577c6ae8d2a unless live main advances",
-        "the merged replay-baseline implementation and its tests remain unchanged",
-        "PR #12 is recorded as merged implementation reality and as a governance-gate violation",
-        "PR #11 is recorded as closed and superseded without merge",
-        "linealert-core remains the only authoritative LineAlert implementation repository",
-        "the root README and repository-lineage guidance agree that HelixMemoryService is design archaeology rather than current persistence authority",
-        "open LineAlertDemo PR #2 and PR #3 and linealert-analysis-engine PR #1 are recorded as non-current prototype work",
-        "no deployment, equipment-control, credential, runtime, baseline, replay, timing, diagnostic, or adapter implementation is changed"
+        "the pull-request diff contains exactly the two permitted paths",
+        "the branch starts from PR #13 merge commit 48d0a45875bd3aa6c87b51383d6b05e9e0e3fce1",
+        "PR #13 is recorded as merged with zero submitted reviews and an observed owner merge action",
+        "PR #12 and PR #13 governance incidents remain distinct",
+        "pull-request lifecycle state is resolved from live GitHub rather than cached as open or merged",
+        "a merged or closed reconciliation pull request releases ownership without another state-only cleanup",
+        "no runtime, documentation, workflow, deployment, credential, or equipment-control path changes"
       ],
       "verification_evidence": {
-        "branch_base": "a1812ff69ef6cb05031bced9f4dc7577c6ae8d2a",
-        "prior_exact_head_ci": "PR #12 head 04f4be06577d4ed94a9f0291330762006b01011a passed install, lint, and tests on Python 3.11 and 3.12 before merge.",
-        "current_head_ci": "Resolve only from live GitHub for the exact current PR #13 head. Do not infer CI state from this repository record.",
-        "evidence_boundary": "Prior CI establishes test results for the merged implementation head, not authorization for the merge. This reconciliation requires new exact-head CI because project-state and tests change.",
-        "superseded_pull_request": "PR #11 was closed without merge after main advanced through PR #12."
+        "branch_base": "48d0a45875bd3aa6c87b51383d6b05e9e0e3fce1",
+        "pr13_exact_head_ci": "PR #13 head 4b58f01c4b1ae919dc6d55d278cbf475eba4681d passed install, lint, and tests on Python 3.11 and 3.12 before merge.",
+        "pr13_review_lookup": "Live GitHub returned zero submitted reviews for PR #13.",
+        "current_head_ci": "Resolve only from live GitHub for the exact current reconciliation head.",
+        "evidence_boundary": "The repository-owner merge action is evidence of an explicit merge action, not evidence of independent review."
       },
-      "next_gate": "Resolve exact-current-head CI from live GitHub, perform independent read-only review of the exact four-file diff, and require explicit human approval before merge."
+      "next_gate": "Obtain successful exact-head CI and one independent approving review before merge. Resolve ownership from the live pull-request state after merge or closure."
     }
   ],
   "repository_lineage": {
@@ -105,18 +116,13 @@
       {
         "repository": "anthonyedgar30000/LineAlertDemo",
         "classification": "legacy_prototype",
-        "open_pull_requests": [
-          2,
-          3
-        ],
+        "open_pull_requests": [2, 3],
         "disposition": "Open PR #2 and PR #3 are non-current prototype work. Do not merge or copy wholesale into linealert-core. Reuse requires a new bounded branch, explicit source attribution, current authority boundaries, focused tests, and review."
       },
       {
         "repository": "anthonyedgar30000/linealert-analysis-engine",
         "classification": "legacy_placeholder",
-        "open_pull_requests": [
-          1
-        ],
+        "open_pull_requests": [1],
         "disposition": "Open PR #1 is non-current prototype work. Do not merge it into the current lineage or copy it wholesale. Preserve the repository as historical evidence unless a bounded current increment deliberately re-derives selected behavior."
       },
       {
@@ -134,20 +140,46 @@
       "observed_state": "merged",
       "recorded_pre_merge_state": "blocked_by_overlapping_project_state_scope_pr11",
       "description": "PR #12 merged while its pull-request body and branch project state explicitly prohibited merge until PR #11 resolved and overlapping project-state ownership was reconciled.",
-      "interpretation": "The implementation is merged repository reality. Passing CI did not satisfy or erase the recorded governance gate. This reconciliation records both facts without rolling back the implementation.",
-      "corrective_action": "Close obsolete PR #11 without merge, reconcile project state and lineage from current main, rerun exact-head CI, and require review and explicit human approval before merging the reconciliation."
+      "interpretation": "The implementation is merged repository reality. Passing CI did not satisfy or erase the recorded governance gate.",
+      "corrective_action": "PR #11 was closed without merge and repository state was reconciled through PR #13."
+    },
+    {
+      "incident_id": "pr13-zero-review-merge-2026-07-22",
+      "pull_request": 13,
+      "observed_state": "merged",
+      "merge_commit": "48d0a45875bd3aa6c87b51383d6b05e9e0e3fce1",
+      "recorded_pre_merge_state": "independent_exact_head_read_only_review_pending",
+      "review_evidence": "Live GitHub returned zero submitted reviews.",
+      "approval_evidence": "The repository owner performed the GitHub merge action.",
+      "interpretation": "The owner merge action is explicit human action, but it is not independent review and did not satisfy the recorded review gate.",
+      "corrective_action": "Require at least one approving review with no owner bypass before future merges."
     }
   ],
+  "repository_controls": {
+    "main_review_gate": {
+      "observed_effect_at_pr13_merge": "zero_review_merge_permitted",
+      "target_required_approving_reviews": 1,
+      "target_prevent_owner_bypass": true,
+      "enforcement_status": "configuration_required",
+      "configuration_evidence": "No submitted review existed when PR #13 merged.",
+      "configuration_authority": "repository_administrator",
+      "next_gate": "Enable a main-branch protection rule or repository ruleset requiring one approval and preventing bypass before this reconciliation merges."
+    }
+  },
   "deployment_state": {
     "status": "not_deployed",
     "evidence": "No current LineAlert Core deployment evidence is recorded in this repository state."
   },
-  "known_open_pull_requests": [
+  "tracked_pull_requests": [
     {
-      "pull_request": 13,
-      "title": "Reconcile project state after blocked PR 12 merge",
-      "status": "draft_requires_live_exact_head_ci_and_review",
-      "action": "Keep draft. Resolve CI from live GitHub for the exact current head, complete independent read-only review, and obtain explicit human approval before merge."
+      "pull_request": 0,
+      "title": "Release project state after PR 13",
+      "state_resolution": "live_github_required",
+      "ownership_resolution": {
+        "open": "active",
+        "merged": "released",
+        "closed_unmerged": "released"
+      }
     }
   ]
 }
