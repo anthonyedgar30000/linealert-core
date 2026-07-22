@@ -22,10 +22,10 @@
     {
       "workstream_id": "governed-baseline-resolution-v0.1",
       "branch": "feature/governed-baseline-resolution",
-      "pull_request": null,
+      "pull_request": 9,
       "write_owner": "LineAlert authoritative workspace / governed-baseline-resolution conversation",
       "objective": "Add immutable commissioned-baseline records, append-only replacement and invalidation evidence, exact applicability resolution, explicit rejection and ambiguity outcomes, and deterministic baseline-versus-envelope drift assessment without diagnosing faults or authorizing equipment action.",
-      "status": "declared_branch_owned",
+      "status": "implemented_on_branch_ci_pending",
       "permitted_paths": [
         ".project/active-work.json",
         "docs/baseline_resolution.md",
@@ -74,10 +74,10 @@
         "drift findings do not assert fault, root cause, safe production change, or authorization"
       ],
       "verification_evidence": {
-        "local_targeted_validation": "New baseline unit tests and JSON parsing are validated before publication where tooling permits.",
+        "local_targeted_validation": "Ten focused baseline tests and syntax compilation passed before publication.",
         "evidence_boundary": "Local validation is supporting evidence only. Live exact-current-head GitHub CI is authoritative for CI verification after the branch is published."
       },
-      "next_gate": "Implement only the declared baseline slice, obtain exact-current-head CI, perform independent read-only review of the exact head and scope, then require explicit human approval before merge."
+      "next_gate": "Obtain successful exact-current-head CI, perform independent read-only review of the exact head and scope, then require explicit human approval before merge."
     }
   ],
   "repository_lineage": {
@@ -128,5 +128,12 @@
     "status": "not_deployed",
     "evidence": "No current LineAlert Core deployment evidence is recorded in this repository state."
   },
-  "known_open_pull_requests": []
+  "known_open_pull_requests": [
+    {
+      "pull_request": 9,
+      "title": "Add governed baseline resolution and drift assessment",
+      "status": "draft_exact_head_ci_pending",
+      "action": "Keep draft pending successful exact-head CI, independent read-only review of that exact head, and explicit human merge approval."
+    }
+  ]
 }
