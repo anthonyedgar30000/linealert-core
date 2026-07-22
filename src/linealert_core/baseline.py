@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import math
 from collections import Counter
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 from types import MappingProxyType
-from typing import Mapping
 
 
 class BaselineError(ValueError):
@@ -294,6 +294,15 @@ class BaselineRegistry:
         self.records = records
         self.invalidations = invalidations
         self._records_by_id = self._validate_and_index()
+        self._replacement_by_id = {
+            record.replaces_baseline_id: record.baseline_id
+            for record in self.records
+            if record.replaces_baseline_id is not None
+        }
+        self._invalidation_by_id = {
+            invalidation.baseline_id: invalidation
+            for invalidation in self.invalidations
+        }
         self._effective_records = self._resolve_effective_records()
 
     @property
@@ -307,19 +316,30 @@ class BaselineRegistry:
 
         relevant = tuple(
             record
-            for record in self._effective_records
+            for record in self.records
             if record.applicability.asset_id == applicability.asset_id
             and record.applicability.observation_key == applicability.observation_key
         )
         matches: list[BaselineRecord] = []
         rejections: list[BaselineRejection] = []
         for record in relevant:
-            reasons = _applicability_mismatches(record.applicability, applicability)
+            reasons = list(
+                _applicability_mismatches(record.applicability, applicability)
+            )
+            replacement = self._replacement_by_id.get(record.baseline_id)
+            if replacement is not None:
+                reasons.append(f"replaced by baseline {replacement!r}")
+            invalidation = self._invalidation_by_id.get(record.baseline_id)
+            if invalidation is not None:
+                reasons.append(
+                    f"invalidated: {invalidation.reason} "
+                    f"(evidence {invalidation.evidence_reference!r})"
+                )
             if reasons:
                 rejections.append(
                     BaselineRejection(
                         baseline_id=record.baseline_id,
-                        reasons=reasons,
+                        reasons=tuple(reasons),
                     )
                 )
             else:
@@ -436,12 +456,8 @@ class BaselineRegistry:
         return records_by_id
 
     def _resolve_effective_records(self) -> tuple[BaselineRecord, ...]:
-        replaced = {
-            record.replaces_baseline_id
-            for record in self.records
-            if record.replaces_baseline_id is not None
-        }
-        invalidated = {item.baseline_id for item in self.invalidations}
+        replaced = set(self._replacement_by_id)
+        invalidated = set(self._invalidation_by_id)
         return tuple(
             sorted(
                 (
