@@ -1,0 +1,120 @@
+{
+  "schema_version": "project.active-work.v1",
+  "project": "LineAlert Core",
+  "repository": {
+    "owner": "anthonyedgar30000",
+    "name": "linealert-core",
+    "full_name": "anthonyedgar30000/linealert-core",
+    "role": "authoritative_linealert_implementation"
+  },
+  "updated_on": "2026-07-22",
+  "trusted_baseline": {
+    "branch": "main",
+    "commit": "ec148bbc478570baf01248ca7fdd2370c09635ab",
+    "commit_semantics": "Verified merge commit for PR #6 before the project-reality-control workstream was created; live GitHub state determines the current main head.",
+    "last_completed_increment": {
+      "pull_request": 6,
+      "title": "Add multi-cycle timing signal analysis",
+      "merge_commit": "ec148bbc478570baf01248ca7fdd2370c09635ab"
+    }
+  },
+  "workstreams": [
+    {
+      "workstream_id": "project-reality-control-v0.1",
+      "branch": "agent/project-reality-control",
+      "pull_request": null,
+      "write_owner": "LineAlert authoritative workspace / project-reality-control conversation",
+      "objective": "Establish repository-local reality control and formally classify prior LineAlert repositories and pull requests without changing runtime, telemetry, diagnostic, deployment, or equipment behavior.",
+      "status": "implemented_on_branch_ci_pending",
+      "permitted_paths": [
+        ".project/README.md",
+        ".project/active-work.json",
+        "docs/repository-lineage.md",
+        "tests/test_project_state.py"
+      ],
+      "protected_paths": [
+        ".github/workflows/**",
+        "src/**",
+        "examples/**",
+        "adapters/**",
+        "deployment/**",
+        "**/*credential*",
+        "**/*secret*"
+      ],
+      "capability_boundary": {
+        "repository_writes": "declared permitted paths only",
+        "pull_request_creation": true,
+        "pull_request_merge": false,
+        "runtime_code_changes": false,
+        "telemetry_adapter_implementation": false,
+        "diagnostic_rule_changes": false,
+        "external_api_calls": false,
+        "deployment_mutation": false,
+        "equipment_control": false,
+        "credential_use": false
+      },
+      "verification_criteria": [
+        "active-work.json parses as JSON",
+        "ruff check passes",
+        "the complete pytest suite passes",
+        "the pull-request diff remains inside permitted_paths",
+        "project lookups resolve and state the exact owner/repository target before inspecting state or claiming ownership",
+        "ambiguous repository scope stops without ownership or project-state conclusions",
+        "linealert-core is the only authoritative LineAlert implementation repository",
+        "legacy LineAlert repositories and their open prototype pull requests remain classified as design archaeology",
+        "no runtime, telemetry, diagnostic, workflow, deployment, credential, or equipment-control implementation is added"
+      ],
+      "verification_evidence": {
+        "local_targeted_validation": "Project-state tests and JSON parsing are validated before publication where tooling permits.",
+        "evidence_boundary": "Local validation is supporting evidence only. Live exact-current-head GitHub CI is authoritative for CI verification after the branch is published."
+      },
+      "next_gate": "Obtain successful exact-current-head CI, perform an independent read-only review of the exact head and declared scope, then require explicit human approval before merge."
+    }
+  ],
+  "repository_lineage": {
+    "authoritative": [
+      {
+        "repository": "anthonyedgar30000/linealert-core",
+        "classification": "authoritative_implementation",
+        "notes": "Owns the deterministic machine-event reasoning core and current LineAlert implementation lineage."
+      }
+    ],
+    "active_related_boundaries": [
+      {
+        "repository": "anthonyedgar30000/helix-protocol-kernel",
+        "classification": "separate_governed_protocol_boundary",
+        "notes": "Owns governed evidence-package and transport contracts; it is not merged into LineAlert Core."
+      },
+      {
+        "repository": "anthonyedgar30000/ContextOS",
+        "classification": "separate_execution_containment_boundary",
+        "notes": "Owns containment and policy enforcement; it is not the LineAlert implementation repository."
+      }
+    ],
+    "design_archaeology": [
+      {
+        "repository": "anthonyedgar30000/LineAlertDemo",
+        "classification": "legacy_prototype",
+        "open_pull_requests": [2, 3],
+        "disposition": "Do not merge or copy wholesale into linealert-core. Reuse requires a new bounded branch, explicit source attribution, current authority boundaries, focused tests, and review."
+      },
+      {
+        "repository": "anthonyedgar30000/linealert-analysis-engine",
+        "classification": "legacy_placeholder",
+        "open_pull_requests": [],
+        "disposition": "Not an active implementation source. Preserve only as historical repository evidence."
+      },
+      {
+        "repository": "anthonyedgar30000/HelixMemoryService",
+        "classification": "early_memory_prototype",
+        "open_pull_requests": [],
+        "disposition": "Preserve as design archaeology. Persistence and retrieval integration require a separately governed current architecture and package boundary."
+      }
+    ]
+  },
+  "deployment_state": {
+    "status": "not_deployed",
+    "evidence": "No current LineAlert Core deployment evidence is recorded in this repository state."
+  },
+  "known_open_pull_requests": []
+}
