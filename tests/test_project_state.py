@@ -36,7 +36,7 @@ def test_active_work_resolves_authoritative_repository_and_owned_branch() -> Non
     workstream = state["workstreams"][0]
     assert workstream["workstream_id"] == "replay-baseline-assessment-v0.1"
     assert workstream["branch"] == "feature/replay-baseline-assessment"
-    assert workstream["pull_request"] == 11
+    assert workstream["pull_request"] == 12
     assert workstream["write_owner"]
 
 
@@ -72,13 +72,22 @@ def test_replay_baseline_workstream_scope_and_authority_are_bounded() -> None:
     assert state["known_open_pull_requests"] == [
         {
             "pull_request": 11,
-            "title": "Assess replay timing against governed baselines",
-            "status": "draft_exact_head_ci_pending",
+            "title": "Reconcile LineAlert lineage boundaries",
+            "status": "draft_parallel_owner_of_overlapping_project_state_paths",
             "action": (
-                "Keep draft pending successful exact-head CI, independent read-only "
-                "review of that exact head, and explicit human merge approval."
+                "Resolve PR #11 before PR #12 proceeds because it owns "
+                ".project/active-work.json and tests/test_project_state.py."
             ),
-        }
+        },
+        {
+            "pull_request": 12,
+            "title": "Assess replay timing against governed baselines",
+            "status": "draft_blocked_by_pr11_scope_collision",
+            "action": (
+                "Do not merge. Rebase and reconcile ownership only after PR #11 "
+                "resolves."
+            ),
+        },
     ]
 
 
