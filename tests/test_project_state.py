@@ -48,7 +48,7 @@ def test_reconciliation_ownership_is_live_resolved_and_self_releasing() -> None:
     workstream = state["workstreams"][0]
     assert workstream["workstream_id"] == "post-pr13-state-release-v0.1"
     assert workstream["branch"] == "chore/reconcile-state-after-pr13"
-    assert workstream["pull_request"] == 0
+    assert workstream["pull_request"] == 14
     assert workstream["status_resolution"] == "resolve_from_live_pull_request"
     assert workstream["lifecycle_by_live_pr_state"] == {
         "open": "active_bounded_state_reconciliation",
@@ -58,7 +58,7 @@ def test_reconciliation_ownership_is_live_resolved_and_self_releasing() -> None:
 
     assert state["tracked_pull_requests"] == [
         {
-            "pull_request": 0,
+            "pull_request": 14,
             "title": "Release project state after PR 13",
             "state_resolution": "live_github_required",
             "ownership_resolution": {
