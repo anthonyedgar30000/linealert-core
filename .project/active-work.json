@@ -10,26 +10,144 @@
   "updated_on": "2026-07-28",
   "state_model": {
     "record_type": "repository_coordination_snapshot",
-    "captured_from_main": "0720bbf269a571ec35a74829d72c124370afd436",
+    "captured_from_main": "a094f0812ad85bfbcfe3c90c4cbc1d85547be7cd",
     "current_reality_source": "live_github",
     "semantics": "This file records bounded ownership and the verified main baseline at workstream creation. Live GitHub pull-request, commit, CI, review, repository-control, visibility, deployment, and equipment evidence determines current state and supersedes cached status."
   },
   "trusted_baseline": {
     "branch": "main",
-    "commit": "0720bbf269a571ec35a74829d72c124370afd436",
-    "commit_role": "verified_main_head_after_pr16_merge",
+    "commit": "a094f0812ad85bfbcfe3c90c4cbc1d85547be7cd",
+    "commit_role": "verified_main_head_after_pr17_merge",
     "last_completed_increment": {
+      "pull_request": 17,
+      "title": "Reconcile project state after PR 16",
+      "merge_commit": "a094f0812ad85bfbcfe3c90c4cbc1d85547be7cd",
+      "increment_type": "state_only_reconciliation",
+      "implementation_status": "merged",
+      "review_status": "merged_with_zero_submitted_reviews",
+      "governance_gate_status": "recorded_pre_merge_gate_not_satisfied"
+    },
+    "last_functional_increment": {
       "pull_request": 16,
       "title": "Add bounded lab streaming ingestion",
       "merge_commit": "0720bbf269a571ec35a74829d72c124370afd436",
-      "implementation_status": "merged",
       "exact_head_ci_status": "success",
       "exact_head_ci_run": 30385722716,
-      "review_status": "merged_with_zero_submitted_reviews",
-      "governance_gate_status": "recorded_pre_merge_gate_not_satisfied"
+      "deployment_status": "not_deployed"
     }
   },
-  "workstreams": [],
+  "workstreams": [
+    {
+      "workstream_id": "streaming-evidence-hardening-v0.2",
+      "branch": "agent/harden-streaming-evidence-v0.2",
+      "pull_request": 20,
+      "write_owner": "LineAlert authoritative workspace / streaming-evidence-hardening-v0.2 conversation",
+      "objective": "Correct two bounded review findings in the already-merged PR #16 streaming boundary without adding a connector, proprietary equipment integration, deployment, or control path.",
+      "classification": "corrective_hardening_of_existing_public_code",
+      "status_resolution": "resolve_from_live_pull_request",
+      "lifecycle_by_live_pr_state": {
+        "open": "active_bounded_corrective_hardening",
+        "merged": "completed_and_ownership_released",
+        "closed_unmerged": "closed_and_ownership_released"
+      },
+      "permitted_paths": [
+        ".project/active-work.json",
+        "docs/streaming_ingestion.md",
+        "src/linealert_core/streaming.py",
+        "tests/test_project_state.py",
+        "tests/test_streaming.py"
+      ],
+      "protected_paths": [
+        ".github/workflows/**",
+        "README.md",
+        "docs/repository-lineage.md",
+        "examples/**",
+        "adapters/**",
+        "deployment/**",
+        "src/linealert_core/__init__.py",
+        "src/linealert_core/baseline.py",
+        "src/linealert_core/baseline_io.py",
+        "src/linealert_core/baseline_replay.py",
+        "src/linealert_core/cli.py",
+        "src/linealert_core/diagnostic_cli.py",
+        "src/linealert_core/diagnostic_io.py",
+        "src/linealert_core/diagnostic_projection.py",
+        "src/linealert_core/diagnostics.py",
+        "src/linealert_core/events.py",
+        "src/linealert_core/machine.py",
+        "src/linealert_core/mosaic.py",
+        "src/linealert_core/pipeline.py",
+        "src/linealert_core/replay.py",
+        "src/linealert_core/signal_io.py",
+        "src/linealert_core/signal_processing.py",
+        "src/linealert_core/simulator.py",
+        "src/linealert_core/timing.py",
+        "src/linealert_core/topology.py",
+        "**/*credential*",
+        "**/*secret*"
+      ],
+      "capability_boundary": {
+        "repository_writes": "declared permitted paths only",
+        "pull_request_creation": true,
+        "pull_request_merge": false,
+        "runtime_code_changes": true,
+        "runtime_change_scope": "corrective hardening of existing read-only in-process streaming evidence",
+        "new_proprietary_increment": false,
+        "external_telemetry_connector": false,
+        "network_listener": false,
+        "persistence_changes": false,
+        "baseline_logic_changes": false,
+        "diagnostic_rule_changes": false,
+        "workflow_changes": false,
+        "deployment_mutation": false,
+        "equipment_control": false,
+        "credential_use": false
+      },
+      "equipment_scope": {
+        "asset": "existing pressure-sensitive labeler fixture only",
+        "source": "deterministic supplied-event lab simulator",
+        "physical_equipment_connection": false,
+        "production_connection": false,
+        "control_path": false
+      },
+      "review_findings": [
+        {
+          "finding_id": "transport-attributes-not-deeply-immutable",
+          "source": "post-PR16 author-side read-only inspection",
+          "risk": "Nested caller-owned values could mutate retained transport evidence or fail machine-readable serialization.",
+          "disposition": "remediation_implemented_on_pr20_requires_ci_and_review"
+        },
+        {
+          "finding_id": "session-transition-committed-before-core-acceptance",
+          "source": "post-PR16 author-side read-only inspection",
+          "risk": "A core-ingestion exception during a new session could leave transport session state advanced without an accepted stream result.",
+          "disposition": "remediation_implemented_on_pr20_requires_ci_and_review"
+        }
+      ],
+      "verification_criteria": [
+        "active-work.json parses as JSON",
+        "ruff check passes",
+        "the complete pytest suite passes",
+        "the pull-request diff contains exactly the five permitted paths",
+        "the branch starts from PR #17 merge commit a094f0812ad85bfbcfe3c90c4cbc1d85547be7cd",
+        "clock quality is normalized to synchronized, degraded, unsynchronized, or unknown",
+        "transport attributes are recursively copied, deeply frozen, and limited to JSON-compatible evidence",
+        "a core-ingestion exception does not activate a new source session, advance its sequence, or append a stream result",
+        "existing replay-versus-stream equivalence remains unchanged",
+        "PR #17 review and repository-visibility controls remain present",
+        "no connector, proprietary equipment integration, network listener, persistence, baseline, diagnostic, deployment, credential, or equipment-control capability changes"
+      ],
+      "verification_evidence": {
+        "branch_base": "a094f0812ad85bfbcfe3c90c4cbc1d85547be7cd",
+        "superseded_pr": "PR #18 was closed without merge after PR #17 advanced main and changed overlapping project-state paths.",
+        "prior_branch_ci": "Superseded PR #18 head 3373bb0b5adda569e121d500d1b4327f5c4fdcc2 passed CI run 30387638568, but that evidence does not transfer to PR #20.",
+        "current_head_ci": "Resolve only from live GitHub for PR #20 exact current head.",
+        "review": "One independent approving review is required on the exact current head.",
+        "evidence_boundary": "Corrective evidence hardening does not verify sensor truth, physical state, diagnosis, authorized action, deployment, or production safety."
+      },
+      "next_gate": "Obtain successful exact-head CI, make the repository private or explicitly resolve the visibility contradiction, configure and verify one required review with stale-approval dismissal and no owner bypass, obtain one independent approval, then re-check live main, head, diff, CI, reviews, mergeability, visibility, and deployment state before any merge decision."
+    }
+  ],
   "repository_lineage": {
     "authoritative": [
       {
@@ -54,18 +172,13 @@
       {
         "repository": "anthonyedgar30000/LineAlertDemo",
         "classification": "legacy_prototype",
-        "open_pull_requests": [
-          2,
-          3
-        ],
+        "open_pull_requests": [2, 3],
         "disposition": "Open PR #2 and PR #3 are non-current prototype work. Do not merge or copy wholesale into linealert-core. Reuse requires a new bounded branch, explicit source attribution, current authority boundaries, focused tests, and review."
       },
       {
         "repository": "anthonyedgar30000/linealert-analysis-engine",
         "classification": "legacy_placeholder",
-        "open_pull_requests": [
-          1
-        ],
+        "open_pull_requests": [1],
         "disposition": "Open PR #1 is non-current prototype work. Do not merge it into the current lineage or copy it wholesale. Preserve the repository as historical evidence unless a bounded current increment deliberately re-derives selected behavior."
       },
       {
@@ -118,17 +231,29 @@
       "review_evidence": "Live GitHub returned zero submitted reviews.",
       "interpretation": "The streaming implementation is merged repository reality, but exact-head CI did not satisfy the explicit independent-review and repository-control gates.",
       "corrective_action": "Release the completed workstream, preserve the gate violation as audit history, and block the next implementation merge until one approval and owner-bypass prevention are enforced."
+    },
+    {
+      "incident_id": "pr17-zero-review-gate-bypass-2026-07-28",
+      "pull_request": 17,
+      "observed_state": "merged",
+      "merge_commit": "a094f0812ad85bfbcfe3c90c4cbc1d85547be7cd",
+      "recorded_pre_merge_state": "review_and_repository_configuration_gates_required",
+      "review_evidence": "Live GitHub returned zero submitted reviews.",
+      "interpretation": "PR #17 is merged state-reconciliation reality, but its own review and repository-configuration gates were not satisfied before merge.",
+      "corrective_action": "Preserve PR #17 controls, close obsolete PR #18, and rebuild corrective hardening from the PR #17 merge commit."
     }
   ],
   "repository_controls": {
     "main_review_gate": {
-      "observed_effect_at_pr16_merge": "zero_review_merge_permitted",
+      "tracking_issue": 15,
+      "observed_effect_at_pr17_merge": "zero_review_merge_permitted",
       "target_required_approving_reviews": 1,
+      "target_dismiss_stale_approvals": true,
       "target_prevent_owner_bypass": true,
-      "enforcement_status": "configuration_required",
-      "configuration_evidence": "PR #16 merged with zero submitted reviews despite an explicit pre-merge gate.",
+      "enforcement_status": "configuration_required_and_unverified",
+      "configuration_evidence": "PR #17 merged with zero submitted reviews.",
       "configuration_authority": "repository_administrator",
-      "next_gate": "Enable a main-branch protection rule or repository ruleset requiring one approval and preventing owner bypass before any later implementation pull request may merge."
+      "next_gate": "Enable and verify a main ruleset requiring one approval, stale-approval dismissal, and no owner bypass before PR #20 can merge."
     },
     "repository_visibility": {
       "observed_visibility": "public",
@@ -136,12 +261,24 @@
       "status": "configuration_required",
       "evidence": "Live GitHub repository metadata reports linealert-core as public while the canonical repository plan calls for new private repositories.",
       "configuration_authority": "repository_administrator",
-      "next_gate": "Resolve the visibility contradiction and make the repository private before adding another proprietary implementation increment."
+      "next_gate": "Make the repository private or explicitly resolve the contradiction before PR #20 or any later proprietary implementation may merge."
     }
   },
   "deployment_state": {
     "status": "not_deployed",
     "evidence": "No current LineAlert Core deployment, physical-equipment connection, network listener, or equipment-control path evidence is recorded."
   },
-  "tracked_pull_requests": []
+  "tracked_pull_requests": [
+    {
+      "pull_request": 20,
+      "title": "Harden streaming evidence after PR 17",
+      "state_resolution": "live_github_required",
+      "ownership_resolution": {
+        "open": "active",
+        "merged": "released",
+        "closed_unmerged": "released"
+      },
+      "required_state": "draft_until_exact_head_ci_visibility_review_and_repository_controls_pass"
+    }
+  ]
 }
