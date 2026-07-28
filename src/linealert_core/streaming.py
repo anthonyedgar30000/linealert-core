@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -29,6 +30,71 @@ class StreamDisposition(StrEnum):
     REJECTED_SESSION_START = "rejected_session_start"
 
 
+_ALLOWED_CLOCK_QUALITIES = frozenset(
+    {
+        "synchronized",
+        "degraded",
+        "unsynchronized",
+        "unknown",
+    }
+)
+
+
+def _normalize_clock_quality(value: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise StreamInputError("clock_quality must be a non-empty string")
+    normalized = value.strip().lower()
+    if normalized not in _ALLOWED_CLOCK_QUALITIES:
+        allowed = ", ".join(sorted(_ALLOWED_CLOCK_QUALITIES))
+        raise StreamInputError(f"clock_quality must be one of: {allowed}")
+    return normalized
+
+
+def _freeze_transport_value(value: Any, *, path: str) -> Any:
+    if value is None or isinstance(value, (str, bool, int)):
+        return value
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            raise StreamInputError(f"{path} must not contain a non-finite float")
+        return value
+    if isinstance(value, Mapping):
+        items = list(value.items())
+        for key, _ in items:
+            if not isinstance(key, str) or not key.strip():
+                raise StreamInputError(f"{path} mapping keys must be non-empty strings")
+        return MappingProxyType(
+            {
+                key: _freeze_transport_value(item, path=f"{path}.{key}")
+                for key, item in sorted(items, key=lambda pair: pair[0])
+            }
+        )
+    if isinstance(value, (list, tuple)):
+        return tuple(
+            _freeze_transport_value(item, path=f"{path}[{index}]")
+            for index, item in enumerate(value)
+        )
+    raise StreamInputError(
+        f"{path} must contain only JSON-compatible scalar, mapping, or sequence values"
+    )
+
+
+def _freeze_transport_attributes(attributes: Mapping[str, Any]) -> Mapping[str, Any]:
+    if not isinstance(attributes, Mapping):
+        raise StreamInputError("transport_attributes must be a mapping")
+    frozen = _freeze_transport_value(attributes, path="transport_attributes")
+    if not isinstance(frozen, Mapping):
+        raise StreamInputError("transport_attributes must be a mapping")
+    return frozen
+
+
+def _plain_transport_value(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return {key: _plain_transport_value(item) for key, item in value.items()}
+    if isinstance(value, tuple):
+        return [_plain_transport_value(item) for item in value]
+    return value
+
+
 @dataclass(frozen=True, slots=True)
 class StreamEnvelope:
     """One event plus transport evidence that must not alter event meaning."""
@@ -43,18 +109,23 @@ class StreamEnvelope:
     def __post_init__(self) -> None:
         if not isinstance(self.session_id, str) or not self.session_id.strip():
             raise StreamInputError("session_id must be a non-empty string")
-        if not isinstance(self.sequence_number, int) or isinstance(self.sequence_number, bool):
+        if not isinstance(self.sequence_number, int) or isinstance(
+            self.sequence_number, bool
+        ):
             raise StreamInputError("sequence_number must be an integer")
         if self.sequence_number < 0:
             raise StreamInputError("sequence_number must be non-negative")
         if self.received_at.tzinfo is None or self.received_at.utcoffset() is None:
             raise StreamInputError("received_at must be timezone-aware")
-        if not isinstance(self.clock_quality, str) or not self.clock_quality.strip():
-            raise StreamInputError("clock_quality must be a non-empty string")
+        object.__setattr__(
+            self,
+            "clock_quality",
+            _normalize_clock_quality(self.clock_quality),
+        )
         object.__setattr__(
             self,
             "transport_attributes",
-            MappingProxyType(dict(self.transport_attributes)),
+            _freeze_transport_attributes(self.transport_attributes),
         )
 
 
@@ -150,8 +221,9 @@ class StreamConsumer:
 
         source_id = envelope.event.source_id
         active_session = self._active_session_by_source.get(source_id)
-        seen_sessions = self._seen_sessions_by_source.setdefault(source_id, set())
+        seen_sessions = self._seen_sessions_by_source.get(source_id, set())
         session_transition = active_session != envelope.session_id
+        pending_activation = False
 
         if active_session is None:
             if envelope.sequence_number != 0:
@@ -165,7 +237,7 @@ class StreamConsumer:
                         "prior transport history may be missing."
                     ),
                 )
-            self._activate_session(source_id, envelope.session_id, seen_sessions)
+            pending_activation = True
         elif active_session != envelope.session_id:
             if envelope.session_id in seen_sessions:
                 return self._reject(
@@ -192,10 +264,10 @@ class StreamConsumer:
                         "before this envelope may be missing."
                     ),
                 )
-            self._activate_session(source_id, envelope.session_id, seen_sessions)
+            pending_activation = True
 
         key = (source_id, envelope.session_id)
-        expected = self._next_sequence_by_session[key]
+        expected = 0 if pending_activation else self._next_sequence_by_session[key]
         if envelope.sequence_number < expected:
             return self._reject(
                 envelope,
@@ -220,7 +292,13 @@ class StreamConsumer:
             )
 
         pipeline_result = self.core.ingest(envelope.event)
+        if pending_activation:
+            self._active_session_by_source[source_id] = envelope.session_id
+            self._seen_sessions_by_source.setdefault(source_id, set()).add(
+                envelope.session_id
+            )
         self._next_sequence_by_session[key] = expected + 1
+
         receipt = StreamReceipt(
             source_id=source_id,
             session_id=envelope.session_id,
@@ -236,7 +314,11 @@ class StreamConsumer:
                 "supplied envelope. The source timestamp and sensor value remain source evidence."
             ),
         )
-        result = StreamResult(envelope=envelope, receipt=receipt, pipeline_result=pipeline_result)
+        result = StreamResult(
+            envelope=envelope,
+            receipt=receipt,
+            pipeline_result=pipeline_result,
+        )
         self._results.append(result)
         return result
 
@@ -251,16 +333,6 @@ class StreamConsumer:
             machine_profile=self.core.machine_profile,
             topology_edges=self.core.topology.edges,
         )
-
-    def _activate_session(
-        self,
-        source_id: str,
-        session_id: str,
-        seen_sessions: set[str],
-    ) -> None:
-        self._active_session_by_source[source_id] = session_id
-        seen_sessions.add(session_id)
-        self._next_sequence_by_session[(source_id, session_id)] = 0
 
     def _reject(
         self,
@@ -362,7 +434,9 @@ def _stream_result_to_dict(result: StreamResult) -> dict[str, Any]:
             "received_at": result.receipt.received_at.isoformat(),
             "source_timestamp": result.envelope.event.timestamp.isoformat(),
             "clock_quality": result.envelope.clock_quality,
-            "transport_attributes": dict(result.envelope.transport_attributes),
+            "transport_attributes": _plain_transport_value(
+                result.envelope.transport_attributes
+            ),
             "event_id": result.receipt.event_id,
             "event_fingerprint": result.receipt.event_fingerprint,
             "disposition": result.receipt.disposition.value,
@@ -370,7 +444,9 @@ def _stream_result_to_dict(result: StreamResult) -> dict[str, Any]:
             "retained_uncertainty": result.receipt.retained_uncertainty,
         },
         "event": result.envelope.event.canonical_payload(),
-        "pipeline_result": _pipeline_result_to_dict(pipeline) if pipeline is not None else None,
+        "pipeline_result": _pipeline_result_to_dict(pipeline)
+        if pipeline is not None
+        else None,
     }
 
 
