@@ -44,6 +44,24 @@ Each `StreamEnvelope` preserves:
 Transport metadata does not rewrite the machine event. The event fingerprint remains calculated only
 from the original event content.
 
+Clock quality is normalized to one governed value:
+
+```text
+synchronized
+degraded
+unsynchronized
+unknown
+```
+
+A new vocabulary value requires an explicit code and test change. An arbitrary non-empty string is
+not accepted as evidence.
+
+Transport attributes must be JSON-compatible evidence made from string-keyed mappings, sequences,
+strings, booleans, integers, finite floats, and null values. The envelope recursively copies and
+freezes nested mappings and sequences, so later caller mutation cannot rewrite retained transport
+evidence. Machine-readable output converts the frozen representation back to ordinary JSON
+mappings and arrays.
+
 ## Integrity behavior
 
 `StreamConsumer` admits an envelope only when its source session and sequence are continuous.
@@ -60,6 +78,12 @@ from the original event content.
 
 A rejected transport envelope does not advance the expected sequence. The source can resend the
 missing expected envelope without LineAlert inventing or repairing evidence.
+
+For a valid new session, transport activation and sequence advancement occur only after
+`LineAlertCore.ingest()` returns successfully. If core ingestion raises, the exception remains
+visible and no transport receipt, session activation, or sequence advancement is recorded. This
+bounds transport-state mutation; it does not claim that arbitrary future core handlers can always be
+rolled back after partially executing.
 
 ## Deterministic simulator
 
