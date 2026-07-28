@@ -79,6 +79,18 @@ from .signal_processing import (
     TimingSeriesAssessment,
     TimingSignalAnalyzer,
 )
+from .simulator import DeterministicStreamSimulator
+from .streaming import (
+    StreamConsumer,
+    StreamDisposition,
+    StreamEnvelope,
+    StreamInputError,
+    StreamReceipt,
+    StreamResult,
+    StreamSummary,
+    consume_stream,
+    stream_summary_to_dict,
+)
 from .timing import TemporalRule, TimingFinding, TimingMonitor, TimingStatus
 from .topology import DependencyEdge, TopologyContext, TopologyGraph
 
@@ -96,12 +108,12 @@ __all__ = [
     "BaselineRejection",
     "BaselineResolution",
     "BaselineResolutionStatus",
-    "ReplayBaselineAssessment",
     "CheckDisposition",
     "ComponentDefinition",
     "ComponentDependency",
     "ConsumerOutput",
     "DependencyEdge",
+    "DeterministicStreamSimulator",
     "DiagnosticCheck",
     "DiagnosticCheckAssessment",
     "DiagnosticEngine",
@@ -124,11 +136,19 @@ __all__ = [
     "MachineProfileError",
     "OperatorReport",
     "PipelineResult",
+    "ReplayBaselineAssessment",
     "ReplayInputError",
     "ReplaySummary",
     "SignalAnalysisError",
     "SignalAnalysisPolicy",
     "SignalPattern",
+    "StreamConsumer",
+    "StreamDisposition",
+    "StreamEnvelope",
+    "StreamInputError",
+    "StreamReceipt",
+    "StreamResult",
+    "StreamSummary",
     "Subscription",
     "SymptomDefinition",
     "TemporalRule",
@@ -147,6 +167,7 @@ __all__ = [
     "build_core_from_config",
     "collect_timing_findings",
     "compare_to_baseline",
+    "consume_stream",
     "load_baseline_registry",
     "load_diagnostic_engine",
     "load_events",
@@ -156,6 +177,7 @@ __all__ = [
     "projection_to_dict",
     "replay_events",
     "signal_assessments_to_dict",
+    "stream_summary_to_dict",
     "summary_to_dict",
     "timing_baseline_assessment_to_dict",
 ]
