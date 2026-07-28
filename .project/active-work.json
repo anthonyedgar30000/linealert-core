@@ -31,10 +31,10 @@
     {
       "workstream_id": "lab-streaming-ingestion-v0.1",
       "branch": "agent/lab-streaming-ingestion-v0.1",
-      "pull_request": null,
+      "pull_request": 16,
       "write_owner": "LineAlert authoritative workspace / lab-streaming-ingestion-v0.1 conversation",
       "objective": "Add a bounded read-only lab stream envelope, deterministic source-session and sequence validation, a supplied-event transport simulator, replay-versus-stream equivalence tests, and machine-readable transport evidence without changing existing timing, diagnostic, baseline, deployment, or equipment-control behavior.",
-      "status": "implemented_on_branch_pr_pending",
+      "status": "draft_pr_open_requires_exact_head_ci_review_and_control",
       "permitted_paths": [
         ".project/active-work.json",
         "docs/streaming_ingestion.md",
@@ -113,11 +113,11 @@
       "verification_evidence": {
         "branch_base": "50985af78df9ee4a352fcfced84ac2703aa98ba0",
         "local_smoke_test": "Streaming module syntax compiled and deterministic acceptance, gap, out-of-order, duplicate, restart, and session-reuse behavior passed against a local interface-compatible harness.",
-        "exact_head_ci": "Resolve only from live GitHub after the draft pull request exists.",
+        "exact_head_ci": "Resolve only from live GitHub for PR #16 exact current head.",
         "review": "One independent approving review is required on the exact current head.",
         "evidence_boundary": "Transport admission does not verify sensor truth, physical state, diagnosis, authorized action, or production safety."
       },
-      "next_gate": "Open a draft pull request, obtain successful exact-head CI, configure main review enforcement with one approval and no owner bypass, obtain one independent approving review, then re-check live main, head, diff, CI, reviews, mergeability, and deployment state before any merge decision."
+      "next_gate": "Obtain successful exact-head CI, configure main review enforcement with one approval and no owner bypass, obtain one independent approving review, then re-check live main, head, diff, CI, reviews, mergeability, and deployment state before any merge decision."
     }
   ],
   "repository_lineage": {
@@ -209,5 +209,12 @@
     "status": "not_deployed",
     "evidence": "No current LineAlert Core deployment or physical-equipment connection evidence is recorded."
   },
-  "tracked_pull_requests": []
+  "tracked_pull_requests": [
+    {
+      "pull_request": 16,
+      "title": "Add bounded lab streaming ingestion",
+      "state_resolution": "live_github_required",
+      "required_state": "draft_until_exact_head_ci_review_and_repository_control_pass"
+    }
+  ]
 }
