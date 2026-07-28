@@ -17,7 +17,7 @@ def load_project_state() -> dict[str, Any]:
     return value
 
 
-def test_state_snapshot_resolves_current_reality_from_live_github() -> None:
+def test_state_snapshot_resolves_streaming_workstream_from_live_main() -> None:
     state = load_project_state()
 
     assert state["schema_version"] == "project.active-work.v1"
@@ -29,82 +29,81 @@ def test_state_snapshot_resolves_current_reality_from_live_github() -> None:
 
     baseline = state["trusted_baseline"]
     assert baseline["branch"] == "main"
-    assert baseline["commit"] == "48d0a45875bd3aa6c87b51383d6b05e9e0e3fce1"
-    assert baseline["commit_role"] == "verified_main_head_at_reconciliation_start"
+    assert baseline["commit"] == "50985af78df9ee4a352fcfced84ac2703aa98ba0"
+    assert baseline["commit_role"] == "verified_main_head_at_streaming_workstream_start"
     assert baseline["last_completed_increment"] == {
-        "pull_request": 13,
-        "title": "Reconcile project state after blocked PR 12 merge",
-        "merge_commit": "48d0a45875bd3aa6c87b51383d6b05e9e0e3fce1",
+        "pull_request": 14,
+        "title": "Release project state after PR 13",
+        "merge_commit": "50985af78df9ee4a352fcfced84ac2703aa98ba0",
         "implementation_status": "merged",
         "review_status": "merged_with_zero_submitted_reviews",
         "owner_merge_action_observed": True,
     }
 
 
-def test_reconciliation_ownership_is_live_resolved_and_self_releasing() -> None:
+def test_streaming_workstream_owns_one_bounded_branch_and_file_set() -> None:
     state = load_project_state()
     assert len(state["workstreams"]) == 1
 
     workstream = state["workstreams"][0]
-    assert workstream["workstream_id"] == "post-pr13-state-release-v0.1"
-    assert workstream["branch"] == "chore/reconcile-state-after-pr13"
-    assert workstream["pull_request"] == 14
-    assert workstream["status_resolution"] == "resolve_from_live_pull_request"
-    assert workstream["lifecycle_by_live_pr_state"] == {
-        "open": "active_bounded_state_reconciliation",
-        "merged": "completed_and_ownership_released",
-        "closed_unmerged": "closed_and_ownership_released",
+    assert workstream["workstream_id"] == "lab-streaming-ingestion-v0.1"
+    assert workstream["branch"] == "agent/lab-streaming-ingestion-v0.1"
+    assert workstream["pull_request"] is None
+    assert workstream["status"] == "implemented_on_branch_pr_pending"
+
+    permitted = workstream["permitted_paths"]
+    assert len(permitted) == len(set(permitted))
+    assert set(permitted) == {
+        ".project/active-work.json",
+        "docs/streaming_ingestion.md",
+        "src/linealert_core/__init__.py",
+        "src/linealert_core/simulator.py",
+        "src/linealert_core/streaming.py",
+        "tests/test_project_state.py",
+        "tests/test_streaming.py",
     }
-
-    assert state["tracked_pull_requests"] == [
-        {
-            "pull_request": 14,
-            "title": "Release project state after PR 13",
-            "state_resolution": "live_github_required",
-            "ownership_resolution": {
-                "open": "active",
-                "merged": "released",
-                "closed_unmerged": "released",
-            },
-        }
-    ]
-    assert "known_open_pull_requests" not in state
+    assert state["tracked_pull_requests"] == []
 
 
-def test_reconciliation_scope_protects_all_non_state_paths() -> None:
+def test_streaming_scope_preserves_existing_reasoning_and_control_boundaries() -> None:
     workstream = load_project_state()["workstreams"][0]
-    permitted = set(workstream["permitted_paths"])
     protected = set(workstream["protected_paths"])
     capabilities = workstream["capability_boundary"]
+    equipment = workstream["equipment_scope"]
 
-    assert permitted == {
-        ".project/active-work.json",
-        "tests/test_project_state.py",
-    }
-    assert len(permitted) == len(workstream["permitted_paths"])
     assert {
         ".github/workflows/**",
         "README.md",
-        "docs/**",
-        "src/**",
+        "docs/repository-lineage.md",
         "examples/**",
         "adapters/**",
         "deployment/**",
+        "src/linealert_core/events.py",
+        "src/linealert_core/pipeline.py",
+        "src/linealert_core/timing.py",
+        "src/linealert_core/baseline.py",
+        "src/linealert_core/diagnostic_projection.py",
     }.issubset(protected)
     assert capabilities["pull_request_merge"] is False
-    assert capabilities["runtime_code_changes"] is False
-    assert capabilities["documentation_changes"] is False
+    assert capabilities["runtime_code_changes"] is True
+    assert capabilities["runtime_change_scope"] == (
+        "read-only in-process lab streaming boundary only"
+    )
+    assert capabilities["deterministic_lab_simulator"] is True
+    assert capabilities["external_telemetry_connector"] is False
+    assert capabilities["network_listener"] is False
+    assert capabilities["persistence_changes"] is False
     assert capabilities["baseline_logic_changes"] is False
-    assert capabilities["replay_baseline_logic_changes"] is False
-    assert capabilities["telemetry_adapter_implementation"] is False
     assert capabilities["diagnostic_rule_changes"] is False
-    assert capabilities["workflow_changes"] is False
     assert capabilities["deployment_mutation"] is False
     assert capabilities["equipment_control"] is False
     assert capabilities["credential_use"] is False
+    assert equipment["physical_equipment_connection"] is False
+    assert equipment["production_connection"] is False
+    assert equipment["control_path"] is False
 
 
-def test_pr12_and_pr13_governance_incidents_remain_distinct() -> None:
+def test_pr12_pr13_and_pr14_governance_incidents_remain_distinct() -> None:
     state = load_project_state()
     incidents = {
         incident["incident_id"]: incident for incident in state["governance_incidents"]
@@ -113,27 +112,29 @@ def test_pr12_and_pr13_governance_incidents_remain_distinct() -> None:
     assert set(incidents) == {
         "pr12-blocked-merge-2026-07-22",
         "pr13-zero-review-merge-2026-07-22",
+        "pr14-zero-review-merge-2026-07-23",
     }
     assert incidents["pr12-blocked-merge-2026-07-22"]["pull_request"] == 12
+    assert incidents["pr13-zero-review-merge-2026-07-22"]["pull_request"] == 13
 
-    pr13 = incidents["pr13-zero-review-merge-2026-07-22"]
-    assert pr13["pull_request"] == 13
-    assert pr13["observed_state"] == "merged"
-    assert pr13["merge_commit"] == "48d0a45875bd3aa6c87b51383d6b05e9e0e3fce1"
-    assert pr13["review_evidence"] == "Live GitHub returned zero submitted reviews."
-    assert "not independent review" in pr13["interpretation"]
+    pr14 = incidents["pr14-zero-review-merge-2026-07-23"]
+    assert pr14["pull_request"] == 14
+    assert pr14["observed_state"] == "merged"
+    assert pr14["merge_commit"] == "50985af78df9ee4a352fcfced84ac2703aa98ba0"
+    assert pr14["review_evidence"] == "Live GitHub returned zero submitted reviews."
+    assert "not satisfied" in pr14["interpretation"]
     assert state["deployment_state"]["status"] == "not_deployed"
 
 
-def test_main_review_gate_records_required_enforcement() -> None:
+def test_main_review_gate_remains_a_real_pre_merge_requirement() -> None:
     control = load_project_state()["repository_controls"]["main_review_gate"]
 
-    assert control["observed_effect_at_pr13_merge"] == "zero_review_merge_permitted"
+    assert control["observed_effect_at_pr14_merge"] == "zero_review_merge_permitted"
     assert control["target_required_approving_reviews"] == 1
     assert control["target_prevent_owner_bypass"] is True
     assert control["enforcement_status"] == "configuration_required"
     assert "one approval" in control["next_gate"]
-    assert "preventing bypass" in control["next_gate"]
+    assert "preventing owner bypass" in control["next_gate"]
 
 
 def test_project_lookup_requires_repository_resolution() -> None:
