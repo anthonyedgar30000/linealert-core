@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -8,6 +9,7 @@ import pytest
 from linealert_core import (
     DependencyEdge,
     DeterministicStreamSimulator,
+    EventIdentityCollision,
     LineAlertCore,
     MachineEvent,
     StreamConsumer,
@@ -67,14 +69,16 @@ def envelope(
     sequence_number: int,
     *,
     session_id: str = "session-a",
+    clock_quality: str = "synchronized",
+    transport_attributes: dict[str, object] | None = None,
 ) -> StreamEnvelope:
     return StreamEnvelope(
         session_id=session_id,
         sequence_number=sequence_number,
         received_at=event.timestamp + timedelta(milliseconds=50),
         event=event,
-        clock_quality="synchronized",
-        transport_attributes={"adapter": "deterministic-test"},
+        clock_quality=clock_quality,
+        transport_attributes=transport_attributes or {"adapter": "deterministic-test"},
     )
 
 
@@ -175,6 +179,25 @@ def test_source_restart_requires_zero_and_old_session_cannot_reappear() -> None:
     assert reused_old.receipt.disposition is StreamDisposition.REJECTED_SESSION_REUSE
 
 
+def test_core_ingest_failure_does_not_commit_new_transport_session() -> None:
+    first = machine_event("e-1", "ActuatorCommand", 0)
+    colliding = machine_event("e-1", "ProductTransfer", 1)
+    recovery = machine_event("e-2", "ActuatorCommand", 2, correlation_id="cycle-2")
+    consumer = StreamConsumer(make_core())
+
+    consumer.consume(envelope(first, 0, session_id="session-a"))
+
+    with pytest.raises(EventIdentityCollision):
+        consumer.consume(envelope(colliding, 0, session_id="session-b"))
+
+    assert len(consumer.summary().results) == 1
+
+    recovered = consumer.consume(envelope(recovery, 0, session_id="session-b"))
+    assert recovered.receipt.disposition is StreamDisposition.ACCEPTED
+    assert recovered.receipt.session_transition is True
+    assert recovered.receipt.expected_sequence_number == 0
+
+
 def test_stream_envelope_rejects_naive_receive_timestamp() -> None:
     event = machine_event("e-1", "ActuatorCommand", 0)
 
@@ -185,6 +208,60 @@ def test_stream_envelope_rejects_naive_receive_timestamp() -> None:
             received_at=datetime(2026, 7, 28, 12, 0),
             event=event,
         )
+
+
+def test_stream_envelope_enforces_governed_clock_quality() -> None:
+    event = machine_event("e-1", "ActuatorCommand", 0)
+
+    normalized = envelope(event, 0, clock_quality=" SYNCHRONIZED ")
+    assert normalized.clock_quality == "synchronized"
+
+    with pytest.raises(StreamInputError, match="clock_quality must be one of"):
+        envelope(event, 0, clock_quality="gps_locked")
+
+
+def test_transport_attributes_are_deeply_frozen_and_json_compatible() -> None:
+    event = machine_event("e-1", "ActuatorCommand", 0)
+    supplied = {
+        "adapter": "lab",
+        "route": {"hops": ["collector-a", "collector-b"]},
+        "retry": 0,
+    }
+    transport = envelope(event, 0, transport_attributes=supplied)
+    supplied["route"]["hops"].append("mutated-after-envelope")
+
+    assert transport.transport_attributes["route"]["hops"] == (
+        "collector-a",
+        "collector-b",
+    )
+
+    summary = consume_stream(make_core(), (transport,))
+    report = stream_summary_to_dict(summary)
+    attributes = report["envelopes"][0]["transport"]["transport_attributes"]
+
+    assert attributes == {
+        "adapter": "lab",
+        "retry": 0,
+        "route": {"hops": ["collector-a", "collector-b"]},
+    }
+    json.dumps(report, sort_keys=True)
+
+
+@pytest.mark.parametrize(
+    "attributes",
+    [
+        {"unsupported": {"set-value"}},
+        {"non_finite": float("nan")},
+        {1: "non-string-key"},
+    ],
+)
+def test_transport_attributes_reject_non_evidence_values(
+    attributes: dict[object, object],
+) -> None:
+    event = machine_event("e-1", "ActuatorCommand", 0)
+
+    with pytest.raises(StreamInputError):
+        envelope(event, 0, transport_attributes=attributes)
 
 
 def test_stream_report_preserves_transport_and_source_timestamps() -> None:
