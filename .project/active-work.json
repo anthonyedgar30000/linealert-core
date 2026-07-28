@@ -7,21 +7,21 @@
     "full_name": "anthonyedgar30000/linealert-core",
     "role": "authoritative_linealert_implementation"
   },
-  "updated_on": "2026-07-22",
+  "updated_on": "2026-07-28",
   "state_model": {
     "record_type": "repository_coordination_snapshot",
-    "captured_from_main": "48d0a45875bd3aa6c87b51383d6b05e9e0e3fce1",
+    "captured_from_main": "50985af78df9ee4a352fcfced84ac2703aa98ba0",
     "current_reality_source": "live_github",
     "semantics": "This file records bounded ownership and the verified main baseline at workstream creation. Live GitHub pull-request, commit, CI, review, and deployment evidence determines current state and supersedes cached status."
   },
   "trusted_baseline": {
     "branch": "main",
-    "commit": "48d0a45875bd3aa6c87b51383d6b05e9e0e3fce1",
-    "commit_role": "verified_main_head_at_reconciliation_start",
+    "commit": "50985af78df9ee4a352fcfced84ac2703aa98ba0",
+    "commit_role": "verified_main_head_at_streaming_workstream_start",
     "last_completed_increment": {
-      "pull_request": 13,
-      "title": "Reconcile project state after blocked PR 12 merge",
-      "merge_commit": "48d0a45875bd3aa6c87b51383d6b05e9e0e3fce1",
+      "pull_request": 14,
+      "title": "Release project state after PR 13",
+      "merge_commit": "50985af78df9ee4a352fcfced84ac2703aa98ba0",
       "implementation_status": "merged",
       "review_status": "merged_with_zero_submitted_reviews",
       "owner_merge_action_observed": true
@@ -29,29 +29,45 @@
   },
   "workstreams": [
     {
-      "workstream_id": "post-pr13-state-release-v0.1",
-      "branch": "chore/reconcile-state-after-pr13",
-      "pull_request": 14,
-      "write_owner": "LineAlert authoritative workspace / post-pr13-state-release conversation",
-      "objective": "Release the merged PR #13 reconciliation ownership, advance the verified baseline, record the missing independent-review gate, and replace self-staling open-PR assertions with live-resolved lifecycle semantics.",
-      "status_resolution": "resolve_from_live_pull_request",
-      "lifecycle_by_live_pr_state": {
-        "open": "active_bounded_state_reconciliation",
-        "merged": "completed_and_ownership_released",
-        "closed_unmerged": "closed_and_ownership_released"
-      },
+      "workstream_id": "lab-streaming-ingestion-v0.1",
+      "branch": "agent/lab-streaming-ingestion-v0.1",
+      "pull_request": 16,
+      "write_owner": "LineAlert authoritative workspace / lab-streaming-ingestion-v0.1 conversation",
+      "objective": "Add a bounded read-only lab stream envelope, deterministic source-session and sequence validation, a supplied-event transport simulator, replay-versus-stream equivalence tests, and machine-readable transport evidence without changing existing timing, diagnostic, baseline, deployment, or equipment-control behavior.",
+      "status": "draft_pr_open_requires_exact_head_ci_review_and_control",
       "permitted_paths": [
         ".project/active-work.json",
-        "tests/test_project_state.py"
+        "docs/streaming_ingestion.md",
+        "src/linealert_core/__init__.py",
+        "src/linealert_core/simulator.py",
+        "src/linealert_core/streaming.py",
+        "tests/test_project_state.py",
+        "tests/test_streaming.py"
       ],
       "protected_paths": [
         ".github/workflows/**",
         "README.md",
-        "docs/**",
-        "src/**",
+        "docs/repository-lineage.md",
         "examples/**",
         "adapters/**",
         "deployment/**",
+        "src/linealert_core/baseline.py",
+        "src/linealert_core/baseline_io.py",
+        "src/linealert_core/baseline_replay.py",
+        "src/linealert_core/cli.py",
+        "src/linealert_core/diagnostic_cli.py",
+        "src/linealert_core/diagnostic_io.py",
+        "src/linealert_core/diagnostic_projection.py",
+        "src/linealert_core/diagnostics.py",
+        "src/linealert_core/events.py",
+        "src/linealert_core/machine.py",
+        "src/linealert_core/mosaic.py",
+        "src/linealert_core/pipeline.py",
+        "src/linealert_core/replay.py",
+        "src/linealert_core/signal_io.py",
+        "src/linealert_core/signal_processing.py",
+        "src/linealert_core/timing.py",
+        "src/linealert_core/topology.py",
         "**/*credential*",
         "**/*secret*"
       ],
@@ -59,37 +75,49 @@
         "repository_writes": "declared permitted paths only",
         "pull_request_creation": true,
         "pull_request_merge": false,
-        "runtime_code_changes": false,
-        "documentation_changes": false,
+        "runtime_code_changes": true,
+        "runtime_change_scope": "read-only in-process lab streaming boundary only",
+        "documentation_changes": true,
+        "deterministic_lab_simulator": true,
+        "external_telemetry_connector": false,
+        "network_listener": false,
+        "persistence_changes": false,
         "baseline_logic_changes": false,
         "replay_baseline_logic_changes": false,
-        "telemetry_adapter_implementation": false,
         "diagnostic_rule_changes": false,
         "workflow_changes": false,
         "deployment_mutation": false,
         "equipment_control": false,
         "credential_use": false
       },
+      "equipment_scope": {
+        "asset": "existing pressure-sensitive labeler fixture only",
+        "source": "deterministic supplied-event lab simulator",
+        "physical_equipment_connection": false,
+        "production_connection": false,
+        "control_path": false
+      },
       "verification_criteria": [
         "active-work.json parses as JSON",
         "ruff check passes",
         "the complete pytest suite passes",
-        "the pull-request diff contains exactly the two permitted paths",
-        "the branch starts from PR #13 merge commit 48d0a45875bd3aa6c87b51383d6b05e9e0e3fce1",
-        "PR #13 is recorded as merged with zero submitted reviews and an observed owner merge action",
-        "PR #12 and PR #13 governance incidents remain distinct",
-        "pull-request lifecycle state is resolved from live GitHub rather than cached as open or merged",
-        "a merged or closed reconciliation pull request releases ownership without another state-only cleanup",
-        "no runtime, documentation, workflow, deployment, credential, or equipment-control path changes"
+        "the pull-request diff remains inside permitted_paths",
+        "the branch starts from main commit 50985af78df9ee4a352fcfced84ac2703aa98ba0",
+        "the existing labeler event fixture produces equal PipelineResult tuples through ordered replay and deterministic stream ingestion",
+        "event fingerprints remain equal to the original MachineEvent fingerprints",
+        "sequence gaps, out-of-order frames, invalid session starts, and superseded-session reuse are rejected before core ingestion",
+        "an exact event duplicate at the next valid transport sequence retains Fusion Mosaic idempotence",
+        "source and receive timestamps, source session, sequence, clock quality, and transport attributes remain visible",
+        "no existing event, timing, topology, diagnostic, baseline, replay, deployment, credential, or equipment-control implementation changes"
       ],
       "verification_evidence": {
-        "branch_base": "48d0a45875bd3aa6c87b51383d6b05e9e0e3fce1",
-        "pr13_exact_head_ci": "PR #13 head 4b58f01c4b1ae919dc6d55d278cbf475eba4681d passed install, lint, and tests on Python 3.11 and 3.12 before merge.",
-        "pr13_review_lookup": "Live GitHub returned zero submitted reviews for PR #13.",
-        "current_head_ci": "Resolve only from live GitHub for the exact current reconciliation head.",
-        "evidence_boundary": "The repository-owner merge action is evidence of an explicit merge action, not evidence of independent review."
+        "branch_base": "50985af78df9ee4a352fcfced84ac2703aa98ba0",
+        "local_smoke_test": "Streaming module syntax compiled and deterministic acceptance, gap, out-of-order, duplicate, restart, and session-reuse behavior passed against a local interface-compatible harness.",
+        "exact_head_ci": "Resolve only from live GitHub for PR #16 exact current head.",
+        "review": "One independent approving review is required on the exact current head.",
+        "evidence_boundary": "Transport admission does not verify sensor truth, physical state, diagnosis, authorized action, or production safety."
       },
-      "next_gate": "Obtain successful exact-head CI and one independent approving review before merge. Resolve ownership from the live pull-request state after merge or closure."
+      "next_gate": "Obtain successful exact-head CI, configure main review enforcement with one approval and no owner bypass, obtain one independent approving review, then re-check live main, head, diff, CI, reviews, mergeability, and deployment state before any merge decision."
     }
   ],
   "repository_lineage": {
@@ -153,33 +181,40 @@
       "approval_evidence": "The repository owner performed the GitHub merge action.",
       "interpretation": "The owner merge action is explicit human action, but it is not independent review and did not satisfy the recorded review gate.",
       "corrective_action": "Require at least one approving review with no owner bypass before future merges."
+    },
+    {
+      "incident_id": "pr14-zero-review-merge-2026-07-23",
+      "pull_request": 14,
+      "observed_state": "merged",
+      "merge_commit": "50985af78df9ee4a352fcfced84ac2703aa98ba0",
+      "recorded_pre_merge_state": "independent_approval_and_review_enforcement_pending",
+      "review_evidence": "Live GitHub returned zero submitted reviews.",
+      "approval_evidence": "The repository owner performed the GitHub merge action.",
+      "interpretation": "The state reconciliation is merged repository reality, but its stated independent-review and branch-enforcement gates were not satisfied.",
+      "corrective_action": "Keep the next implementation pull request draft until review enforcement is configured and one independent approval exists on the exact head."
     }
   ],
   "repository_controls": {
     "main_review_gate": {
-      "observed_effect_at_pr13_merge": "zero_review_merge_permitted",
+      "observed_effect_at_pr14_merge": "zero_review_merge_permitted",
       "target_required_approving_reviews": 1,
       "target_prevent_owner_bypass": true,
       "enforcement_status": "configuration_required",
-      "configuration_evidence": "No submitted review existed when PR #13 merged.",
+      "configuration_evidence": "No submitted review existed when PR #14 merged.",
       "configuration_authority": "repository_administrator",
-      "next_gate": "Enable a main-branch protection rule or repository ruleset requiring one approval and preventing bypass before this reconciliation merges."
+      "next_gate": "Enable a main-branch protection rule or repository ruleset requiring one approval and preventing owner bypass before the streaming pull request can merge."
     }
   },
   "deployment_state": {
     "status": "not_deployed",
-    "evidence": "No current LineAlert Core deployment evidence is recorded in this repository state."
+    "evidence": "No current LineAlert Core deployment or physical-equipment connection evidence is recorded."
   },
   "tracked_pull_requests": [
     {
-      "pull_request": 14,
-      "title": "Release project state after PR 13",
+      "pull_request": 16,
+      "title": "Add bounded lab streaming ingestion",
       "state_resolution": "live_github_required",
-      "ownership_resolution": {
-        "open": "active",
-        "merged": "released",
-        "closed_unmerged": "released"
-      }
+      "required_state": "draft_until_exact_head_ci_review_and_repository_control_pass"
     }
   ]
 }
