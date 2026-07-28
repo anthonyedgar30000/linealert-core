@@ -10,36 +10,40 @@
   "updated_on": "2026-07-28",
   "state_model": {
     "record_type": "repository_coordination_snapshot",
-    "captured_from_main": "50985af78df9ee4a352fcfced84ac2703aa98ba0",
+    "captured_from_main": "0720bbf269a571ec35a74829d72c124370afd436",
     "current_reality_source": "live_github",
     "semantics": "This file records bounded ownership and the verified main baseline at workstream creation. Live GitHub pull-request, commit, CI, review, and deployment evidence determines current state and supersedes cached status."
   },
   "trusted_baseline": {
     "branch": "main",
-    "commit": "50985af78df9ee4a352fcfced84ac2703aa98ba0",
-    "commit_role": "verified_main_head_at_streaming_workstream_start",
+    "commit": "0720bbf269a571ec35a74829d72c124370afd436",
+    "commit_role": "verified_main_head_at_streaming_hardening_start",
     "last_completed_increment": {
-      "pull_request": 14,
-      "title": "Release project state after PR 13",
-      "merge_commit": "50985af78df9ee4a352fcfced84ac2703aa98ba0",
+      "pull_request": 16,
+      "title": "Add bounded lab streaming ingestion",
+      "merge_commit": "0720bbf269a571ec35a74829d72c124370afd436",
       "implementation_status": "merged",
       "review_status": "merged_with_zero_submitted_reviews",
-      "owner_merge_action_observed": true
+      "owner_merge_action_observed": true,
+      "deployment_status": "not_deployed"
     }
   },
   "workstreams": [
     {
-      "workstream_id": "lab-streaming-ingestion-v0.1",
-      "branch": "agent/lab-streaming-ingestion-v0.1",
-      "pull_request": 16,
-      "write_owner": "LineAlert authoritative workspace / lab-streaming-ingestion-v0.1 conversation",
-      "objective": "Add a bounded read-only lab stream envelope, deterministic source-session and sequence validation, a supplied-event transport simulator, replay-versus-stream equivalence tests, and machine-readable transport evidence without changing existing timing, diagnostic, baseline, deployment, or equipment-control behavior.",
-      "status": "draft_pr_open_requires_exact_head_ci_review_and_control",
+      "workstream_id": "streaming-evidence-hardening-v0.1",
+      "branch": "agent/harden-streaming-evidence-v0.1",
+      "pull_request": 18,
+      "write_owner": "LineAlert authoritative workspace / streaming-evidence-hardening-v0.1 conversation",
+      "objective": "Resolve the two bounded PR #16 streaming review findings by governing clock quality, recursively freezing JSON-compatible transport attributes, and committing source-session transport state only after successful core ingestion.",
+      "status_resolution": "resolve_from_live_pull_request",
+      "lifecycle_by_live_pr_state": {
+        "open": "active_bounded_streaming_hardening",
+        "merged": "completed_and_ownership_released",
+        "closed_unmerged": "closed_and_ownership_released"
+      },
       "permitted_paths": [
         ".project/active-work.json",
         "docs/streaming_ingestion.md",
-        "src/linealert_core/__init__.py",
-        "src/linealert_core/simulator.py",
         "src/linealert_core/streaming.py",
         "tests/test_project_state.py",
         "tests/test_streaming.py"
@@ -51,6 +55,7 @@
         "examples/**",
         "adapters/**",
         "deployment/**",
+        "src/linealert_core/__init__.py",
         "src/linealert_core/baseline.py",
         "src/linealert_core/baseline_io.py",
         "src/linealert_core/baseline_replay.py",
@@ -66,6 +71,7 @@
         "src/linealert_core/replay.py",
         "src/linealert_core/signal_io.py",
         "src/linealert_core/signal_processing.py",
+        "src/linealert_core/simulator.py",
         "src/linealert_core/timing.py",
         "src/linealert_core/topology.py",
         "**/*credential*",
@@ -76,9 +82,7 @@
         "pull_request_creation": true,
         "pull_request_merge": false,
         "runtime_code_changes": true,
-        "runtime_change_scope": "read-only in-process lab streaming boundary only",
-        "documentation_changes": true,
-        "deterministic_lab_simulator": true,
+        "runtime_change_scope": "existing read-only in-process streaming evidence boundary only",
         "external_telemetry_connector": false,
         "network_listener": false,
         "persistence_changes": false,
@@ -97,27 +101,42 @@
         "production_connection": false,
         "control_path": false
       },
+      "review_findings": [
+        {
+          "finding_id": "transport-attributes-not-deeply-immutable",
+          "source": "post-PR16 author-side read-only inspection",
+          "risk": "Nested caller-owned values could mutate retained transport evidence or fail machine-readable serialization.",
+          "disposition": "remediation_implemented_on_pr18_requires_ci_and_review"
+        },
+        {
+          "finding_id": "session-transition-committed-before-core-acceptance",
+          "source": "post-PR16 author-side read-only inspection",
+          "risk": "A core-ingestion exception during a new session could leave transport session state advanced without an accepted stream result.",
+          "disposition": "remediation_implemented_on_pr18_requires_ci_and_review"
+        }
+      ],
       "verification_criteria": [
         "active-work.json parses as JSON",
         "ruff check passes",
         "the complete pytest suite passes",
-        "the pull-request diff remains inside permitted_paths",
-        "the branch starts from main commit 50985af78df9ee4a352fcfced84ac2703aa98ba0",
-        "the existing labeler event fixture produces equal PipelineResult tuples through ordered replay and deterministic stream ingestion",
-        "event fingerprints remain equal to the original MachineEvent fingerprints",
-        "sequence gaps, out-of-order frames, invalid session starts, and superseded-session reuse are rejected before core ingestion",
-        "an exact event duplicate at the next valid transport sequence retains Fusion Mosaic idempotence",
-        "source and receive timestamps, source session, sequence, clock quality, and transport attributes remain visible",
-        "no existing event, timing, topology, diagnostic, baseline, replay, deployment, credential, or equipment-control implementation changes"
+        "the pull-request diff contains exactly the five permitted paths",
+        "the branch starts from PR #16 merge commit 0720bbf269a571ec35a74829d72c124370afd436",
+        "clock quality is normalized to synchronized, degraded, unsynchronized, or unknown",
+        "transport attributes are recursively copied, deeply frozen, and limited to JSON-compatible evidence",
+        "machine-readable output thaws transport mappings and sequences without rewriting evidence",
+        "a core-ingestion exception does not activate a new source session, advance its sequence, or append a stream result",
+        "existing replay-versus-stream equivalence remains unchanged",
+        "no connector, network listener, persistence, baseline, diagnostic, deployment, credential, or equipment-control capability changes"
       ],
       "verification_evidence": {
-        "branch_base": "50985af78df9ee4a352fcfced84ac2703aa98ba0",
-        "local_smoke_test": "Streaming module syntax compiled and deterministic acceptance, gap, out-of-order, duplicate, restart, and session-reuse behavior passed against a local interface-compatible harness.",
-        "exact_head_ci": "Resolve only from live GitHub for PR #16 exact current head.",
+        "branch_base": "0720bbf269a571ec35a74829d72c124370afd436",
+        "pr16_exact_head_ci": "PR #16 head 3881f6962bc6d530f5e0cbae30e301b1a0eacbc5 passed install, lint, and tests on Python 3.11 and 3.12 before merge.",
+        "pr16_review_lookup": "Live GitHub returned zero submitted reviews for PR #16.",
+        "current_head_ci": "Resolve only from live GitHub for PR #18 exact current head.",
         "review": "One independent approving review is required on the exact current head.",
-        "evidence_boundary": "Transport admission does not verify sensor truth, physical state, diagnosis, authorized action, or production safety."
+        "evidence_boundary": "Evidence hardening does not verify sensor truth, physical state, diagnosis, authorized action, deployment, or production safety."
       },
-      "next_gate": "Obtain successful exact-head CI, configure main review enforcement with one approval and no owner bypass, obtain one independent approving review, then re-check live main, head, diff, CI, reviews, mergeability, and deployment state before any merge decision."
+      "next_gate": "Obtain successful exact-head CI, configure and verify main review enforcement with one approval and no owner bypass, obtain one independent approving review, then re-check live main, head, diff, CI, reviews, mergeability, and deployment state before any merge decision."
     }
   ],
   "repository_lineage": {
@@ -144,13 +163,18 @@
       {
         "repository": "anthonyedgar30000/LineAlertDemo",
         "classification": "legacy_prototype",
-        "open_pull_requests": [2, 3],
+        "open_pull_requests": [
+          2,
+          3
+        ],
         "disposition": "Open PR #2 and PR #3 are non-current prototype work. Do not merge or copy wholesale into linealert-core. Reuse requires a new bounded branch, explicit source attribution, current authority boundaries, focused tests, and review."
       },
       {
         "repository": "anthonyedgar30000/linealert-analysis-engine",
         "classification": "legacy_placeholder",
-        "open_pull_requests": [1],
+        "open_pull_requests": [
+          1
+        ],
         "disposition": "Open PR #1 is non-current prototype work. Do not merge it into the current lineage or copy it wholesale. Preserve the repository as historical evidence unless a bounded current increment deliberately re-derives selected behavior."
       },
       {
@@ -192,29 +216,47 @@
       "approval_evidence": "The repository owner performed the GitHub merge action.",
       "interpretation": "The state reconciliation is merged repository reality, but its stated independent-review and branch-enforcement gates were not satisfied.",
       "corrective_action": "Keep the next implementation pull request draft until review enforcement is configured and one independent approval exists on the exact head."
+    },
+    {
+      "incident_id": "pr16-zero-review-merge-2026-07-28",
+      "pull_request": 16,
+      "observed_state": "merged",
+      "merge_commit": "0720bbf269a571ec35a74829d72c124370afd436",
+      "recorded_pre_merge_state": "draft_pending_review_enforcement_and_independent_approval",
+      "review_evidence": "Live GitHub returned zero submitted reviews.",
+      "approval_evidence": "The repository owner performed the GitHub merge action.",
+      "interpretation": "Bounded streaming ingestion is merged implementation reality, but the stated review-enforcement and independent-approval gates were not satisfied.",
+      "corrective_action": "Keep PR #18 draft, resolve the two technical review findings, and do not merge until Issue #15 controls and independent exact-head approval are verified."
     }
   ],
   "repository_controls": {
     "main_review_gate": {
-      "observed_effect_at_pr14_merge": "zero_review_merge_permitted",
+      "tracking_issue": 15,
+      "observed_effect_at_pr16_merge": "zero_review_merge_permitted",
       "target_required_approving_reviews": 1,
+      "target_dismiss_stale_approvals": true,
       "target_prevent_owner_bypass": true,
-      "enforcement_status": "configuration_required",
-      "configuration_evidence": "No submitted review existed when PR #14 merged.",
+      "enforcement_status": "configuration_required_and_unverified",
+      "configuration_evidence": "No submitted review existed when PR #16 merged.",
       "configuration_authority": "repository_administrator",
-      "next_gate": "Enable a main-branch protection rule or repository ruleset requiring one approval and preventing owner bypass before the streaming pull request can merge."
+      "next_gate": "Enable and verify a main ruleset requiring one approval, stale-approval dismissal, and no owner bypass before PR #18 can merge."
     }
   },
   "deployment_state": {
     "status": "not_deployed",
-    "evidence": "No current LineAlert Core deployment or physical-equipment connection evidence is recorded."
+    "evidence": "No current LineAlert Core deployment, physical-equipment connection, or operational-verification evidence is recorded."
   },
   "tracked_pull_requests": [
     {
-      "pull_request": 16,
-      "title": "Add bounded lab streaming ingestion",
+      "pull_request": 18,
+      "title": "Harden streaming evidence integrity",
       "state_resolution": "live_github_required",
-      "required_state": "draft_until_exact_head_ci_review_and_repository_control_pass"
+      "ownership_resolution": {
+        "open": "active",
+        "merged": "released",
+        "closed_unmerged": "released"
+      },
+      "required_state": "draft_until_exact_head_ci_independent_review_and_repository_control_pass"
     }
   ]
 }
