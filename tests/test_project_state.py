@@ -48,8 +48,10 @@ def test_streaming_workstream_owns_one_bounded_branch_and_file_set() -> None:
     workstream = state["workstreams"][0]
     assert workstream["workstream_id"] == "lab-streaming-ingestion-v0.1"
     assert workstream["branch"] == "agent/lab-streaming-ingestion-v0.1"
-    assert workstream["pull_request"] is None
-    assert workstream["status"] == "implemented_on_branch_pr_pending"
+    assert workstream["pull_request"] == 16
+    assert workstream["status"] == (
+        "draft_pr_open_requires_exact_head_ci_review_and_control"
+    )
 
     permitted = workstream["permitted_paths"]
     assert len(permitted) == len(set(permitted))
@@ -62,7 +64,16 @@ def test_streaming_workstream_owns_one_bounded_branch_and_file_set() -> None:
         "tests/test_project_state.py",
         "tests/test_streaming.py",
     }
-    assert state["tracked_pull_requests"] == []
+    assert state["tracked_pull_requests"] == [
+        {
+            "pull_request": 16,
+            "title": "Add bounded lab streaming ingestion",
+            "state_resolution": "live_github_required",
+            "required_state": (
+                "draft_until_exact_head_ci_review_and_repository_control_pass"
+            ),
+        }
+    ]
 
 
 def test_streaming_scope_preserves_existing_reasoning_and_control_boundaries() -> None:
