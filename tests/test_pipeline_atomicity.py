@@ -34,10 +34,6 @@ def build_core() -> LineAlertCore:
     return LineAlertCore(rules=[build_rule()], topology=topology)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="FW-02: negative timing currently consumes the matching start",
-)
 def test_negative_end_timestamp_does_not_consume_matching_start(make_event) -> None:
     monitor = TimingMonitor([build_rule()])
     monitor.handle(
