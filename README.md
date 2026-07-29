@@ -234,6 +234,6 @@ When a machine profile is loaded, the core rejects:
 
 ## Development workflow
 
-`main` is the trusted, reviewed state. Changes belong on bounded branches with tests and pull
-requests. AI may propose patches or rules, but activation remains governed, versioned,
-testable, and reversible.
+`main` is merged repository reality. Independent review is not established until Issue #15
+acceptance evidence exists. Changes belong on bounded branches with tests and pull requests. AI may
+propose patches or rules, but activation remains governed, versioned, testable, and reversible.
