@@ -83,7 +83,6 @@ class FusionMosaic:
                 duplicate=True,
             )
 
-        self._fingerprints_by_event_id[event.event_id] = event.fingerprint
         delivered_to: list[str] = []
         outputs: list[ConsumerOutput] = []
 
@@ -102,6 +101,7 @@ class FusionMosaic:
                 for value in emitted
             )
 
+        self._fingerprints_by_event_id[event.event_id] = event.fingerprint
         return EventReceipt(
             event_id=event.event_id,
             delivered_to=tuple(delivered_to),
