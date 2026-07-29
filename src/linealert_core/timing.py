@@ -100,7 +100,7 @@ class TimingMonitor:
             if event.event_type != rule.end_event:
                 continue
 
-            start = self._starts.pop(key, None)
+            start = self._starts.get(key)
             if start is None:
                 continue
 
@@ -117,20 +117,20 @@ class TimingMonitor:
             else:
                 status = TimingStatus.WITHIN
 
-            findings.append(
-                TimingFinding(
-                    rule_id=rule.rule_id,
-                    asset_id=event.asset_id,
-                    correlation_id=event.correlation_id,
-                    start_timestamp=start.timestamp,
-                    end_timestamp=event.timestamp,
-                    delay_seconds=delay_seconds,
-                    min_delay_seconds=rule.min_delay_seconds,
-                    max_delay_seconds=rule.max_delay_seconds,
-                    status=status,
-                    topology_from=rule.topology_from,
-                    topology_to=rule.topology_to,
-                )
+            finding = TimingFinding(
+                rule_id=rule.rule_id,
+                asset_id=event.asset_id,
+                correlation_id=event.correlation_id,
+                start_timestamp=start.timestamp,
+                end_timestamp=event.timestamp,
+                delay_seconds=delay_seconds,
+                min_delay_seconds=rule.min_delay_seconds,
+                max_delay_seconds=rule.max_delay_seconds,
+                status=status,
+                topology_from=rule.topology_from,
+                topology_to=rule.topology_to,
             )
+            self._starts.pop(key)
+            findings.append(finding)
 
         return tuple(findings)
