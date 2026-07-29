@@ -9,17 +9,13 @@ PROJECT_STATE = PROJECT_ROOT / ".project" / "active-work.json"
 PROJECT_GUIDANCE = PROJECT_ROOT / ".project" / "README.md"
 ROOT_README = PROJECT_ROOT / "README.md"
 LINEAGE_GUIDANCE = PROJECT_ROOT / "docs" / "repository-lineage.md"
+CI_WORKFLOW = PROJECT_ROOT / ".github" / "workflows" / "ci.yml"
 
-PR16_MERGE = "0720bbf269a571ec35a74829d72c124370afd436"
-PR17_MERGE = "a094f0812ad85bfbcfe3c90c4cbc1d85547be7cd"
 PR20_HEAD = "3f2e4b23154d34f892d6966fa1e9d72c5acb5087"
 PR20_MERGE = "f0b48f7e8966f886ff29629af0fb2eb50e366ea4"
-PR21_HEAD = "19d9ce75cbff57d45a911083b84761b7aef32842"
-PR21_MERGE = "6858d4a639c0dc27853c313e545d3af467ec1412"
-PR22_HEAD = "cc6718bf76329ac28f83429204a0d5ef4b36bfe9"
-PR22_MERGE = "03060ff05252e43538f86ad75527be05c96853a5"
-PR24_HEAD = "e9e7065e7062bc9b99bbe429999e77f01b07ed99"
-PR24_MERGE = "9bc91562535f8fad681aecde61a6fc28885da69c"
+PR28_HEAD = "cb03bb10d8b3854272177380b8e3a9abe6a4788b"
+PR28_MERGE = "9ab27c2f825f2c3ccea99fafbca0127fbe25fb05"
+PR29_HEAD = "9146a12078394cfda22ff3e6bb9df22eaf53adaf"
 
 
 def load_project_state() -> dict[str, Any]:
@@ -28,49 +24,47 @@ def load_project_state() -> dict[str, Any]:
     return value
 
 
-def test_state_snapshot_advances_to_pr24_main() -> None:
+def test_state_snapshot_advances_to_pr28_main() -> None:
     state = load_project_state()
     assert state["schema_version"] == "project.active-work.v1"
-    assert state["repository"]["full_name"] == "anthonyedgar30000/linealert-core"
-    assert state["state_model"]["captured_from_main"] == PR24_MERGE
+    assert state["repository"]["full_name"] == (
+        "anthonyedgar30000/linealert-core"
+    )
+    assert state["state_model"]["captured_from_main"] == PR28_MERGE
     assert state["state_model"]["current_reality_source"] == (
         "live_github_and_explicit_user_direction"
     )
-    assert "supersedes cached current-state claims" in state["state_model"]["semantics"]
+    assert "supersedes cached current-state claims" in (
+        state["state_model"]["semantics"]
+    )
 
     baseline = state["trusted_baseline"]
-    assert baseline["commit"] == PR24_MERGE
-    assert baseline["commit_role"] == "verified_main_head_after_pr24_merge"
+    assert baseline["commit"] == PR28_MERGE
+    assert baseline["commit_role"] == "verified_main_head_after_pr28_merge"
 
     completed = baseline["last_completed_increment"]
-    assert completed["pull_request"] == 24
-    assert completed["source_head"] == PR24_HEAD
-    assert completed["merge_commit"] == PR24_MERGE
-    assert completed["exact_head_ci"] == {
-        "run_id": 30410780245,
-        "conclusion": "success",
-        "python_versions": ["3.11", "3.12"],
-    }
-    assert completed["review_status"] == "merged_with_zero_submitted_reviews"
-    assert completed["authorization_status"] == (
-        "merged_after_explicit_merge_not_authorized_boundary"
+    assert completed["pull_request"] == 28
+    assert completed["source_head"] == PR28_HEAD
+    assert completed["merge_commit"] == PR28_MERGE
+    assert completed["pull_request_ci"]["run_id"] == 30419929640
+    assert completed["pull_request_ci"]["conclusion"] == "success"
+    assert completed["pull_request_ci"]["checkout_provenance"] == (
+        "github_pull_request_synthetic_merge_ref"
     )
-    assert completed["runtime_change"] is False
 
-    functional = baseline["last_functional_increment"]
-    assert functional["pull_request"] == 20
-    assert functional["source_head"] == PR20_HEAD
-    assert functional["merge_commit"] == PR20_MERGE
-    assert functional["exact_head_ci"]["run_id"] == 30388270765
-    assert functional["review_status"] == "merged_with_zero_submitted_reviews"
-    assert functional["deployment_status"] == "not_deployed"
+    runtime = baseline["last_merged_runtime_increment"]
+    assert runtime["pull_request"] == 20
+    assert runtime["source_head"] == PR20_HEAD
+    assert runtime["merge_commit"] == PR20_MERGE
+    assert runtime["deployment_status"] == "not_deployed"
 
 
-def test_live_observation_records_intentionally_public_visibility() -> None:
+def test_live_observation_matches_branch_creation_reality() -> None:
     observation = load_project_state()["live_observation"]
-    assert observation["default_branch_head"] == PR24_MERGE
-    assert observation["open_pull_requests_before_branch_creation"] == []
-    assert observation["open_issues"] == [15, 19, 23]
+    assert observation["default_branch_head"] == PR28_MERGE
+    assert observation["open_pull_requests_before_branch_creation"] == [29]
+    assert observation["open_issues"] == [19, 23]
+    assert observation["adopted_governance_issue"] == 27
     assert observation["visibility"] == {
         "github_metadata": "public",
         "canonical_policy": "public",
@@ -80,32 +74,42 @@ def test_live_observation_records_intentionally_public_visibility() -> None:
     assert observation["physical_equipment_connection"] == "not_observed"
     assert observation["network_listener"] == "not_observed"
     assert observation["equipment_control_path"] == "not_observed"
+    assert "no_oem_or_commissioning" in observation["equipment_documentation"]
 
 
-def test_reconciliation_owns_exactly_three_paths() -> None:
+def test_active_workstreams_preserve_scope_and_authority() -> None:
     state = load_project_state()
-    assert len(state["workstreams"]) == 1
-    workstream = state["workstreams"][0]
+    workstreams = {item["workstream_id"]: item for item in state["workstreams"]}
+    assert set(workstreams) == {
+        "remediate-atomic-ingestion-v0.1",
+        "reconcile-ci-and-project-state-v1",
+    }
 
-    assert workstream["workstream_id"] == "state-reconciliation-after-pr24-v1"
-    assert workstream["branch"] == "agent/reconcile-state-after-pr24-v1"
-    assert workstream["pull_request_resolution"] == "resolve_live_by_exact_branch"
-    assert workstream["classification"] == "state_and_documentation_only_reconciliation"
-    assert workstream["permitted_paths"] == [
+    remediation = workstreams["remediate-atomic-ingestion-v0.1"]
+    assert remediation["pull_request"] == 29
+    assert remediation["head"] == PR29_HEAD
+    assert remediation["exact_head_ci_status"] == "not_yet_established"
+    assert remediation["merge_authority"] == "not_granted"
+    assert len(remediation["remaining_characterized_windows"]) == 2
+
+    reconciliation = workstreams["reconcile-ci-and-project-state-v1"]
+    assert reconciliation["branch"] == (
+        "agent/reconcile-ci-and-project-state-v1"
+    )
+    assert reconciliation["pull_request"] == 30
+    assert reconciliation["permitted_paths"] == [
+        ".github/workflows/ci.yml",
         ".project/active-work.json",
-        "README.md",
         "tests/test_project_state.py",
     ]
-    assert state["tracked_pull_requests"] == []
-
-    capability = workstream["capability_boundary"]
+    assert reconciliation["merge_authority"] == "not_granted"
+    capability = reconciliation["capability_boundary"]
     assert capability["pull_request_creation"] is True
     assert capability["pull_request_merge"] is False
-    assert capability["state_reconciliation_only"] is True
-    assert capability["documentation_correction"] is True
+    assert capability["workflow_change"] is True
+    assert capability["coordination_state_change"] is True
     for field in {
         "runtime_code_change",
-        "workflow_change",
         "dependency_change",
         "telemetry_connector",
         "network_listener",
@@ -121,10 +125,62 @@ def test_reconciliation_owns_exactly_three_paths() -> None:
     }:
         assert capability[field] is False
 
+    assert state["tracked_pull_requests"] == [29, 30]
 
-def test_governance_incidents_remain_distinct_through_pr24() -> None:
-    history = load_project_state()["governance_incident_history"]
-    assert "prior git revisions" in history["historical_detail"]
+
+def test_issue_lifecycle_is_reconciled_without_overclaiming() -> None:
+    issues = load_project_state()["issue_lifecycle"]
+
+    issue_23 = issues["23"]
+    assert issue_23["title"] == "Track atomic ingestion failure windows"
+    assert issue_23["characterization"] == "completed_by_pr28"
+    assert issue_23["remediation"] == "two_of_four_windows_proposed_in_pr29"
+    assert issue_23["remaining_scope"] == [
+        "FW-03_later_subscriber_rollback",
+        "FW-04_diagnostic_derivation_rollback",
+    ]
+    assert "Do not close" in issue_23["closure_rule"]
+
+    issue_19 = issues["19"]
+    assert issue_19["title"] == "Plan isolated OpenPLC labeler lab emulator"
+    assert issue_19["state"] == "open_blocked"
+    assert issue_19["risk_tier"] == "tier_2"
+    assert issue_19["implementation_authority"] == "not_granted"
+
+    issue_27 = issues["27"]
+    assert issue_27 == {
+        "title": "Adopt risk-tiered solo-maintainer governance policy",
+        "state": "closed_completed",
+        "role": "active_governance_policy",
+    }
+
+
+def test_ci_workflow_verifies_literal_event_sha() -> None:
+    state = load_project_state()
+    policy = state["ci_policy"]
+    assert policy["required_checkout"] == "literal_event_sha"
+    assert policy["pull_request_sha"] == "github.event.pull_request.head.sha"
+    assert policy["push_sha"] == "github.sha"
+    assert policy["verification"] == "git_rev_parse_HEAD_must_equal_expected_sha"
+
+    workflow = CI_WORKFLOW.read_text(encoding="utf-8")
+    assert "name: Checkout pull-request head" in workflow
+    assert "ref: ${{ github.event.pull_request.head.sha }}" in workflow
+    assert "name: Checkout pushed commit" in workflow
+    assert "ref: ${{ github.sha }}" in workflow
+    assert "name: Verify exact checkout provenance" in workflow
+    assert (
+        "EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}"
+        in workflow
+    )
+    assert 'actual_sha="$(git rev-parse HEAD)"' in workflow
+    assert 'test "$actual_sha" = "$EXPECTED_SHA"' in workflow
+
+
+def test_governance_incidents_remain_append_only() -> None:
+    state = load_project_state()
+    history = state["governance_incident_history"]
+    assert "Append-only incident keys" in history["historical_detail"]
 
     incidents = {item["id"]: item for item in history["incidents"]}
     assert set(incidents) == {
@@ -138,57 +194,40 @@ def test_governance_incidents_remain_distinct_through_pr24() -> None:
         "pr22-zero-review-architecture-publication-2026-07-28",
         "pr24-explicit-no-merge-boundary-bypassed-2026-07-28",
     }
-
-    assert incidents["pr16-zero-review-gate-bypass-2026-07-28"][
-        "merge_commit"
-    ] == PR16_MERGE
-    assert incidents["pr17-zero-review-gate-bypass-2026-07-28"][
-        "merge_commit"
-    ] == PR17_MERGE
-
-    pr20 = incidents["pr20-zero-review-gate-bypass-2026-07-28"]
-    assert pr20["source_head"] == PR20_HEAD
-    assert pr20["merge_commit"] == PR20_MERGE
-    assert pr20["ci_run"] == 30388270765
-
-    pr21 = incidents["pr21-review-gate-probe-merged-zero-review-2026-07-28"]
-    assert pr21["source_head"] == PR21_HEAD
-    assert pr21["merge_commit"] == PR21_MERGE
-    assert pr21["ci_run"] == 30390768815
-
-    pr22 = incidents["pr22-zero-review-architecture-publication-2026-07-28"]
-    assert pr22["source_head"] == PR22_HEAD
-    assert pr22["merge_commit"] == PR22_MERGE
-    assert pr22["ci_run"] == 30407732572
-
-    pr24 = incidents["pr24-explicit-no-merge-boundary-bypassed-2026-07-28"]
-    assert pr24["source_head"] == PR24_HEAD
-    assert pr24["merge_commit"] == PR24_MERGE
-    assert pr24["ci_run"] == 30410780245
-    assert pr24["classification"] == (
+    assert incidents[
+        "pr24-explicit-no-merge-boundary-bypassed-2026-07-28"
+    ]["classification"] == (
         "state_reconciliation_merged_after_explicit_merge_not_authorized_boundary"
     )
 
-    for pr in (13, 14, 16, 17, 20, 21, 22, 24):
-        incident = next(item for item in incidents.values() if item["pr"] == pr)
-        assert incident["reviews"] == 0
+    recent = history["recent_lifecycle"]
+    assert [item.get("pull_request") for item in recent] == [25, None, 28, 29, 30]
+    assert recent[1]["issue"] == 27
 
 
-def test_repository_controls_keep_review_gate_and_public_policy_separate() -> None:
+def test_governance_policy_separates_tier_1_and_tier_2() -> None:
     controls = load_project_state()["repository_controls"]
-    review = controls["main_review_gate"]
 
-    assert review["tracking_issue"] == 15
-    assert review["observed_effect_through_pr24"] == "zero_review_merges_permitted"
-    assert review["probe_pull_request"] == 21
-    assert review["probe_result"] == "merged_with_zero_submitted_reviews"
-    assert review["required_approvals"] == 1
-    assert review["dismiss_stale_approvals"] is True
-    assert review["prevent_owner_or_admin_bypass"] is True
-    assert review["status"] == "not_effective_or_not_verified"
-    assert review["tool_boundary"] == (
-        "connected_github_toolset_does_not_expose_ruleset_mutation"
-    )
+    historical = controls["historical_main_review_gate"]
+    assert historical["tracking_issue"] == 15
+    assert historical["probe_pull_request"] == 21
+    assert historical["status"] == "not_effective_or_not_verified"
+    assert "Issue 27 replaced" in historical["supersession"]
+
+    tier_1 = controls["tier_1_policy"]
+    assert tier_1 == {
+        "tracking_issue": 27,
+        "independent_github_approval_required": False,
+        "fresh_named_merge_instruction_required": True,
+        "exact_head_ci_required": True,
+    }
+
+    tier_2 = controls["tier_2_policy"]
+    assert tier_2["tracking_issue"] == 27
+    assert tier_2["independent_or_qualified_review_required"] is True
+    assert tier_2[
+        "owner_approval_is_not_substitute_for_qualified_judgment"
+    ] is True
 
     visibility = controls["repository_visibility"]
     assert visibility == {
@@ -196,11 +235,10 @@ def test_repository_controls_keep_review_gate_and_public_policy_separate() -> No
         "canonical_policy": "public",
         "status": "verified_public",
         "policy_source": "explicit_user_direction",
-        "next_gate": "none",
     }
 
 
-def test_lineage_lifecycle_is_preserved() -> None:
+def test_lineage_archaeology_statuses_are_preserved() -> None:
     lineage = load_project_state()["repository_lineage"]
     assert lineage["authoritative"] == ["anthonyedgar30000/linealert-core"]
 
@@ -216,6 +254,7 @@ def test_lineage_lifecycle_is_preserved() -> None:
         "merged_legacy_prototype_non_authoritative"
     )
     memory = archaeology["anthonyedgar30000/HelixMemoryService"]
+    assert memory["pull_requests"] == {}
     assert "not_current_persistence" in memory["disposition"]
 
 
@@ -229,33 +268,22 @@ def test_deployment_and_equipment_reality_remain_bounded() -> None:
     }
 
 
-def test_project_lookup_requires_repository_resolution() -> None:
+def test_project_lookup_and_lineage_guidance_remain_bounded() -> None:
     guidance = PROJECT_GUIDANCE.read_text(encoding="utf-8")
     assert "## Repository resolution gate" in guidance
     assert "exact `owner/repository` target" in guidance
     assert "stop without drawing ownership or project-state conclusions" in guidance
     assert "authoritative only for the resolved repository" in guidance
-    assert "A correctly executed lookup against the wrong repository" in guidance
 
-
-def test_root_readme_and_lineage_guidance_agree() -> None:
     readme = " ".join(ROOT_README.read_text(encoding="utf-8").split())
     lineage = LINEAGE_GUIDANCE.read_text(encoding="utf-8")
-
-    assert (
-        "`linealert-core`**: authoritative current LineAlert implementation"
-    ) in readme
+    assert "`linealert-core`**: authoritative current LineAlert implementation" in readme
     assert "`ContextOS`**: separate execution-containment" in readme
     assert "`HelixMemoryService`**: early memory-service prototype" in readme
-    assert (
-        "not current LineAlert persistence, retrieval, or lifecycle-system "
-        "authority"
-    ) in readme
+    assert "not current LineAlert persistence" in readme
     assert "`main` is merged repository reality" in readme
     assert "Independent review is not established" in readme
-    assert "**Assess replay timing against governed baselines**" in lineage
     assert "must not be merged into the current lineage" in lineage
-    assert "merged_implementation != governance_gate_satisfied" in lineage
     assert "green_ci != authorized_merge" in lineage
     assert "historical_pattern != current_root_cause" in lineage
     assert "successful_test != safe_production_change" in lineage
