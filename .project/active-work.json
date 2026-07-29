@@ -92,7 +92,7 @@
     {
       "workstream_id": "reconcile-ci-and-project-state-v1",
       "branch": "agent/reconcile-ci-and-project-state-v1",
-      "pull_request_resolution": "resolve_live_by_exact_branch",
+      "pull_request": 30,
       "base": "9ab27c2f825f2c3ccea99fafbca0127fbe25fb05",
       "write_owner": "Authorized by Anthony Edgar with 'Fix issues'",
       "objective": "Make pull-request CI verify the literal event head SHA and reconcile repository-local state and issue lifecycle without changing runtime or operational behaviour.",
@@ -127,15 +127,18 @@
         "workflow compares git rev-parse HEAD with the expected event SHA",
         "ruff and complete pytest pass on Python 3.11 and 3.12",
         "diff remains within the three declared repository paths",
+        "historical governance incidents remain present in the current snapshot",
         "no runtime, deployment, connector, credential, persistence, physical-equipment, or equipment-control change"
       ],
+      "exact_head_ci_status": "revalidate_after_each_head_change",
+      "merge_authority": "not_granted",
       "authority_expiry": "pull_request_closed_or_merged",
       "rollback": "Close the pull request without merge; no runtime, deployment, host, network, credential, or equipment rollback is required."
     }
   ],
   "issue_lifecycle": {
     "23": {
-      "title": "Characterize atomic ingestion failure windows",
+      "title": "Track atomic ingestion failure windows",
       "state": "open",
       "characterization": "completed_by_pr28",
       "remediation": "two_of_four_windows_proposed_in_pr29",
@@ -146,7 +149,7 @@
       "closure_rule": "Do not close until remaining windows are separately resolved, explicitly deferred, or split into successor issues with preserved traceability."
     },
     "19": {
-      "title": "Add isolated OpenPLC labeler lab emulator",
+      "title": "Plan isolated OpenPLC labeler lab emulator",
       "state": "open_blocked",
       "risk_tier": "tier_2",
       "blocking_policy": "Issue 27 requires independent or qualified review for listeners, connectors, external integrations, PLC boundaries, and equipment-adjacent work.",
@@ -176,20 +179,104 @@
     "design_archaeology": {
       "anthonyedgar30000/LineAlertDemo": {
         "classification": "legacy_prototype",
+        "pull_requests": {
+          "1": "merged",
+          "2": "merged",
+          "3": "open"
+        },
         "disposition": "non_authoritative_do_not_copy_or_merge_wholesale"
       },
       "anthonyedgar30000/linealert-analysis-engine": {
         "classification": "merged_legacy_prototype_non_authoritative",
+        "pull_requests": {
+          "1": "merged"
+        },
         "disposition": "preserve_as_design_archaeology"
       },
       "anthonyedgar30000/HelixMemoryService": {
         "classification": "early_memory_prototype",
+        "pull_requests": {},
         "disposition": "not_current_persistence_retrieval_or_lifecycle_authority"
       }
     }
   },
-  "governance_history": {
-    "historical_detail": "Detailed incidents through PR 24 remain preserved in prior git revisions. This snapshot adds the later lifecycle without rewriting earlier history.",
+  "governance_incident_history": {
+    "historical_detail": "Append-only incident keys remain present in this snapshot and in prior git revisions. Later policy adoption does not rewrite earlier lifecycle evidence.",
+    "incidents": [
+      {
+        "id": "pr12-blocked-merge-2026-07-22",
+        "pr": 12,
+        "state": "merged",
+        "gate": "blocked_scope_collision"
+      },
+      {
+        "id": "pr13-zero-review-merge-2026-07-22",
+        "pr": 13,
+        "state": "merged",
+        "reviews": 0
+      },
+      {
+        "id": "pr14-zero-review-merge-2026-07-23",
+        "pr": 14,
+        "state": "merged",
+        "reviews": 0
+      },
+      {
+        "id": "pr16-zero-review-gate-bypass-2026-07-28",
+        "pr": 16,
+        "state": "merged",
+        "merge_commit": "0720bbf269a571ec35a74829d72c124370afd436",
+        "ci_run": 30385722716,
+        "reviews": 0
+      },
+      {
+        "id": "pr17-zero-review-gate-bypass-2026-07-28",
+        "pr": 17,
+        "state": "merged",
+        "merge_commit": "a094f0812ad85bfbcfe3c90c4cbc1d85547be7cd",
+        "reviews": 0
+      },
+      {
+        "id": "pr20-zero-review-gate-bypass-2026-07-28",
+        "pr": 20,
+        "state": "merged",
+        "source_head": "3f2e4b23154d34f892d6966fa1e9d72c5acb5087",
+        "merge_commit": "f0b48f7e8966f886ff29629af0fb2eb50e366ea4",
+        "ci_run": 30388270765,
+        "reviews": 0,
+        "classification": "corrective_hardening_merged_without_required_gates"
+      },
+      {
+        "id": "pr21-review-gate-probe-merged-zero-review-2026-07-28",
+        "pr": 21,
+        "state": "merged",
+        "source_head": "19d9ce75cbff57d45a911083b84761b7aef32842",
+        "merge_commit": "6858d4a639c0dc27853c313e545d3af467ec1412",
+        "ci_run": 30390768815,
+        "reviews": 0,
+        "classification": "review_control_not_effective_for_probe_merge"
+      },
+      {
+        "id": "pr22-zero-review-architecture-publication-2026-07-28",
+        "pr": 22,
+        "state": "merged",
+        "source_head": "cc6718bf76329ac28f83429204a0d5ef4b36bfe9",
+        "merge_commit": "03060ff05252e43538f86ad75527be05c96853a5",
+        "ci_run": 30407732572,
+        "reviews": 0,
+        "classification": "proposed_architecture_evidence_not_implementation_authority"
+      },
+      {
+        "id": "pr24-explicit-no-merge-boundary-bypassed-2026-07-28",
+        "pr": 24,
+        "state": "merged",
+        "source_head": "e9e7065e7062bc9b99bbe429999e77f01b07ed99",
+        "merge_commit": "9bc91562535f8fad681aecde61a6fc28885da69c",
+        "ci_run": 30410780245,
+        "reviews": 0,
+        "classification": "state_reconciliation_merged_after_explicit_merge_not_authorized_boundary"
+      }
+    ],
     "recent_lifecycle": [
       {
         "pull_request": 25,
@@ -212,10 +299,27 @@
         "pull_request": 29,
         "state": "open_draft",
         "classification": "partial_atomicity_remediation"
+      },
+      {
+        "pull_request": 30,
+        "state": "open_draft",
+        "classification": "ci_provenance_and_state_reconciliation"
       }
     ]
   },
   "repository_controls": {
+    "historical_main_review_gate": {
+      "tracking_issue": 15,
+      "observed_effect_through_pr24": "zero_review_merges_permitted",
+      "probe_pull_request": 21,
+      "probe_result": "merged_with_zero_submitted_reviews",
+      "required_approvals": 1,
+      "dismiss_stale_approvals": true,
+      "prevent_owner_or_admin_bypass": true,
+      "status": "not_effective_or_not_verified",
+      "tool_boundary": "connected_github_toolset_does_not_expose_ruleset_mutation",
+      "supersession": "Issue 27 replaced this blanket blocker with risk-tiered governance; the historical enforcement result remains evidence."
+    },
     "tier_1_policy": {
       "tracking_issue": 27,
       "independent_github_approval_required": false,
@@ -241,6 +345,7 @@
     "equipment_control_path": "not_observed"
   },
   "tracked_pull_requests": [
-    29
+    29,
+    30
   ]
 }
