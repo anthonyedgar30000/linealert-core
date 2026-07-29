@@ -20,6 +20,8 @@ PR22_HEAD = "cc6718bf76329ac28f83429204a0d5ef4b36bfe9"
 PR22_MERGE = "03060ff05252e43538f86ad75527be05c96853a5"
 PR24_HEAD = "e9e7065e7062bc9b99bbe429999e77f01b07ed99"
 PR24_MERGE = "9bc91562535f8fad681aecde61a6fc28885da69c"
+PR25_HEAD = "2e7219a42dff4f8a604f6cf855fd0eb570e1198b"
+PR25_MERGE = "7c26657cd4e4a565946f7aa6b0358a07c3f34e83"
 
 
 def load_project_state() -> dict[str, Any]:
@@ -28,26 +30,26 @@ def load_project_state() -> dict[str, Any]:
     return value
 
 
-def test_state_snapshot_advances_to_pr24_main() -> None:
+def test_state_snapshot_advances_to_pr25_main() -> None:
     state = load_project_state()
     assert state["schema_version"] == "project.active-work.v1"
     assert state["repository"]["full_name"] == "anthonyedgar30000/linealert-core"
-    assert state["state_model"]["captured_from_main"] == PR24_MERGE
+    assert state["state_model"]["captured_from_main"] == PR25_MERGE
     assert state["state_model"]["current_reality_source"] == (
         "live_github_and_explicit_user_direction"
     )
     assert "supersedes cached current-state claims" in state["state_model"]["semantics"]
 
     baseline = state["trusted_baseline"]
-    assert baseline["commit"] == PR24_MERGE
-    assert baseline["commit_role"] == "verified_main_head_after_pr24_merge"
+    assert baseline["commit"] == PR25_MERGE
+    assert baseline["commit_role"] == "verified_main_head_after_pr25_merge"
 
     completed = baseline["last_completed_increment"]
-    assert completed["pull_request"] == 24
-    assert completed["source_head"] == PR24_HEAD
-    assert completed["merge_commit"] == PR24_MERGE
+    assert completed["pull_request"] == 25
+    assert completed["source_head"] == PR25_HEAD
+    assert completed["merge_commit"] == PR25_MERGE
     assert completed["exact_head_ci"] == {
-        "run_id": 30410780245,
+        "run_id": 30417218671,
         "conclusion": "success",
         "python_versions": ["3.11", "3.12"],
     }
@@ -66,9 +68,9 @@ def test_state_snapshot_advances_to_pr24_main() -> None:
     assert functional["deployment_status"] == "not_deployed"
 
 
-def test_live_observation_records_intentionally_public_visibility() -> None:
+def test_live_observation_records_current_public_repository_reality() -> None:
     observation = load_project_state()["live_observation"]
-    assert observation["default_branch_head"] == PR24_MERGE
+    assert observation["default_branch_head"] == PR25_MERGE
     assert observation["open_pull_requests_before_branch_creation"] == []
     assert observation["open_issues"] == [15, 19, 23]
     assert observation["visibility"] == {
@@ -82,27 +84,27 @@ def test_live_observation_records_intentionally_public_visibility() -> None:
     assert observation["equipment_control_path"] == "not_observed"
 
 
-def test_reconciliation_owns_exactly_three_paths() -> None:
+def test_reconciliation_releases_pr25_and_owns_exactly_two_paths() -> None:
     state = load_project_state()
     assert len(state["workstreams"]) == 1
     workstream = state["workstreams"][0]
 
-    assert workstream["workstream_id"] == "state-reconciliation-after-pr24-v1"
-    assert workstream["branch"] == "agent/reconcile-state-after-pr24-v1"
+    assert workstream["workstream_id"] == "state-reconciliation-after-pr25-v1"
+    assert workstream["branch"] == "agent/reconcile-state-after-pr25-v1"
     assert workstream["pull_request_resolution"] == "resolve_live_by_exact_branch"
-    assert workstream["classification"] == "state_and_documentation_only_reconciliation"
+    assert workstream["classification"] == "state_only_reconciliation"
     assert workstream["permitted_paths"] == [
         ".project/active-work.json",
-        "README.md",
         "tests/test_project_state.py",
     ]
+    assert "PR #25" in workstream["objective"]
     assert state["tracked_pull_requests"] == []
 
     capability = workstream["capability_boundary"]
     assert capability["pull_request_creation"] is True
     assert capability["pull_request_merge"] is False
     assert capability["state_reconciliation_only"] is True
-    assert capability["documentation_correction"] is True
+    assert capability["documentation_correction"] is False
     for field in {
         "runtime_code_change",
         "workflow_change",
@@ -122,7 +124,7 @@ def test_reconciliation_owns_exactly_three_paths() -> None:
         assert capability[field] is False
 
 
-def test_governance_incidents_remain_distinct_through_pr24() -> None:
+def test_governance_incidents_remain_distinct_through_pr25() -> None:
     history = load_project_state()["governance_incident_history"]
     assert "prior git revisions" in history["historical_detail"]
 
@@ -137,6 +139,7 @@ def test_governance_incidents_remain_distinct_through_pr24() -> None:
         "pr21-review-gate-probe-merged-zero-review-2026-07-28",
         "pr22-zero-review-architecture-publication-2026-07-28",
         "pr24-explicit-no-merge-boundary-bypassed-2026-07-28",
+        "pr25-explicit-no-merge-boundary-bypassed-2026-07-28",
     }
 
     assert incidents["pr16-zero-review-gate-bypass-2026-07-28"][
@@ -165,11 +168,16 @@ def test_governance_incidents_remain_distinct_through_pr24() -> None:
     assert pr24["source_head"] == PR24_HEAD
     assert pr24["merge_commit"] == PR24_MERGE
     assert pr24["ci_run"] == 30410780245
-    assert pr24["classification"] == (
+
+    pr25 = incidents["pr25-explicit-no-merge-boundary-bypassed-2026-07-28"]
+    assert pr25["source_head"] == PR25_HEAD
+    assert pr25["merge_commit"] == PR25_MERGE
+    assert pr25["ci_run"] == 30417218671
+    assert pr25["classification"] == (
         "state_reconciliation_merged_after_explicit_merge_not_authorized_boundary"
     )
 
-    for pr in (13, 14, 16, 17, 20, 21, 22, 24):
+    for pr in (13, 14, 16, 17, 20, 21, 22, 24, 25):
         incident = next(item for item in incidents.values() if item["pr"] == pr)
         assert incident["reviews"] == 0
 
@@ -179,7 +187,7 @@ def test_repository_controls_keep_review_gate_and_public_policy_separate() -> No
     review = controls["main_review_gate"]
 
     assert review["tracking_issue"] == 15
-    assert review["observed_effect_through_pr24"] == "zero_review_merges_permitted"
+    assert review["observed_effect_through_pr25"] == "zero_review_merges_permitted"
     assert review["probe_pull_request"] == 21
     assert review["probe_result"] == "merged_with_zero_submitted_reviews"
     assert review["required_approvals"] == 1
