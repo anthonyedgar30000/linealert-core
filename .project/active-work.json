@@ -11,8 +11,8 @@
   "state_model": {
     "record_type": "repository_coordination_snapshot",
     "captured_from_main": "9bc91562535f8fad681aecde61a6fc28885da69c",
-    "current_reality_source": "live_github",
-    "semantics": "This is a time-bounded coordination snapshot. Live GitHub lifecycle, CI, review, repository-control, visibility, deployment, and equipment evidence supersedes cached current-state claims."
+    "current_reality_source": "live_github_and_explicit_user_direction",
+    "semantics": "This is a time-bounded coordination snapshot. Live GitHub lifecycle, CI, review, repository-control, deployment, and equipment evidence supersedes cached current-state claims. Explicit user direction governs intended repository visibility."
   },
   "live_observation": {
     "default_branch": "main",
@@ -25,8 +25,8 @@
     ],
     "visibility": {
       "github_metadata": "public",
-      "target_policy": "private",
-      "status": "live_public_policy_mismatch"
+      "canonical_policy": "public",
+      "status": "verified_public"
     },
     "deployment": "not_deployed",
     "physical_equipment_connection": "not_observed",
@@ -100,7 +100,8 @@
         "physical_equipment_connection": false,
         "equipment_control": false,
         "action_authorization": false,
-        "repository_ruleset_mutation": false
+        "repository_ruleset_mutation": false,
+        "repository_visibility_mutation": false
       },
       "verified_starting_evidence": {
         "main_head": "9bc91562535f8fad681aecde61a6fc28885da69c",
@@ -118,17 +119,21 @@
           "exact_head_ci_run": 30410780245,
           "explicit_merge_boundary": "merge_not_authorized"
         },
-        "repository_visibility": "public",
+        "repository_visibility": {
+          "github_metadata": "public",
+          "canonical_policy": "public",
+          "policy_source": "explicit_user_direction"
+        },
         "deployment": "not_deployed"
       },
       "verification_criteria": [
         "active-work.json parses as JSON",
         "ruff and complete pytest pass",
-        "diff contains exactly the three permitted paths",
+        "diff contains exactly the three permitted repository paths",
         "branch starts from PR #24 merge commit",
         "PR #24 remains a distinct governance and authorization incident",
         "README describes main as merged repository reality rather than independently reviewed state",
-        "repository visibility is recorded as live public with a separate private target policy",
+        "repository visibility is recorded as intentionally and canonically public",
         "no runtime or operational capability changes"
       ],
       "authority_expiry": "pull_request_closed_or_merged",
@@ -260,10 +265,10 @@
     },
     "repository_visibility": {
       "github_metadata": "public",
-      "target_policy": "private",
-      "status": "live_public_policy_mismatch",
-      "tool_boundary": "connected_github_toolset_does_not_expose_repository_visibility_mutation",
-      "next_gate": "A repository administrator must deliberately make the repository private or explicitly revise the private target policy."
+      "canonical_policy": "public",
+      "status": "verified_public",
+      "policy_source": "explicit_user_direction",
+      "next_gate": "none"
     }
   },
   "deployment_state": {
