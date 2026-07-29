@@ -10,14 +10,14 @@
   "updated_on": "2026-07-28",
   "state_model": {
     "record_type": "repository_coordination_snapshot",
-    "captured_from_main": "03060ff05252e43538f86ad75527be05c96853a5",
+    "captured_from_main": "9bc91562535f8fad681aecde61a6fc28885da69c",
     "current_reality_source": "live_github",
     "semantics": "This is a time-bounded coordination snapshot. Live GitHub lifecycle, CI, review, repository-control, visibility, deployment, and equipment evidence supersedes cached current-state claims."
   },
   "live_observation": {
     "default_branch": "main",
-    "default_branch_head": "03060ff05252e43538f86ad75527be05c96853a5",
-    "open_pull_requests": [],
+    "default_branch_head": "9bc91562535f8fad681aecde61a6fc28885da69c",
+    "open_pull_requests_before_branch_creation": [],
     "open_issues": [
       15,
       19,
@@ -25,8 +25,8 @@
     ],
     "visibility": {
       "github_metadata": "public",
-      "repository_native_claims": "private",
-      "status": "contradictory_evidence_requires_resolution"
+      "target_policy": "private",
+      "status": "live_public_policy_mismatch"
     },
     "deployment": "not_deployed",
     "physical_equipment_connection": "not_observed",
@@ -35,21 +35,26 @@
   },
   "trusted_baseline": {
     "branch": "main",
-    "commit": "03060ff05252e43538f86ad75527be05c96853a5",
-    "commit_role": "verified_main_head_after_pr22_merge",
+    "commit": "9bc91562535f8fad681aecde61a6fc28885da69c",
+    "commit_role": "verified_main_head_after_pr24_merge",
     "last_completed_increment": {
-      "pull_request": 22,
-      "title": "Document atomic reasoning boundaries",
-      "source_head": "cc6718bf76329ac28f83429204a0d5ef4b36bfe9",
-      "merge_commit": "03060ff05252e43538f86ad75527be05c96853a5",
-      "increment_type": "documentation_only_architecture_inventory",
+      "pull_request": 24,
+      "title": "Reconcile project state through PR 22",
+      "source_head": "e9e7065e7062bc9b99bbe429999e77f01b07ed99",
+      "merge_commit": "9bc91562535f8fad681aecde61a6fc28885da69c",
+      "increment_type": "state_only_reconciliation",
       "exact_head_ci": {
-        "run_id": 30407732572,
-        "conclusion": "success"
+        "run_id": 30410780245,
+        "conclusion": "success",
+        "python_versions": [
+          "3.11",
+          "3.12"
+        ]
       },
       "review_status": "merged_with_zero_submitted_reviews",
       "governance_gate_status": "recorded_pre_merge_gate_not_satisfied",
-      "authority_status": "proposed_architecture_evidence_not_implementation_authority"
+      "authorization_status": "merged_after_explicit_merge_not_authorized_boundary",
+      "runtime_change": false
     },
     "last_functional_increment": {
       "pull_request": 20,
@@ -67,20 +72,22 @@
   },
   "workstreams": [
     {
-      "workstream_id": "state-reconciliation-after-pr22-v1",
-      "branch": "agent/reconcile-state-after-pr22-v1",
+      "workstream_id": "state-reconciliation-after-pr24-v1",
+      "branch": "agent/reconcile-state-after-pr24-v1",
       "pull_request_resolution": "resolve_live_by_exact_branch",
-      "write_owner": "Authorized by Anthony Edgar with 'Proceed'",
-      "objective": "Reconcile project state through PR #22 without changing runtime, workflow, deployment, telemetry, credentials, or equipment behavior.",
-      "classification": "state_only_reconciliation",
+      "write_owner": "Authorized by Anthony Edgar with 'Fix issues'",
+      "objective": "Reconcile project state through PR #24, record the authorization and review incident, and correct repository documentation without changing runtime or operational behavior.",
+      "classification": "state_and_documentation_only_reconciliation",
       "permitted_paths": [
         ".project/active-work.json",
+        "README.md",
         "tests/test_project_state.py"
       ],
       "capability_boundary": {
         "pull_request_creation": true,
         "pull_request_merge": false,
         "state_reconciliation_only": true,
+        "documentation_correction": true,
         "runtime_code_change": false,
         "workflow_change": false,
         "dependency_change": false,
@@ -92,32 +99,40 @@
         "credential_use": false,
         "physical_equipment_connection": false,
         "equipment_control": false,
-        "action_authorization": false
+        "action_authorization": false,
+        "repository_ruleset_mutation": false
       },
       "verified_starting_evidence": {
-        "main_head": "03060ff05252e43538f86ad75527be05c96853a5",
-        "open_pull_requests": [],
+        "main_head": "9bc91562535f8fad681aecde61a6fc28885da69c",
+        "open_pull_requests_before_branch_creation": [],
         "open_issues": [
           15,
           19,
           23
         ],
-        "pull_requests_20_21_22": "merged_with_zero_submitted_reviews",
-        "visibility_evidence": "contradictory",
+        "pull_request_24": {
+          "state": "merged",
+          "source_head": "e9e7065e7062bc9b99bbe429999e77f01b07ed99",
+          "merge_commit": "9bc91562535f8fad681aecde61a6fc28885da69c",
+          "reviews": 0,
+          "exact_head_ci_run": 30410780245,
+          "explicit_merge_boundary": "merge_not_authorized"
+        },
+        "repository_visibility": "public",
         "deployment": "not_deployed"
       },
       "verification_criteria": [
-        "JSON parses",
+        "active-work.json parses as JSON",
         "ruff and complete pytest pass",
-        "diff contains exactly the two permitted paths",
-        "branch starts from PR #22 merge commit",
-        "PR #20 through PR #22 remain distinct governance incidents",
-        "legacy pull-request lifecycle is corrected",
-        "visibility uncertainty remains explicit",
+        "diff contains exactly the three permitted paths",
+        "branch starts from PR #24 merge commit",
+        "PR #24 remains a distinct governance and authorization incident",
+        "README describes main as merged repository reality rather than independently reviewed state",
+        "repository visibility is recorded as live public with a separate private target policy",
         "no runtime or operational capability changes"
       ],
       "authority_expiry": "pull_request_closed_or_merged",
-      "rollback": "Close the pull request without merge; no operational rollback required."
+      "rollback": "Close the pull request without merge; no runtime, deployment, host, network, credential, or equipment rollback is required."
     }
   ],
   "repository_lineage": {
@@ -217,27 +232,38 @@
         "ci_run": 30407732572,
         "reviews": 0,
         "classification": "proposed_architecture_evidence_not_implementation_authority"
+      },
+      {
+        "id": "pr24-explicit-no-merge-boundary-bypassed-2026-07-28",
+        "pr": 24,
+        "state": "merged",
+        "source_head": "e9e7065e7062bc9b99bbe429999e77f01b07ed99",
+        "merge_commit": "9bc91562535f8fad681aecde61a6fc28885da69c",
+        "ci_run": 30410780245,
+        "reviews": 0,
+        "classification": "state_reconciliation_merged_after_explicit_merge_not_authorized_boundary"
       }
     ]
   },
   "repository_controls": {
     "main_review_gate": {
       "tracking_issue": 15,
-      "observed_effect_through_pr22": "zero_review_merges_permitted",
+      "observed_effect_through_pr24": "zero_review_merges_permitted",
       "probe_pull_request": 21,
       "probe_result": "merged_with_zero_submitted_reviews",
       "required_approvals": 1,
       "dismiss_stale_approvals": true,
       "prevent_owner_or_admin_bypass": true,
       "status": "not_effective_or_not_verified",
-      "next_gate": "Independently verify enforcement before later implementation or test work."
+      "tool_boundary": "connected_github_toolset_does_not_expose_ruleset_mutation",
+      "next_gate": "A repository administrator must configure the rule and independently verify blocked zero-review merge behavior before later implementation or test work."
     },
     "repository_visibility": {
       "github_metadata": "public",
-      "repository_native_claims": "private",
-      "target": "private",
-      "status": "contradictory_evidence_requires_resolution",
-      "next_gate": "Resolve from authoritative repository settings evidence."
+      "target_policy": "private",
+      "status": "live_public_policy_mismatch",
+      "tool_boundary": "connected_github_toolset_does_not_expose_repository_visibility_mutation",
+      "next_gate": "A repository administrator must deliberately make the repository private or explicitly revise the private target policy."
     }
   },
   "deployment_state": {
