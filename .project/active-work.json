@@ -1,1 +1,250 @@
-{"schema_version":"project.active-work.v1","project":"LineAlert Core","repository":{"owner":"anthonyedgar30000","name":"linealert-core","full_name":"anthonyedgar30000/linealert-core","role":"authoritative_linealert_implementation"},"updated_on":"2026-07-28","state_model":{"record_type":"repository_coordination_snapshot","captured_from_main":"03060ff05252e43538f86ad75527be05c96853a5","current_reality_source":"live_github","semantics":"This is a time-bounded coordination snapshot. Live GitHub lifecycle, CI, review, repository-control, visibility, deployment, and equipment evidence supersedes cached current-state claims."},"live_observation":{"default_branch":"main","default_branch_head":"03060ff05252e43538f86ad75527be05c96853a5","open_pull_requests":[],"open_issues":[15,19,23],"visibility":{"github_metadata":"public","repository_native_claims":"private","status":"contradictory_evidence_requires_resolution"},"deployment":"not_deployed","physical_equipment_connection":"not_observed","network_listener":"not_observed","equipment_control_path":"not_observed"},"trusted_baseline":{"branch":"main","commit":"03060ff05252e43538f86ad75527be05c96853a5","commit_role":"verified_main_head_after_pr22_merge","last_completed_increment":{"pull_request":22,"title":"Document atomic reasoning boundaries","source_head":"cc6718bf76329ac28f83429204a0d5ef4b36bfe9","merge_commit":"03060ff05252e43538f86ad75527be05c96853a5","increment_type":"documentation_only_architecture_inventory","exact_head_ci":{"run_id":30407732572,"conclusion":"success"},"review_status":"merged_with_zero_submitted_reviews","governance_gate_status":"recorded_pre_merge_gate_not_satisfied","authority_status":"proposed_architecture_evidence_not_implementation_authority"},"last_functional_increment":{"pull_request":20,"title":"Harden streaming evidence after PR 17","source_head":"3f2e4b23154d34f892d6966fa1e9d72c5acb5087","merge_commit":"f0b48f7e8966f886ff29629af0fb2eb50e366ea4","exact_head_ci":{"run_id":30388270765,"conclusion":"success"},"review_status":"merged_with_zero_submitted_reviews","governance_gate_status":"recorded_pre_merge_gate_not_satisfied","deployment_status":"not_deployed"}},"workstreams":[{"workstream_id":"state-reconciliation-after-pr22-v1","branch":"agent/reconcile-state-after-pr22-v1","pull_request_resolution":"resolve_live_by_exact_branch","write_owner":"Authorized by Anthony Edgar with 'Proceed'","objective":"Reconcile project state through PR #22 without changing runtime, workflow, deployment, telemetry, credentials, or equipment behavior.","classification":"state_only_reconciliation","permitted_paths":[".project/active-work.json","tests/test_project_state.py"],"capability_boundary":{"pull_request_creation":true,"pull_request_merge":false,"state_reconciliation_only":true,"runtime_code_change":false,"workflow_change":false,"dependency_change":false,"telemetry_connector":false,"network_listener":false,"persistence_change":false,"baseline_or_diagnostic_change":false,"deployment_mutation":false,"credential_use":false,"physical_equipment_connection":false,"equipment_control":false,"action_authorization":false},"verified_starting_evidence":{"main_head":"03060ff05252e43538f86ad75527be05c96853a5","open_pull_requests":[],"open_issues":[15,19,23],"pull_requests_20_21_22":"merged_with_zero_submitted_reviews","visibility_evidence":"contradictory","deployment":"not_deployed"},"verification_criteria":["JSON parses","ruff and complete pytest pass","diff contains exactly the two permitted paths","branch starts from PR #22 merge commit","PR #20 through PR #22 remain distinct governance incidents","legacy pull-request lifecycle is corrected","visibility uncertainty remains explicit","no runtime or operational capability changes"],"authority_expiry":"pull_request_closed_or_merged","rollback":"Close the pull request without merge; no operational rollback required."}],"repository_lineage":{"authoritative":["anthonyedgar30000/linealert-core"],"active_related_boundaries":{"anthonyedgar30000/helix-protocol-kernel":"governed_protocol_boundary","anthonyedgar30000/ContextOS":"execution_containment_boundary"},"design_archaeology":{"anthonyedgar30000/LineAlertDemo":{"classification":"legacy_prototype","pull_requests":{"1":"merged","2":"merged","3":"open"},"disposition":"non_authoritative_do_not_copy_or_merge_wholesale"},"anthonyedgar30000/linealert-analysis-engine":{"classification":"merged_legacy_prototype_non_authoritative","pull_requests":{"1":"merged"},"disposition":"preserve_as_design_archaeology"},"anthonyedgar30000/HelixMemoryService":{"classification":"early_memory_prototype","pull_requests":{},"disposition":"not_current_persistence_retrieval_or_lifecycle_authority"}}},"governance_incident_history":{"historical_detail":"Preserved in prior git revisions; entries below retain current audit keys.","incidents":[{"id":"pr12-blocked-merge-2026-07-22","pr":12,"state":"merged","gate":"blocked_scope_collision"},{"id":"pr13-zero-review-merge-2026-07-22","pr":13,"state":"merged","reviews":0},{"id":"pr14-zero-review-merge-2026-07-23","pr":14,"state":"merged","reviews":0},{"id":"pr16-zero-review-gate-bypass-2026-07-28","pr":16,"state":"merged","merge_commit":"0720bbf269a571ec35a74829d72c124370afd436","ci_run":30385722716,"reviews":0},{"id":"pr17-zero-review-gate-bypass-2026-07-28","pr":17,"state":"merged","merge_commit":"a094f0812ad85bfbcfe3c90c4cbc1d85547be7cd","reviews":0},{"id":"pr20-zero-review-gate-bypass-2026-07-28","pr":20,"state":"merged","source_head":"3f2e4b23154d34f892d6966fa1e9d72c5acb5087","merge_commit":"f0b48f7e8966f886ff29629af0fb2eb50e366ea4","ci_run":30388270765,"reviews":0,"classification":"corrective_hardening_merged_without_required_gates"},{"id":"pr21-review-gate-probe-merged-zero-review-2026-07-28","pr":21,"state":"merged","source_head":"19d9ce75cbff57d45a911083b84761b7aef32842","merge_commit":"6858d4a639c0dc27853c313e545d3af467ec1412","ci_run":30390768815,"reviews":0,"classification":"review_control_not_effective_for_probe_merge"},{"id":"pr22-zero-review-architecture-publication-2026-07-28","pr":22,"state":"merged","source_head":"cc6718bf76329ac28f83429204a0d5ef4b36bfe9","merge_commit":"03060ff05252e43538f86ad75527be05c96853a5","ci_run":30407732572,"reviews":0,"classification":"proposed_architecture_evidence_not_implementation_authority"}]},"repository_controls":{"main_review_gate":{"tracking_issue":15,"observed_effect_through_pr22":"zero_review_merges_permitted","probe_pull_request":21,"probe_result":"merged_with_zero_submitted_reviews","required_approvals":1,"dismiss_stale_approvals":true,"prevent_owner_or_admin_bypass":true,"status":"not_effective_or_not_verified","next_gate":"Independently verify enforcement before later implementation or test work."},"repository_visibility":{"github_metadata":"public","repository_native_claims":"private","target":"private","status":"contradictory_evidence_requires_resolution","next_gate":"Resolve from authoritative repository settings evidence."}},"deployment_state":{"status":"not_deployed","physical_equipment_connection":"not_observed","network_listener":"not_observed","equipment_control_path":"not_observed"},"tracked_pull_requests":[]}
+{
+  "schema_version": "project.active-work.v1",
+  "project": "LineAlert Core",
+  "repository": {
+    "owner": "anthonyedgar30000",
+    "name": "linealert-core",
+    "full_name": "anthonyedgar30000/linealert-core",
+    "role": "authoritative_linealert_implementation"
+  },
+  "updated_on": "2026-07-28",
+  "state_model": {
+    "record_type": "repository_coordination_snapshot",
+    "captured_from_main": "03060ff05252e43538f86ad75527be05c96853a5",
+    "current_reality_source": "live_github",
+    "semantics": "This is a time-bounded coordination snapshot. Live GitHub lifecycle, CI, review, repository-control, visibility, deployment, and equipment evidence supersedes cached current-state claims."
+  },
+  "live_observation": {
+    "default_branch": "main",
+    "default_branch_head": "03060ff05252e43538f86ad75527be05c96853a5",
+    "open_pull_requests": [],
+    "open_issues": [
+      15,
+      19,
+      23
+    ],
+    "visibility": {
+      "github_metadata": "public",
+      "repository_native_claims": "private",
+      "status": "contradictory_evidence_requires_resolution"
+    },
+    "deployment": "not_deployed",
+    "physical_equipment_connection": "not_observed",
+    "network_listener": "not_observed",
+    "equipment_control_path": "not_observed"
+  },
+  "trusted_baseline": {
+    "branch": "main",
+    "commit": "03060ff05252e43538f86ad75527be05c96853a5",
+    "commit_role": "verified_main_head_after_pr22_merge",
+    "last_completed_increment": {
+      "pull_request": 22,
+      "title": "Document atomic reasoning boundaries",
+      "source_head": "cc6718bf76329ac28f83429204a0d5ef4b36bfe9",
+      "merge_commit": "03060ff05252e43538f86ad75527be05c96853a5",
+      "increment_type": "documentation_only_architecture_inventory",
+      "exact_head_ci": {
+        "run_id": 30407732572,
+        "conclusion": "success"
+      },
+      "review_status": "merged_with_zero_submitted_reviews",
+      "governance_gate_status": "recorded_pre_merge_gate_not_satisfied",
+      "authority_status": "proposed_architecture_evidence_not_implementation_authority"
+    },
+    "last_functional_increment": {
+      "pull_request": 20,
+      "title": "Harden streaming evidence after PR 17",
+      "source_head": "3f2e4b23154d34f892d6966fa1e9d72c5acb5087",
+      "merge_commit": "f0b48f7e8966f886ff29629af0fb2eb50e366ea4",
+      "exact_head_ci": {
+        "run_id": 30388270765,
+        "conclusion": "success"
+      },
+      "review_status": "merged_with_zero_submitted_reviews",
+      "governance_gate_status": "recorded_pre_merge_gate_not_satisfied",
+      "deployment_status": "not_deployed"
+    }
+  },
+  "workstreams": [
+    {
+      "workstream_id": "state-reconciliation-after-pr22-v1",
+      "branch": "agent/reconcile-state-after-pr22-v1",
+      "pull_request_resolution": "resolve_live_by_exact_branch",
+      "write_owner": "Authorized by Anthony Edgar with 'Proceed'",
+      "objective": "Reconcile project state through PR #22 without changing runtime, workflow, deployment, telemetry, credentials, or equipment behavior.",
+      "classification": "state_only_reconciliation",
+      "permitted_paths": [
+        ".project/active-work.json",
+        "tests/test_project_state.py"
+      ],
+      "capability_boundary": {
+        "pull_request_creation": true,
+        "pull_request_merge": false,
+        "state_reconciliation_only": true,
+        "runtime_code_change": false,
+        "workflow_change": false,
+        "dependency_change": false,
+        "telemetry_connector": false,
+        "network_listener": false,
+        "persistence_change": false,
+        "baseline_or_diagnostic_change": false,
+        "deployment_mutation": false,
+        "credential_use": false,
+        "physical_equipment_connection": false,
+        "equipment_control": false,
+        "action_authorization": false
+      },
+      "verified_starting_evidence": {
+        "main_head": "03060ff05252e43538f86ad75527be05c96853a5",
+        "open_pull_requests": [],
+        "open_issues": [
+          15,
+          19,
+          23
+        ],
+        "pull_requests_20_21_22": "merged_with_zero_submitted_reviews",
+        "visibility_evidence": "contradictory",
+        "deployment": "not_deployed"
+      },
+      "verification_criteria": [
+        "JSON parses",
+        "ruff and complete pytest pass",
+        "diff contains exactly the two permitted paths",
+        "branch starts from PR #22 merge commit",
+        "PR #20 through PR #22 remain distinct governance incidents",
+        "legacy pull-request lifecycle is corrected",
+        "visibility uncertainty remains explicit",
+        "no runtime or operational capability changes"
+      ],
+      "authority_expiry": "pull_request_closed_or_merged",
+      "rollback": "Close the pull request without merge; no operational rollback required."
+    }
+  ],
+  "repository_lineage": {
+    "authoritative": [
+      "anthonyedgar30000/linealert-core"
+    ],
+    "active_related_boundaries": {
+      "anthonyedgar30000/helix-protocol-kernel": "governed_protocol_boundary",
+      "anthonyedgar30000/ContextOS": "execution_containment_boundary"
+    },
+    "design_archaeology": {
+      "anthonyedgar30000/LineAlertDemo": {
+        "classification": "legacy_prototype",
+        "pull_requests": {
+          "1": "merged",
+          "2": "merged",
+          "3": "open"
+        },
+        "disposition": "non_authoritative_do_not_copy_or_merge_wholesale"
+      },
+      "anthonyedgar30000/linealert-analysis-engine": {
+        "classification": "merged_legacy_prototype_non_authoritative",
+        "pull_requests": {
+          "1": "merged"
+        },
+        "disposition": "preserve_as_design_archaeology"
+      },
+      "anthonyedgar30000/HelixMemoryService": {
+        "classification": "early_memory_prototype",
+        "pull_requests": {},
+        "disposition": "not_current_persistence_retrieval_or_lifecycle_authority"
+      }
+    }
+  },
+  "governance_incident_history": {
+    "historical_detail": "Preserved in prior git revisions; entries below retain current audit keys.",
+    "incidents": [
+      {
+        "id": "pr12-blocked-merge-2026-07-22",
+        "pr": 12,
+        "state": "merged",
+        "gate": "blocked_scope_collision"
+      },
+      {
+        "id": "pr13-zero-review-merge-2026-07-22",
+        "pr": 13,
+        "state": "merged",
+        "reviews": 0
+      },
+      {
+        "id": "pr14-zero-review-merge-2026-07-23",
+        "pr": 14,
+        "state": "merged",
+        "reviews": 0
+      },
+      {
+        "id": "pr16-zero-review-gate-bypass-2026-07-28",
+        "pr": 16,
+        "state": "merged",
+        "merge_commit": "0720bbf269a571ec35a74829d72c124370afd436",
+        "ci_run": 30385722716,
+        "reviews": 0
+      },
+      {
+        "id": "pr17-zero-review-gate-bypass-2026-07-28",
+        "pr": 17,
+        "state": "merged",
+        "merge_commit": "a094f0812ad85bfbcfe3c90c4cbc1d85547be7cd",
+        "reviews": 0
+      },
+      {
+        "id": "pr20-zero-review-gate-bypass-2026-07-28",
+        "pr": 20,
+        "state": "merged",
+        "source_head": "3f2e4b23154d34f892d6966fa1e9d72c5acb5087",
+        "merge_commit": "f0b48f7e8966f886ff29629af0fb2eb50e366ea4",
+        "ci_run": 30388270765,
+        "reviews": 0,
+        "classification": "corrective_hardening_merged_without_required_gates"
+      },
+      {
+        "id": "pr21-review-gate-probe-merged-zero-review-2026-07-28",
+        "pr": 21,
+        "state": "merged",
+        "source_head": "19d9ce75cbff57d45a911083b84761b7aef32842",
+        "merge_commit": "6858d4a639c0dc27853c313e545d3af467ec1412",
+        "ci_run": 30390768815,
+        "reviews": 0,
+        "classification": "review_control_not_effective_for_probe_merge"
+      },
+      {
+        "id": "pr22-zero-review-architecture-publication-2026-07-28",
+        "pr": 22,
+        "state": "merged",
+        "source_head": "cc6718bf76329ac28f83429204a0d5ef4b36bfe9",
+        "merge_commit": "03060ff05252e43538f86ad75527be05c96853a5",
+        "ci_run": 30407732572,
+        "reviews": 0,
+        "classification": "proposed_architecture_evidence_not_implementation_authority"
+      }
+    ]
+  },
+  "repository_controls": {
+    "main_review_gate": {
+      "tracking_issue": 15,
+      "observed_effect_through_pr22": "zero_review_merges_permitted",
+      "probe_pull_request": 21,
+      "probe_result": "merged_with_zero_submitted_reviews",
+      "required_approvals": 1,
+      "dismiss_stale_approvals": true,
+      "prevent_owner_or_admin_bypass": true,
+      "status": "not_effective_or_not_verified",
+      "next_gate": "Independently verify enforcement before later implementation or test work."
+    },
+    "repository_visibility": {
+      "github_metadata": "public",
+      "repository_native_claims": "private",
+      "target": "private",
+      "status": "contradictory_evidence_requires_resolution",
+      "next_gate": "Resolve from authoritative repository settings evidence."
+    }
+  },
+  "deployment_state": {
+    "status": "not_deployed",
+    "physical_equipment_connection": "not_observed",
+    "network_listener": "not_observed",
+    "equipment_control_path": "not_observed"
+  },
+  "tracked_pull_requests": []
+}
