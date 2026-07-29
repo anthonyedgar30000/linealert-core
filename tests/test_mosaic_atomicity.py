@@ -11,10 +11,6 @@ from linealert_core import (
 )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="FW-01: failed delivery currently commits the event fingerprint",
-)
 def test_mosaic_handler_failure_does_not_commit_event_identity(make_event) -> None:
     calls: list[str] = []
     mosaic = FusionMosaic()
