@@ -33,7 +33,9 @@ def test_state_snapshot_advances_to_pr24_main() -> None:
     assert state["schema_version"] == "project.active-work.v1"
     assert state["repository"]["full_name"] == "anthonyedgar30000/linealert-core"
     assert state["state_model"]["captured_from_main"] == PR24_MERGE
-    assert state["state_model"]["current_reality_source"] == "live_github"
+    assert state["state_model"]["current_reality_source"] == (
+        "live_github_and_explicit_user_direction"
+    )
     assert "supersedes cached current-state claims" in state["state_model"]["semantics"]
 
     baseline = state["trusted_baseline"]
@@ -64,15 +66,15 @@ def test_state_snapshot_advances_to_pr24_main() -> None:
     assert functional["deployment_status"] == "not_deployed"
 
 
-def test_live_observation_records_verified_visibility_and_policy_mismatch() -> None:
+def test_live_observation_records_intentionally_public_visibility() -> None:
     observation = load_project_state()["live_observation"]
     assert observation["default_branch_head"] == PR24_MERGE
     assert observation["open_pull_requests_before_branch_creation"] == []
     assert observation["open_issues"] == [15, 19, 23]
     assert observation["visibility"] == {
         "github_metadata": "public",
-        "target_policy": "private",
-        "status": "live_public_policy_mismatch",
+        "canonical_policy": "public",
+        "status": "verified_public",
     }
     assert observation["deployment"] == "not_deployed"
     assert observation["physical_equipment_connection"] == "not_observed"
@@ -115,6 +117,7 @@ def test_reconciliation_owns_exactly_three_paths() -> None:
         "equipment_control",
         "action_authorization",
         "repository_ruleset_mutation",
+        "repository_visibility_mutation",
     }:
         assert capability[field] is False
 
@@ -171,7 +174,7 @@ def test_governance_incidents_remain_distinct_through_pr24() -> None:
         assert incident["reviews"] == 0
 
 
-def test_repository_controls_remain_unsatisfied_and_tool_bounded() -> None:
+def test_repository_controls_keep_review_gate_and_public_policy_separate() -> None:
     controls = load_project_state()["repository_controls"]
     review = controls["main_review_gate"]
 
@@ -188,12 +191,13 @@ def test_repository_controls_remain_unsatisfied_and_tool_bounded() -> None:
     )
 
     visibility = controls["repository_visibility"]
-    assert visibility["github_metadata"] == "public"
-    assert visibility["target_policy"] == "private"
-    assert visibility["status"] == "live_public_policy_mismatch"
-    assert visibility["tool_boundary"] == (
-        "connected_github_toolset_does_not_expose_repository_visibility_mutation"
-    )
+    assert visibility == {
+        "github_metadata": "public",
+        "canonical_policy": "public",
+        "status": "verified_public",
+        "policy_source": "explicit_user_direction",
+        "next_gate": "none",
+    }
 
 
 def test_lineage_lifecycle_is_preserved() -> None:
