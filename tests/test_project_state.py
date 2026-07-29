@@ -11,8 +11,13 @@ ROOT_README = PROJECT_ROOT / "README.md"
 LINEAGE_GUIDANCE = PROJECT_ROOT / "docs" / "repository-lineage.md"
 
 PR16_MERGE = "0720bbf269a571ec35a74829d72c124370afd436"
-PR16_HEAD = "3881f6962bc6d530f5e0cbae30e301b1a0eacbc5"
 PR17_MERGE = "a094f0812ad85bfbcfe3c90c4cbc1d85547be7cd"
+PR20_HEAD = "3f2e4b23154d34f892d6966fa1e9d72c5acb5087"
+PR20_MERGE = "f0b48f7e8966f886ff29629af0fb2eb50e366ea4"
+PR21_HEAD = "19d9ce75cbff57d45a911083b84761b7aef32842"
+PR21_MERGE = "6858d4a639c0dc27853c313e545d3af467ec1412"
+PR22_HEAD = "cc6718bf76329ac28f83429204a0d5ef4b36bfe9"
+PR22_MERGE = "03060ff05252e43538f86ad75527be05c96853a5"
 
 
 def load_project_state() -> dict[str, Any]:
@@ -21,207 +26,196 @@ def load_project_state() -> dict[str, Any]:
     return value
 
 
-def test_state_snapshot_advances_to_pr17_main() -> None:
+def test_state_snapshot_advances_to_pr22_main() -> None:
     state = load_project_state()
-
     assert state["schema_version"] == "project.active-work.v1"
     assert state["repository"]["full_name"] == "anthonyedgar30000/linealert-core"
-    assert state["repository"]["role"] == "authoritative_linealert_implementation"
-    assert state["state_model"]["record_type"] == "repository_coordination_snapshot"
-    assert state["state_model"]["captured_from_main"] == PR17_MERGE
+    assert state["state_model"]["captured_from_main"] == PR22_MERGE
     assert state["state_model"]["current_reality_source"] == "live_github"
-    assert "supersedes cached status" in state["state_model"]["semantics"]
+    assert "supersedes cached current-state claims" in state["state_model"]["semantics"]
 
     baseline = state["trusted_baseline"]
-    assert baseline["branch"] == "main"
-    assert baseline["commit"] == PR17_MERGE
-    assert baseline["commit_role"] == "verified_main_head_after_pr17_merge"
-    assert baseline["last_completed_increment"] == {
-        "pull_request": 17,
-        "title": "Reconcile project state after PR 16",
-        "merge_commit": PR17_MERGE,
-        "increment_type": "state_only_reconciliation",
-        "implementation_status": "merged",
-        "review_status": "merged_with_zero_submitted_reviews",
-        "governance_gate_status": "recorded_pre_merge_gate_not_satisfied",
+    assert baseline["commit"] == PR22_MERGE
+    assert baseline["commit_role"] == "verified_main_head_after_pr22_merge"
+
+    completed = baseline["last_completed_increment"]
+    assert completed["pull_request"] == 22
+    assert completed["source_head"] == PR22_HEAD
+    assert completed["merge_commit"] == PR22_MERGE
+    assert completed["exact_head_ci"] == {
+        "run_id": 30407732572,
+        "conclusion": "success",
     }
-    assert baseline["last_functional_increment"] == {
-        "pull_request": 16,
-        "title": "Add bounded lab streaming ingestion",
-        "merge_commit": PR16_MERGE,
-        "exact_head_ci_status": "success",
-        "exact_head_ci_run": 30385722716,
-        "deployment_status": "not_deployed",
-    }
+    assert completed["review_status"] == "merged_with_zero_submitted_reviews"
+    assert completed["authority_status"] == (
+        "proposed_architecture_evidence_not_implementation_authority"
+    )
+
+    functional = baseline["last_functional_increment"]
+    assert functional["pull_request"] == 20
+    assert functional["source_head"] == PR20_HEAD
+    assert functional["merge_commit"] == PR20_MERGE
+    assert functional["exact_head_ci"]["run_id"] == 30388270765
+    assert functional["review_status"] == "merged_with_zero_submitted_reviews"
+    assert functional["deployment_status"] == "not_deployed"
 
 
-def test_corrective_hardening_owns_one_live_resolved_workstream() -> None:
+def test_live_observation_preserves_material_uncertainty() -> None:
+    observation = load_project_state()["live_observation"]
+    assert observation["default_branch_head"] == PR22_MERGE
+    assert observation["open_pull_requests"] == []
+    assert observation["open_issues"] == [15, 19, 23]
+    assert observation["visibility"] == {
+        "github_metadata": "public",
+        "repository_native_claims": "private",
+        "status": "contradictory_evidence_requires_resolution",
+    }
+    assert observation["deployment"] == "not_deployed"
+    assert observation["physical_equipment_connection"] == "not_observed"
+    assert observation["network_listener"] == "not_observed"
+    assert observation["equipment_control_path"] == "not_observed"
+
+
+def test_reconciliation_owns_exactly_two_paths() -> None:
     state = load_project_state()
     assert len(state["workstreams"]) == 1
-
     workstream = state["workstreams"][0]
-    assert workstream["workstream_id"] == "streaming-evidence-hardening-v0.2"
-    assert workstream["branch"] == "agent/harden-streaming-evidence-v0.2"
-    assert workstream["pull_request"] == 20
-    assert workstream["classification"] == (
-        "corrective_hardening_of_existing_public_code"
-    )
-    assert workstream["status_resolution"] == "resolve_from_live_pull_request"
-    assert workstream["lifecycle_by_live_pr_state"] == {
-        "open": "active_bounded_corrective_hardening",
-        "merged": "completed_and_ownership_released",
-        "closed_unmerged": "closed_and_ownership_released",
-    }
 
-    permitted = workstream["permitted_paths"]
-    assert len(permitted) == len(set(permitted))
-    assert set(permitted) == {
+    assert workstream["workstream_id"] == "state-reconciliation-after-pr22-v1"
+    assert workstream["branch"] == "agent/reconcile-state-after-pr22-v1"
+    assert workstream["pull_request_resolution"] == "resolve_live_by_exact_branch"
+    assert workstream["classification"] == "state_only_reconciliation"
+    assert workstream["permitted_paths"] == [
         ".project/active-work.json",
-        "docs/streaming_ingestion.md",
-        "src/linealert_core/streaming.py",
         "tests/test_project_state.py",
-        "tests/test_streaming.py",
-    }
-    assert state["tracked_pull_requests"] == [
-        {
-            "pull_request": 20,
-            "title": "Harden streaming evidence after PR 17",
-            "state_resolution": "live_github_required",
-            "ownership_resolution": {
-                "open": "active",
-                "merged": "released",
-                "closed_unmerged": "released",
-            },
-            "required_state": (
-                "draft_until_exact_head_ci_visibility_review_and_"
-                "repository_controls_pass"
-            ),
-        }
     ]
+    assert state["tracked_pull_requests"] == []
+
+    capability = workstream["capability_boundary"]
+    assert capability["pull_request_creation"] is True
+    assert capability["pull_request_merge"] is False
+    assert capability["state_reconciliation_only"] is True
+    for field in {
+        "runtime_code_change",
+        "workflow_change",
+        "dependency_change",
+        "telemetry_connector",
+        "network_listener",
+        "persistence_change",
+        "baseline_or_diagnostic_change",
+        "deployment_mutation",
+        "credential_use",
+        "physical_equipment_connection",
+        "equipment_control",
+        "action_authorization",
+    }:
+        assert capability[field] is False
 
 
-def test_corrective_scope_preserves_runtime_and_control_boundaries() -> None:
-    workstream = load_project_state()["workstreams"][0]
-    protected = set(workstream["protected_paths"])
-    capabilities = workstream["capability_boundary"]
-    equipment = workstream["equipment_scope"]
+def test_governance_incidents_remain_distinct_through_pr22() -> None:
+    history = load_project_state()["governance_incident_history"]
+    assert "prior git revisions" in history["historical_detail"]
 
-    assert {
-        ".github/workflows/**",
-        "README.md",
-        "docs/repository-lineage.md",
-        "examples/**",
-        "adapters/**",
-        "deployment/**",
-        "src/linealert_core/__init__.py",
-        "src/linealert_core/events.py",
-        "src/linealert_core/pipeline.py",
-        "src/linealert_core/simulator.py",
-        "src/linealert_core/timing.py",
-        "src/linealert_core/baseline.py",
-        "src/linealert_core/diagnostic_projection.py",
-    }.issubset(protected)
-    assert capabilities["pull_request_merge"] is False
-    assert capabilities["runtime_code_changes"] is True
-    assert capabilities["runtime_change_scope"] == (
-        "corrective hardening of existing read-only in-process streaming evidence"
-    )
-    assert capabilities["new_proprietary_increment"] is False
-    assert capabilities["external_telemetry_connector"] is False
-    assert capabilities["network_listener"] is False
-    assert capabilities["persistence_changes"] is False
-    assert capabilities["baseline_logic_changes"] is False
-    assert capabilities["diagnostic_rule_changes"] is False
-    assert capabilities["workflow_changes"] is False
-    assert capabilities["deployment_mutation"] is False
-    assert capabilities["equipment_control"] is False
-    assert capabilities["credential_use"] is False
-    assert equipment["physical_equipment_connection"] is False
-    assert equipment["production_connection"] is False
-    assert equipment["control_path"] is False
-
-
-def test_two_streaming_findings_remain_explicit_until_reviewed() -> None:
-    findings = {
-        finding["finding_id"]: finding
-        for finding in load_project_state()["workstreams"][0]["review_findings"]
-    }
-
-    assert set(findings) == {
-        "transport-attributes-not-deeply-immutable",
-        "session-transition-committed-before-core-acceptance",
-    }
-    for finding in findings.values():
-        assert finding["source"] == "post-PR16 author-side read-only inspection"
-        assert finding["disposition"] == (
-            "remediation_implemented_on_pr20_requires_ci_and_review"
-        )
-
-
-def test_governance_incidents_remain_distinct_through_pr17() -> None:
-    state = load_project_state()
-    incidents = {
-        incident["incident_id"]: incident for incident in state["governance_incidents"]
-    }
-
+    incidents = {item["id"]: item for item in history["incidents"]}
     assert set(incidents) == {
         "pr12-blocked-merge-2026-07-22",
         "pr13-zero-review-merge-2026-07-22",
         "pr14-zero-review-merge-2026-07-23",
         "pr16-zero-review-gate-bypass-2026-07-28",
         "pr17-zero-review-gate-bypass-2026-07-28",
+        "pr20-zero-review-gate-bypass-2026-07-28",
+        "pr21-review-gate-probe-merged-zero-review-2026-07-28",
+        "pr22-zero-review-architecture-publication-2026-07-28",
     }
-    assert incidents["pr12-blocked-merge-2026-07-22"]["pull_request"] == 12
-    assert incidents["pr13-zero-review-merge-2026-07-22"]["pull_request"] == 13
-    assert incidents["pr14-zero-review-merge-2026-07-23"]["pull_request"] == 14
 
-    pr16 = incidents["pr16-zero-review-gate-bypass-2026-07-28"]
-    assert pr16["pull_request"] == 16
-    assert pr16["merge_commit"] == PR16_MERGE
-    assert PR16_HEAD in pr16["exact_head_ci_evidence"]
-    assert "30385722716" in pr16["exact_head_ci_evidence"]
+    assert incidents["pr16-zero-review-gate-bypass-2026-07-28"][
+        "merge_commit"
+    ] == PR16_MERGE
+    assert incidents["pr17-zero-review-gate-bypass-2026-07-28"][
+        "merge_commit"
+    ] == PR17_MERGE
 
-    pr17 = incidents["pr17-zero-review-gate-bypass-2026-07-28"]
-    assert pr17["pull_request"] == 17
-    assert pr17["observed_state"] == "merged"
-    assert pr17["merge_commit"] == PR17_MERGE
-    assert pr17["review_evidence"] == "Live GitHub returned zero submitted reviews."
-    assert "not satisfied" in pr17["interpretation"]
+    pr20 = incidents["pr20-zero-review-gate-bypass-2026-07-28"]
+    assert pr20["source_head"] == PR20_HEAD
+    assert pr20["merge_commit"] == PR20_MERGE
+    assert pr20["ci_run"] == 30388270765
+
+    pr21 = incidents[
+        "pr21-review-gate-probe-merged-zero-review-2026-07-28"
+    ]
+    assert pr21["source_head"] == PR21_HEAD
+    assert pr21["merge_commit"] == PR21_MERGE
+    assert pr21["ci_run"] == 30390768815
+    assert pr21["classification"] == (
+        "review_control_not_effective_for_probe_merge"
+    )
+
+    pr22 = incidents["pr22-zero-review-architecture-publication-2026-07-28"]
+    assert pr22["source_head"] == PR22_HEAD
+    assert pr22["merge_commit"] == PR22_MERGE
+    assert pr22["ci_run"] == 30407732572
+    assert pr22["classification"] == (
+        "proposed_architecture_evidence_not_implementation_authority"
+    )
+
+    for pr in (13, 14, 16, 17, 20, 21, 22):
+        incident = next(item for item in incidents.values() if item["pr"] == pr)
+        assert incident["reviews"] == 0
 
 
-def test_repository_controls_preserve_review_and_visibility_gates() -> None:
+def test_repository_controls_remain_unsatisfied() -> None:
     controls = load_project_state()["repository_controls"]
-
     review = controls["main_review_gate"]
+
     assert review["tracking_issue"] == 15
-    assert review["observed_effect_at_pr17_merge"] == "zero_review_merge_permitted"
-    assert review["target_required_approving_reviews"] == 1
-    assert review["target_dismiss_stale_approvals"] is True
-    assert review["target_prevent_owner_bypass"] is True
-    assert review["enforcement_status"] == "configuration_required_and_unverified"
-    assert "stale-approval dismissal" in review["next_gate"]
-    assert "no owner bypass" in review["next_gate"]
+    assert review["observed_effect_through_pr22"] == (
+        "zero_review_merges_permitted"
+    )
+    assert review["probe_pull_request"] == 21
+    assert review["probe_result"] == "merged_with_zero_submitted_reviews"
+    assert review["required_approvals"] == 1
+    assert review["dismiss_stale_approvals"] is True
+    assert review["prevent_owner_or_admin_bypass"] is True
+    assert review["status"] == "not_effective_or_not_verified"
 
     visibility = controls["repository_visibility"]
-    assert visibility["observed_visibility"] == "public"
-    assert visibility["target_visibility"] == "private"
-    assert visibility["status"] == "configuration_required"
-    assert "canonical repository plan" in visibility["evidence"]
-    assert "PR #20" in visibility["next_gate"]
+    assert visibility["github_metadata"] == "public"
+    assert visibility["repository_native_claims"] == "private"
+    assert visibility["target"] == "private"
+    assert visibility["status"] == "contradictory_evidence_requires_resolution"
+
+
+def test_lineage_lifecycle_is_corrected() -> None:
+    lineage = load_project_state()["repository_lineage"]
+    assert lineage["authoritative"] == ["anthonyedgar30000/linealert-core"]
+
+    archaeology = lineage["design_archaeology"]
+    assert archaeology["anthonyedgar30000/LineAlertDemo"]["pull_requests"] == {
+        "1": "merged",
+        "2": "merged",
+        "3": "open",
+    }
+    analysis = archaeology["anthonyedgar30000/linealert-analysis-engine"]
+    assert analysis["pull_requests"] == {"1": "merged"}
+    assert analysis["classification"] == (
+        "merged_legacy_prototype_non_authoritative"
+    )
+    memory = archaeology["anthonyedgar30000/HelixMemoryService"]
+    assert "not_current_persistence" in memory["disposition"]
 
 
 def test_deployment_and_equipment_reality_remain_bounded() -> None:
     deployment = load_project_state()["deployment_state"]
-
-    assert deployment["status"] == "not_deployed"
-    assert "physical-equipment connection" in deployment["evidence"]
-    assert "network listener" in deployment["evidence"]
-    assert "equipment-control path" in deployment["evidence"]
+    assert deployment == {
+        "status": "not_deployed",
+        "physical_equipment_connection": "not_observed",
+        "network_listener": "not_observed",
+        "equipment_control_path": "not_observed",
+    }
 
 
 def test_project_lookup_requires_repository_resolution() -> None:
     guidance = PROJECT_GUIDANCE.read_text(encoding="utf-8")
-
     assert "## Repository resolution gate" in guidance
     assert "exact `owner/repository` target" in guidance
     assert "stop without drawing ownership or project-state conclusions" in guidance
@@ -229,39 +223,19 @@ def test_project_lookup_requires_repository_resolution() -> None:
     assert "A correctly executed lookup against the wrong repository" in guidance
 
 
-def test_lineage_has_one_authoritative_repo_and_live_archaeology_inventory() -> None:
-    lineage = load_project_state()["repository_lineage"]
-
-    assert [item["repository"] for item in lineage["authoritative"]] == [
-        "anthonyedgar30000/linealert-core"
-    ]
-
-    archaeology = {item["repository"]: item for item in lineage["design_archaeology"]}
-    assert set(archaeology) == {
-        "anthonyedgar30000/LineAlertDemo",
-        "anthonyedgar30000/linealert-analysis-engine",
-        "anthonyedgar30000/HelixMemoryService",
-    }
-    assert archaeology["anthonyedgar30000/LineAlertDemo"]["open_pull_requests"] == [
-        2,
-        3,
-    ]
-    assert archaeology["anthonyedgar30000/linealert-analysis-engine"][
-        "open_pull_requests"
-    ] == [1]
-    assert "not current LineAlert persistence" in archaeology[
-        "anthonyedgar30000/HelixMemoryService"
-    ]["disposition"]
-
-
 def test_root_readme_and_lineage_guidance_agree() -> None:
     readme = " ".join(ROOT_README.read_text(encoding="utf-8").split())
     lineage = LINEAGE_GUIDANCE.read_text(encoding="utf-8")
 
-    assert "`linealert-core`**: authoritative current LineAlert implementation" in readme
+    assert (
+        "`linealert-core`**: authoritative current LineAlert implementation"
+    ) in readme
     assert "`ContextOS`**: separate execution-containment" in readme
     assert "`HelixMemoryService`**: early memory-service prototype" in readme
-    assert "not current LineAlert persistence, retrieval, or lifecycle-system authority" in readme
+    assert (
+        "not current LineAlert persistence, retrieval, or lifecycle-system "
+        "authority"
+    ) in readme
     assert "**Assess replay timing against governed baselines**" in lineage
     assert "must not be merged into the current lineage" in lineage
     assert "merged_implementation != governance_gate_satisfied" in lineage
