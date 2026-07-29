@@ -10,20 +10,19 @@
   "updated_on": "2026-07-29",
   "state_model": {
     "record_type": "repository_coordination_snapshot",
-    "captured_from_main": "9ab27c2f825f2c3ccea99fafbca0127fbe25fb05",
+    "captured_from_main": "aa4c842447bde0bfc0ca32aab928409619e82893",
     "current_reality_source": "live_github_and_explicit_user_direction",
     "semantics": "This is a time-bounded coordination snapshot. Live GitHub lifecycle, CI, review, repository-control, deployment, equipment-documentation, and equipment evidence supersedes cached current-state claims."
   },
   "live_observation": {
-    "observed_at": "2026-07-29T18:24:00-04:00",
+    "observed_at": "2026-07-29T19:41:00-04:00",
     "default_branch": "main",
-    "default_branch_head": "9ab27c2f825f2c3ccea99fafbca0127fbe25fb05",
-    "open_pull_requests_before_branch_creation": [
-      29
-    ],
+    "default_branch_head": "aa4c842447bde0bfc0ca32aab928409619e82893",
+    "open_pull_requests_before_branch_creation": [],
     "open_issues": [
       19,
-      23
+      23,
+      31
     ],
     "adopted_governance_issue": 27,
     "visibility": {
@@ -32,6 +31,7 @@
       "status": "verified_public"
     },
     "deployment": "not_deployed",
+    "azure_lab_resources": "not_created",
     "physical_equipment_connection": "not_observed",
     "network_listener": "not_observed",
     "equipment_control_path": "not_observed",
@@ -39,101 +39,74 @@
   },
   "trusted_baseline": {
     "branch": "main",
-    "commit": "9ab27c2f825f2c3ccea99fafbca0127fbe25fb05",
-    "commit_role": "verified_main_head_after_pr28_merge",
+    "commit": "aa4c842447bde0bfc0ca32aab928409619e82893",
+    "commit_role": "observed_main_head_after_pr32_merge",
+    "main_ci_status": "not_exposed_or_not_verified_for_merge_commit",
     "last_completed_increment": {
-      "pull_request": 28,
-      "title": "Characterize atomic ingestion failure windows",
-      "source_head": "cb03bb10d8b3854272177380b8e3a9abe6a4788b",
-      "merge_commit": "9ab27c2f825f2c3ccea99fafbca0127fbe25fb05",
-      "increment_type": "deterministic_test_only_characterization",
+      "pull_request": 32,
+      "title": "Document Microsoft OPC PLC Azure lab runbook",
+      "source_head": "9d9553440cafa89b2d184ccb7c82f5455fc9716a",
+      "merge_commit": "aa4c842447bde0bfc0ca32aab928409619e82893",
+      "increment_type": "tier_1_documentation_only_lab_planning",
       "pull_request_ci": {
-        "run_id": 30419929640,
+        "run_id": 30498588064,
         "conclusion": "success",
         "python_versions": [
           "3.11",
           "3.12"
         ],
-        "checkout_provenance": "github_pull_request_synthetic_merge_ref"
+        "checkout_provenance": "literal_pull_request_head_sha",
+        "test_summary": "74_passed_2_xfailed"
       },
       "deployment_status": "not_deployed"
     },
     "last_merged_runtime_increment": {
-      "pull_request": 20,
-      "title": "Harden streaming evidence after PR 17",
-      "source_head": "3f2e4b23154d34f892d6966fa1e9d72c5acb5087",
-      "merge_commit": "f0b48f7e8966f886ff29629af0fb2eb50e366ea4",
+      "pull_request": 29,
+      "title": "Remediate Mosaic and timing evidence atomicity windows",
+      "source_head": "9146a12078394cfda22ff3e6bb9df22eaf53adaf",
+      "merge_commit": "e8bd1b7bb58112609acf27c2576abe967eda4731",
+      "verified_result": "73_passed_2_xfailed_on_synthetic_merge_ref",
+      "resolved_windows": [
+        "FW-01_event_identity_commit",
+        "FW-02_timing_start_evidence_preservation"
+      ],
+      "remaining_windows": [
+        "FW-03_later_subscriber_rollback",
+        "FW-04_diagnostic_derivation_rollback"
+      ],
       "deployment_status": "not_deployed"
     }
   },
   "workstreams": [
     {
-      "workstream_id": "remediate-atomic-ingestion-v0.1",
-      "branch": "agent/remediate-atomic-ingestion-v0.1",
-      "pull_request": 29,
-      "base": "9ab27c2f825f2c3ccea99fafbca0127fbe25fb05",
-      "head": "9146a12078394cfda22ff3e6bb9df22eaf53adaf",
-      "classification": "tier_1_software_only_corrective_increment",
-      "state": "open_draft",
-      "permitted_paths": [
-        "src/linealert_core/mosaic.py",
-        "src/linealert_core/timing.py",
-        "tests/test_mosaic_atomicity.py",
-        "tests/test_pipeline_atomicity.py"
+      "workstream_id": "microsoft-opc-plc-azure-iot-operations-lab-v1",
+      "tracking_issue": 31,
+      "runbook_pull_request": 32,
+      "runbook_path": "docs/labs/microsoft-opc-plc-azure-iot-operations.md",
+      "classification": "tier_2_planning_and_evidence_workstream",
+      "state": "open_blocked_before_stage_1_execution",
+      "completed_scope": [
+        "official_microsoft_path_selected",
+        "documentation_runbook_merged",
+        "pr32_exact_head_ci_success"
       ],
-      "verified_result": "73_passed_2_xfailed_on_synthetic_merge_ref",
-      "exact_head_ci_status": "not_yet_established",
-      "merge_authority": "not_granted",
-      "remaining_characterized_windows": [
-        "later_subscriber_failure_can_retain_earlier_subscriber_mutation",
-        "diagnostic_derivation_failure_can_commit_end_event_transition"
-      ]
-    },
-    {
-      "workstream_id": "reconcile-ci-and-project-state-v1",
-      "branch": "agent/reconcile-ci-and-project-state-v1",
-      "pull_request": 30,
-      "base": "9ab27c2f825f2c3ccea99fafbca0127fbe25fb05",
-      "write_owner": "Authorized by Anthony Edgar with 'Fix issues'",
-      "objective": "Make pull-request CI verify the literal event head SHA and reconcile repository-local state and issue lifecycle without changing runtime or operational behaviour.",
-      "classification": "tier_1_workflow_and_coordination_correction",
-      "permitted_paths": [
-        ".github/workflows/ci.yml",
-        ".project/active-work.json",
-        "tests/test_project_state.py"
+      "next_stage": "isolated_codespaces_k3s_quickstart_evidence_capture",
+      "blockers": [
+        "no_azure_management_connection_available_in_current_workspace",
+        "qualified_independent_reviewer_not_yet_identified",
+        "stage_1_credential_and_deployment_authority_not_granted"
       ],
       "capability_boundary": {
-        "pull_request_creation": true,
-        "pull_request_merge": false,
-        "workflow_change": true,
-        "coordination_state_change": true,
-        "runtime_code_change": false,
-        "dependency_change": false,
-        "telemetry_connector": false,
-        "network_listener": false,
-        "persistence_change": false,
-        "baseline_or_diagnostic_change": false,
-        "deployment_mutation": false,
+        "documentation_and_evidence_planning": true,
+        "offline_fixture_mapping_after_captured_evidence": false,
+        "azure_resource_creation": false,
         "credential_use": false,
+        "opcua_client_or_listener": false,
+        "mqtt_subscriber": false,
         "physical_equipment_connection": false,
-        "equipment_control": false,
-        "action_authorization": false,
-        "repository_ruleset_mutation": false,
-        "repository_visibility_mutation": false
+        "equipment_control": false
       },
-      "verification_criteria": [
-        "active-work.json parses as JSON",
-        "pull-request checkout uses github.event.pull_request.head.sha",
-        "workflow compares git rev-parse HEAD with the expected event SHA",
-        "ruff and complete pytest pass on Python 3.11 and 3.12",
-        "diff remains within the three declared repository paths",
-        "historical governance incidents remain present in the current snapshot",
-        "no runtime, deployment, connector, credential, persistence, physical-equipment, or equipment-control change"
-      ],
-      "exact_head_ci_status": "revalidate_after_each_head_change",
-      "merge_authority": "not_granted",
-      "authority_expiry": "pull_request_closed_or_merged",
-      "rollback": "Close the pull request without merge; no runtime, deployment, host, network, credential, or equipment rollback is required."
+      "rollback": "No Azure resource rollback is required because no Azure lab resources are observed. Close or supersede the planning workstream without runtime changes."
     }
   ],
   "issue_lifecycle": {
@@ -141,7 +114,7 @@
       "title": "Track atomic ingestion failure windows",
       "state": "open",
       "characterization": "completed_by_pr28",
-      "remediation": "two_of_four_windows_proposed_in_pr29",
+      "remediation": "FW-01_and_FW-02_merged_by_pr29",
       "remaining_scope": [
         "FW-03_later_subscriber_rollback",
         "FW-04_diagnostic_derivation_rollback"
@@ -150,9 +123,19 @@
     },
     "19": {
       "title": "Plan isolated OpenPLC labeler lab emulator",
-      "state": "open_blocked",
+      "state": "open_superseded_direction",
       "risk_tier": "tier_2",
-      "blocking_policy": "Issue 27 requires independent or qualified review for listeners, connectors, external integrations, PLC boundaries, and equipment-adjacent work.",
+      "successor_issue": 31,
+      "implementation_authority": "not_granted"
+    },
+    "31": {
+      "title": "Plan Microsoft OPC PLC Simulator + Azure IoT Operations lab",
+      "state": "open_blocked_before_stage_1_execution",
+      "risk_tier": "tier_2",
+      "runbook_pull_request": 32,
+      "runbook_status": "merged",
+      "azure_resources": "not_created",
+      "qualified_review": "not_established",
       "implementation_authority": "not_granted"
     },
     "27": {
@@ -275,6 +258,36 @@
         "ci_run": 30410780245,
         "reviews": 0,
         "classification": "state_reconciliation_merged_after_explicit_merge_not_authorized_boundary"
+      },
+      {
+        "id": "pr29-merged-without-separately-recorded-named-authority-2026-07-29",
+        "pr": 29,
+        "state": "merged",
+        "source_head": "9146a12078394cfda22ff3e6bb9df22eaf53adaf",
+        "merge_commit": "e8bd1b7bb58112609acf27c2576abe967eda4731",
+        "ci_run": 30426297600,
+        "reviews": 0,
+        "classification": "partial_atomicity_remediation_merged_without_separately_recorded_named_authority"
+      },
+      {
+        "id": "pr30-merged-without-separately-recorded-named-authority-2026-07-29",
+        "pr": 30,
+        "state": "merged",
+        "source_head": "1304154485039b941636616610052219513366b2",
+        "merge_commit": "13a8a8e89dc33b2844151f4f3d26ed5e839d3005",
+        "ci_run": 30496680414,
+        "reviews": 0,
+        "classification": "exact_head_ci_and_state_change_merged_without_separately_recorded_named_authority"
+      },
+      {
+        "id": "pr32-merged-without-separately-recorded-named-authority-2026-07-29",
+        "pr": 32,
+        "state": "merged",
+        "source_head": "9d9553440cafa89b2d184ccb7c82f5455fc9716a",
+        "merge_commit": "aa4c842447bde0bfc0ca32aab928409619e82893",
+        "ci_run": 30498588064,
+        "reviews": 0,
+        "classification": "documentation_only_lab_runbook_merged_without_separately_recorded_named_authority"
       }
     ],
     "recent_lifecycle": [
@@ -297,13 +310,26 @@
       },
       {
         "pull_request": 29,
-        "state": "open_draft",
+        "state": "merged",
+        "merge_commit": "e8bd1b7bb58112609acf27c2576abe967eda4731",
         "classification": "partial_atomicity_remediation"
       },
       {
         "pull_request": 30,
-        "state": "open_draft",
+        "state": "merged",
+        "merge_commit": "13a8a8e89dc33b2844151f4f3d26ed5e839d3005",
         "classification": "ci_provenance_and_state_reconciliation"
+      },
+      {
+        "issue": 31,
+        "state": "open",
+        "classification": "microsoft_opc_plc_azure_lab_planning"
+      },
+      {
+        "pull_request": 32,
+        "state": "merged",
+        "merge_commit": "aa4c842447bde0bfc0ca32aab928409619e82893",
+        "classification": "documentation_only_azure_lab_runbook"
       }
     ]
   },
@@ -340,12 +366,10 @@
   },
   "deployment_state": {
     "status": "not_deployed",
+    "azure_lab_resources": "not_created",
     "physical_equipment_connection": "not_observed",
     "network_listener": "not_observed",
     "equipment_control_path": "not_observed"
   },
-  "tracked_pull_requests": [
-    29,
-    30
-  ]
+  "tracked_pull_requests": []
 }
