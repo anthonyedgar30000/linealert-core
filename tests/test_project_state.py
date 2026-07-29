@@ -96,11 +96,13 @@ def test_active_workstreams_preserve_scope_and_authority() -> None:
     assert reconciliation["branch"] == (
         "agent/reconcile-ci-and-project-state-v1"
     )
+    assert reconciliation["pull_request"] == 30
     assert reconciliation["permitted_paths"] == [
         ".github/workflows/ci.yml",
         ".project/active-work.json",
         "tests/test_project_state.py",
     ]
+    assert reconciliation["merge_authority"] == "not_granted"
     capability = reconciliation["capability_boundary"]
     assert capability["pull_request_creation"] is True
     assert capability["pull_request_merge"] is False
@@ -123,11 +125,14 @@ def test_active_workstreams_preserve_scope_and_authority() -> None:
     }:
         assert capability[field] is False
 
+    assert state["tracked_pull_requests"] == [29, 30]
+
 
 def test_issue_lifecycle_is_reconciled_without_overclaiming() -> None:
     issues = load_project_state()["issue_lifecycle"]
 
     issue_23 = issues["23"]
+    assert issue_23["title"] == "Track atomic ingestion failure windows"
     assert issue_23["characterization"] == "completed_by_pr28"
     assert issue_23["remediation"] == "two_of_four_windows_proposed_in_pr29"
     assert issue_23["remaining_scope"] == [
@@ -137,6 +142,7 @@ def test_issue_lifecycle_is_reconciled_without_overclaiming() -> None:
     assert "Do not close" in issue_23["closure_rule"]
 
     issue_19 = issues["19"]
+    assert issue_19["title"] == "Plan isolated OpenPLC labeler lab emulator"
     assert issue_19["state"] == "open_blocked"
     assert issue_19["risk_tier"] == "tier_2"
     assert issue_19["implementation_authority"] == "not_granted"
@@ -171,8 +177,43 @@ def test_ci_workflow_verifies_literal_event_sha() -> None:
     assert 'test "$actual_sha" = "$EXPECTED_SHA"' in workflow
 
 
+def test_governance_incidents_remain_append_only() -> None:
+    state = load_project_state()
+    history = state["governance_incident_history"]
+    assert "Append-only incident keys" in history["historical_detail"]
+
+    incidents = {item["id"]: item for item in history["incidents"]}
+    assert set(incidents) == {
+        "pr12-blocked-merge-2026-07-22",
+        "pr13-zero-review-merge-2026-07-22",
+        "pr14-zero-review-merge-2026-07-23",
+        "pr16-zero-review-gate-bypass-2026-07-28",
+        "pr17-zero-review-gate-bypass-2026-07-28",
+        "pr20-zero-review-gate-bypass-2026-07-28",
+        "pr21-review-gate-probe-merged-zero-review-2026-07-28",
+        "pr22-zero-review-architecture-publication-2026-07-28",
+        "pr24-explicit-no-merge-boundary-bypassed-2026-07-28",
+    }
+    assert incidents[
+        "pr24-explicit-no-merge-boundary-bypassed-2026-07-28"
+    ]["classification"] == (
+        "state_reconciliation_merged_after_explicit_merge_not_authorized_boundary"
+    )
+
+    recent = history["recent_lifecycle"]
+    assert [item.get("pull_request") for item in recent] == [25, None, 28, 29, 30]
+    assert recent[1]["issue"] == 27
+
+
 def test_governance_policy_separates_tier_1_and_tier_2() -> None:
     controls = load_project_state()["repository_controls"]
+
+    historical = controls["historical_main_review_gate"]
+    assert historical["tracking_issue"] == 15
+    assert historical["probe_pull_request"] == 21
+    assert historical["status"] == "not_effective_or_not_verified"
+    assert "Issue 27 replaced" in historical["supersession"]
+
     tier_1 = controls["tier_1_policy"]
     assert tier_1 == {
         "tracking_issue": 27,
@@ -195,6 +236,26 @@ def test_governance_policy_separates_tier_1_and_tier_2() -> None:
         "status": "verified_public",
         "policy_source": "explicit_user_direction",
     }
+
+
+def test_lineage_archaeology_statuses_are_preserved() -> None:
+    lineage = load_project_state()["repository_lineage"]
+    assert lineage["authoritative"] == ["anthonyedgar30000/linealert-core"]
+
+    archaeology = lineage["design_archaeology"]
+    assert archaeology["anthonyedgar30000/LineAlertDemo"]["pull_requests"] == {
+        "1": "merged",
+        "2": "merged",
+        "3": "open",
+    }
+    analysis = archaeology["anthonyedgar30000/linealert-analysis-engine"]
+    assert analysis["pull_requests"] == {"1": "merged"}
+    assert analysis["classification"] == (
+        "merged_legacy_prototype_non_authoritative"
+    )
+    memory = archaeology["anthonyedgar30000/HelixMemoryService"]
+    assert memory["pull_requests"] == {}
+    assert "not_current_persistence" in memory["disposition"]
 
 
 def test_deployment_and_equipment_reality_remain_bounded() -> None:
