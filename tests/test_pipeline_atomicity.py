@@ -66,10 +66,6 @@ def test_negative_end_timestamp_does_not_consume_matching_start(make_event) -> N
     assert findings[0].status is TimingStatus.WITHIN
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="FW-04: diagnostic failure currently commits the end-event transition",
-)
 def test_diagnostic_failure_does_not_commit_end_event_transition(
     make_event,
     monkeypatch,
