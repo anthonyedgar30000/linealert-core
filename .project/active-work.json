@@ -10,20 +10,16 @@
   "updated_on": "2026-07-29",
   "state_model": {
     "record_type": "repository_coordination_snapshot",
-    "captured_from_main": "aa4c842447bde0bfc0ca32aab928409619e82893",
+    "captured_from_main": "edbcd4fc8ba2d839f985be7ca190e138b365ddb4",
     "current_reality_source": "live_github_and_explicit_user_direction",
     "semantics": "This is a time-bounded coordination snapshot. Live GitHub lifecycle, CI, review, repository-control, deployment, equipment-documentation, and equipment evidence supersedes cached current-state claims."
   },
   "live_observation": {
-    "observed_at": "2026-07-29T19:41:00-04:00",
+    "observed_at": "2026-07-29T19:56:00-04:00",
     "default_branch": "main",
-    "default_branch_head": "aa4c842447bde0bfc0ca32aab928409619e82893",
+    "default_branch_head": "edbcd4fc8ba2d839f985be7ca190e138b365ddb4",
     "open_pull_requests_before_branch_creation": [],
-    "open_issues": [
-      19,
-      23,
-      31
-    ],
+    "open_issues": [19, 23, 31],
     "adopted_governance_issue": 27,
     "visibility": {
       "github_metadata": "public",
@@ -39,22 +35,19 @@
   },
   "trusted_baseline": {
     "branch": "main",
-    "commit": "aa4c842447bde0bfc0ca32aab928409619e82893",
-    "commit_role": "observed_main_head_after_pr32_merge",
+    "commit": "edbcd4fc8ba2d839f985be7ca190e138b365ddb4",
+    "commit_role": "observed_main_head_after_pr33_merge",
     "main_ci_status": "not_exposed_or_not_verified_for_merge_commit",
     "last_completed_increment": {
-      "pull_request": 32,
-      "title": "Document Microsoft OPC PLC Azure lab runbook",
-      "source_head": "9d9553440cafa89b2d184ccb7c82f5455fc9716a",
-      "merge_commit": "aa4c842447bde0bfc0ca32aab928409619e82893",
-      "increment_type": "tier_1_documentation_only_lab_planning",
+      "pull_request": 33,
+      "title": "Reconcile post-PR32 state and Azure lab gate",
+      "source_head": "8af94c7e6436a6819c15fcfb6b1cf5106afa509a",
+      "merge_commit": "edbcd4fc8ba2d839f985be7ca190e138b365ddb4",
+      "increment_type": "tier_1_repository_state_and_test_reconciliation",
       "pull_request_ci": {
-        "run_id": 30498588064,
+        "run_id": 30500687408,
         "conclusion": "success",
-        "python_versions": [
-          "3.11",
-          "3.12"
-        ],
+        "python_versions": ["3.11", "3.12"],
         "checkout_provenance": "literal_pull_request_head_sha",
         "test_summary": "74_passed_2_xfailed"
       },
@@ -88,7 +81,8 @@
       "completed_scope": [
         "official_microsoft_path_selected",
         "documentation_runbook_merged",
-        "pr32_exact_head_ci_success"
+        "pr32_exact_head_ci_success",
+        "pr33_project_state_reconciliation_merged"
       ],
       "next_stage": "isolated_codespaces_k3s_quickstart_evidence_capture",
       "blockers": [
@@ -142,6 +136,12 @@
       "title": "Adopt risk-tiered solo-maintainer governance policy",
       "state": "closed_completed",
       "role": "active_governance_policy"
+    },
+    "15": {
+      "title": "Enforce independent review on main before further merges",
+      "state": "closed_not_planned",
+      "acceptance_status": "not_satisfied",
+      "superseded_by_issue": 27
     }
   },
   "ci_policy": {
@@ -152,9 +152,7 @@
     "synthetic_merge_ref": "useful_mergeability_evidence_but_not_exact_head_evidence"
   },
   "repository_lineage": {
-    "authoritative": [
-      "anthonyedgar30000/linealert-core"
-    ],
+    "authoritative": ["anthonyedgar30000/linealert-core"],
     "active_related_boundaries": {
       "anthonyedgar30000/helix-protocol-kernel": "governed_protocol_boundary",
       "anthonyedgar30000/ContextOS": "execution_containment_boundary"
@@ -162,18 +160,12 @@
     "design_archaeology": {
       "anthonyedgar30000/LineAlertDemo": {
         "classification": "legacy_prototype",
-        "pull_requests": {
-          "1": "merged",
-          "2": "merged",
-          "3": "open"
-        },
+        "pull_requests": {"1": "merged", "2": "merged", "3": "open"},
         "disposition": "non_authoritative_do_not_copy_or_merge_wholesale"
       },
       "anthonyedgar30000/linealert-analysis-engine": {
         "classification": "merged_legacy_prototype_non_authoritative",
-        "pull_requests": {
-          "1": "merged"
-        },
+        "pull_requests": {"1": "merged"},
         "disposition": "preserve_as_design_archaeology"
       },
       "anthonyedgar30000/HelixMemoryService": {
@@ -186,157 +178,35 @@
   "governance_incident_history": {
     "historical_detail": "Append-only incident keys remain present in this snapshot and in prior git revisions. Later policy adoption does not rewrite earlier lifecycle evidence.",
     "incidents": [
-      {
-        "id": "pr12-blocked-merge-2026-07-22",
-        "pr": 12,
-        "state": "merged",
-        "gate": "blocked_scope_collision"
-      },
-      {
-        "id": "pr13-zero-review-merge-2026-07-22",
-        "pr": 13,
-        "state": "merged",
-        "reviews": 0
-      },
-      {
-        "id": "pr14-zero-review-merge-2026-07-23",
-        "pr": 14,
-        "state": "merged",
-        "reviews": 0
-      },
-      {
-        "id": "pr16-zero-review-gate-bypass-2026-07-28",
-        "pr": 16,
-        "state": "merged",
-        "merge_commit": "0720bbf269a571ec35a74829d72c124370afd436",
-        "ci_run": 30385722716,
-        "reviews": 0
-      },
-      {
-        "id": "pr17-zero-review-gate-bypass-2026-07-28",
-        "pr": 17,
-        "state": "merged",
-        "merge_commit": "a094f0812ad85bfbcfe3c90c4cbc1d85547be7cd",
-        "reviews": 0
-      },
-      {
-        "id": "pr20-zero-review-gate-bypass-2026-07-28",
-        "pr": 20,
-        "state": "merged",
-        "source_head": "3f2e4b23154d34f892d6966fa1e9d72c5acb5087",
-        "merge_commit": "f0b48f7e8966f886ff29629af0fb2eb50e366ea4",
-        "ci_run": 30388270765,
-        "reviews": 0,
-        "classification": "corrective_hardening_merged_without_required_gates"
-      },
-      {
-        "id": "pr21-review-gate-probe-merged-zero-review-2026-07-28",
-        "pr": 21,
-        "state": "merged",
-        "source_head": "19d9ce75cbff57d45a911083b84761b7aef32842",
-        "merge_commit": "6858d4a639c0dc27853c313e545d3af467ec1412",
-        "ci_run": 30390768815,
-        "reviews": 0,
-        "classification": "review_control_not_effective_for_probe_merge"
-      },
-      {
-        "id": "pr22-zero-review-architecture-publication-2026-07-28",
-        "pr": 22,
-        "state": "merged",
-        "source_head": "cc6718bf76329ac28f83429204a0d5ef4b36bfe9",
-        "merge_commit": "03060ff05252e43538f86ad75527be05c96853a5",
-        "ci_run": 30407732572,
-        "reviews": 0,
-        "classification": "proposed_architecture_evidence_not_implementation_authority"
-      },
-      {
-        "id": "pr24-explicit-no-merge-boundary-bypassed-2026-07-28",
-        "pr": 24,
-        "state": "merged",
-        "source_head": "e9e7065e7062bc9b99bbe429999e77f01b07ed99",
-        "merge_commit": "9bc91562535f8fad681aecde61a6fc28885da69c",
-        "ci_run": 30410780245,
-        "reviews": 0,
-        "classification": "state_reconciliation_merged_after_explicit_merge_not_authorized_boundary"
-      },
-      {
-        "id": "pr29-merged-without-separately-recorded-named-authority-2026-07-29",
-        "pr": 29,
-        "state": "merged",
-        "source_head": "9146a12078394cfda22ff3e6bb9df22eaf53adaf",
-        "merge_commit": "e8bd1b7bb58112609acf27c2576abe967eda4731",
-        "ci_run": 30426297600,
-        "reviews": 0,
-        "classification": "partial_atomicity_remediation_merged_without_separately_recorded_named_authority"
-      },
-      {
-        "id": "pr30-merged-without-separately-recorded-named-authority-2026-07-29",
-        "pr": 30,
-        "state": "merged",
-        "source_head": "1304154485039b941636616610052219513366b2",
-        "merge_commit": "13a8a8e89dc33b2844151f4f3d26ed5e839d3005",
-        "ci_run": 30496680414,
-        "reviews": 0,
-        "classification": "exact_head_ci_and_state_change_merged_without_separately_recorded_named_authority"
-      },
-      {
-        "id": "pr32-merged-without-separately-recorded-named-authority-2026-07-29",
-        "pr": 32,
-        "state": "merged",
-        "source_head": "9d9553440cafa89b2d184ccb7c82f5455fc9716a",
-        "merge_commit": "aa4c842447bde0bfc0ca32aab928409619e82893",
-        "ci_run": 30498588064,
-        "reviews": 0,
-        "classification": "documentation_only_lab_runbook_merged_without_separately_recorded_named_authority"
-      }
+      {"id": "pr12-blocked-merge-2026-07-22", "pr": 12, "state": "merged", "gate": "blocked_scope_collision"},
+      {"id": "pr13-zero-review-merge-2026-07-22", "pr": 13, "state": "merged", "reviews": 0},
+      {"id": "pr14-zero-review-merge-2026-07-23", "pr": 14, "state": "merged", "reviews": 0},
+      {"id": "pr16-zero-review-gate-bypass-2026-07-28", "pr": 16, "state": "merged", "merge_commit": "0720bbf269a571ec35a74829d72c124370afd436", "ci_run": 30385722716, "reviews": 0},
+      {"id": "pr17-zero-review-gate-bypass-2026-07-28", "pr": 17, "state": "merged", "merge_commit": "a094f0812ad85bfbcfe3c90c4cbc1d85547be7cd", "reviews": 0},
+      {"id": "pr20-zero-review-gate-bypass-2026-07-28", "pr": 20, "state": "merged", "source_head": "3f2e4b23154d34f892d6966fa1e9d72c5acb5087", "merge_commit": "f0b48f7e8966f886ff29629af0fb2eb50e366ea4", "ci_run": 30388270765, "reviews": 0, "classification": "corrective_hardening_merged_without_required_gates"},
+      {"id": "pr21-review-gate-probe-merged-zero-review-2026-07-28", "pr": 21, "state": "merged", "source_head": "19d9ce75cbff57d45a911083b84761b7aef32842", "merge_commit": "6858d4a639c0dc27853c313e545d3af467ec1412", "ci_run": 30390768815, "reviews": 0, "classification": "review_control_not_effective_for_probe_merge"},
+      {"id": "pr22-zero-review-architecture-publication-2026-07-28", "pr": 22, "state": "merged", "source_head": "cc6718bf76329ac28f83429204a0d5ef4b36bfe9", "merge_commit": "03060ff05252e43538f86ad75527be05c96853a5", "ci_run": 30407732572, "reviews": 0, "classification": "proposed_architecture_evidence_not_implementation_authority"},
+      {"id": "pr24-explicit-no-merge-boundary-bypassed-2026-07-28", "pr": 24, "state": "merged", "source_head": "e9e7065e7062bc9b99bbe429999e77f01b07ed99", "merge_commit": "9bc91562535f8fad681aecde61a6fc28885da69c", "ci_run": 30410780245, "reviews": 0, "classification": "state_reconciliation_merged_after_explicit_merge_not_authorized_boundary"},
+      {"id": "pr29-merged-without-separately-recorded-named-authority-2026-07-29", "pr": 29, "state": "merged", "source_head": "9146a12078394cfda22ff3e6bb9df22eaf53adaf", "merge_commit": "e8bd1b7bb58112609acf27c2576abe967eda4731", "ci_run": 30426297600, "reviews": 0, "classification": "partial_atomicity_remediation_merged_without_separately_recorded_named_authority"},
+      {"id": "pr30-merged-without-separately-recorded-named-authority-2026-07-29", "pr": 30, "state": "merged", "source_head": "1304154485039b941636616610052219513366b2", "merge_commit": "13a8a8e89dc33b2844151f4f3d26ed5e839d3005", "ci_run": 30496680414, "reviews": 0, "classification": "exact_head_ci_and_state_change_merged_without_separately_recorded_named_authority"},
+      {"id": "pr32-merged-without-separately-recorded-named-authority-2026-07-29", "pr": 32, "state": "merged", "source_head": "9d9553440cafa89b2d184ccb7c82f5455fc9716a", "merge_commit": "aa4c842447bde0bfc0ca32aab928409619e82893", "ci_run": 30498588064, "reviews": 0, "classification": "documentation_only_lab_runbook_merged_without_separately_recorded_named_authority"},
+      {"id": "pr33-merged-without-separately-recorded-named-authority-2026-07-29", "pr": 33, "state": "merged", "source_head": "8af94c7e6436a6819c15fcfb6b1cf5106afa509a", "merge_commit": "edbcd4fc8ba2d839f985be7ca190e138b365ddb4", "ci_run": 30500687408, "reviews": 0, "classification": "project_state_and_azure_gate_reconciliation_merged_without_separately_recorded_named_authority"}
     ],
     "recent_lifecycle": [
-      {
-        "pull_request": 25,
-        "state": "merged",
-        "merge_commit": "7c26657cd4e4a565946f7aa6b0358a07c3f34e83",
-        "classification": "state_reconciliation"
-      },
-      {
-        "issue": 27,
-        "state": "closed_completed",
-        "classification": "risk_tiered_solo_maintainer_governance_adopted"
-      },
-      {
-        "pull_request": 28,
-        "state": "merged",
-        "merge_commit": "9ab27c2f825f2c3ccea99fafbca0127fbe25fb05",
-        "classification": "test_only_characterization"
-      },
-      {
-        "pull_request": 29,
-        "state": "merged",
-        "merge_commit": "e8bd1b7bb58112609acf27c2576abe967eda4731",
-        "classification": "partial_atomicity_remediation"
-      },
-      {
-        "pull_request": 30,
-        "state": "merged",
-        "merge_commit": "13a8a8e89dc33b2844151f4f3d26ed5e839d3005",
-        "classification": "ci_provenance_and_state_reconciliation"
-      },
-      {
-        "issue": 31,
-        "state": "open",
-        "classification": "microsoft_opc_plc_azure_lab_planning"
-      },
-      {
-        "pull_request": 32,
-        "state": "merged",
-        "merge_commit": "aa4c842447bde0bfc0ca32aab928409619e82893",
-        "classification": "documentation_only_azure_lab_runbook"
-      }
+      {"pull_request": 25, "state": "merged", "merge_commit": "7c26657cd4e4a565946f7aa6b0358a07c3f34e83", "classification": "state_reconciliation"},
+      {"issue": 27, "state": "closed_completed", "classification": "risk_tiered_solo_maintainer_governance_adopted"},
+      {"pull_request": 28, "state": "merged", "merge_commit": "9ab27c2f825f2c3ccea99fafbca0127fbe25fb05", "classification": "test_only_characterization"},
+      {"pull_request": 29, "state": "merged", "merge_commit": "e8bd1b7bb58112609acf27c2576abe967eda4731", "classification": "partial_atomicity_remediation"},
+      {"pull_request": 30, "state": "merged", "merge_commit": "13a8a8e89dc33b2844151f4f3d26ed5e839d3005", "classification": "ci_provenance_and_state_reconciliation"},
+      {"issue": 31, "state": "open", "classification": "microsoft_opc_plc_azure_lab_planning"},
+      {"pull_request": 32, "state": "merged", "merge_commit": "aa4c842447bde0bfc0ca32aab928409619e82893", "classification": "documentation_only_azure_lab_runbook"},
+      {"pull_request": 33, "state": "merged", "merge_commit": "edbcd4fc8ba2d839f985be7ca190e138b365ddb4", "classification": "post_pr32_state_and_azure_gate_reconciliation"}
     ]
   },
   "repository_controls": {
     "historical_main_review_gate": {
       "tracking_issue": 15,
-      "observed_effect_through_pr24": "zero_review_merges_permitted",
+      "observed_effect_through_pr33": "zero_review_merges_permitted",
       "probe_pull_request": 21,
       "probe_result": "merged_with_zero_submitted_reviews",
       "required_approvals": 1,
