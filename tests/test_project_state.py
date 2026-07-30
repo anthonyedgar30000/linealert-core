@@ -33,7 +33,7 @@ def test_state_snapshot_advances_to_pr34_main() -> None:
     observation = state["live_observation"]
     assert observation["default_branch_head"] == PR34_MERGE
     assert observation["open_pull_requests_before_branch_creation"] == []
-    assert observation["open_issues"] == [23, 31]
+    assert observation["open_issues"] == [23, 31, 35]
     assert observation["visibility"]["status"] == "verified_public"
     assert observation["recently_closed_issues"]["19"]["successor_issue"] == 31
 
@@ -92,9 +92,13 @@ def test_tier_2_lab_authority_and_blockers_are_not_conflated() -> None:
         "physical_equipment_authority": "not_granted",
         "equipment_control_authority": "not_granted",
     }
+    assert workstream["linked_gates"] == {
+        "qualified_review_issue": 35,
+        "state": "open_no_accepted_review_evidence",
+    }
     assert workstream["blockers"] == [
         "no_azure_management_connection_available_in_current_workspace",
-        "qualified_independent_reviewer_not_yet_identified",
+        "qualified_review_issue_35_open_no_accepted_review_evidence",
         (
             "disposable_subscription_region_resource_group_cleanup_owner_"
             "and_credential_custodian_not_recorded"
@@ -135,6 +139,15 @@ def test_issue_lifecycle_matches_selected_lab_direction() -> None:
     assert issue_31["azure_resources"] == "not_created"
     assert issue_31["qualified_review"] == "not_established"
     assert issue_31["live_adapter_authority"] == "not_granted"
+
+    assert issues["35"] == {
+        "title": "Qualify reviewer for Azure OPC PLC Stage 1",
+        "state": "open",
+        "risk_tier": "tier_2_review_gate",
+        "parent_issue": 31,
+        "acceptance_evidence": "not_established",
+        "execution_authority": "not_granted_by_this_issue",
+    }
 
 
 def test_issue_15_and_governance_reality_are_not_overclaimed() -> None:
@@ -202,6 +215,8 @@ def test_governance_incidents_remain_append_only_through_pr34() -> None:
         item.get("pull_request") == 34 and item.get("merge_commit") == PR34_MERGE
         for item in recent
     )
+    assert recent[-3]["issue"] == 35
+    assert recent[-3]["state"] == "open"
     assert recent[-2]["issue"] == 19
     assert recent[-2]["state"] == "closed_not_planned"
     assert recent[-1]["issue"] == 31
