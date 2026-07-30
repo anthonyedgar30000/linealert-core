@@ -234,6 +234,10 @@ When a machine profile is loaded, the core rejects:
 
 ## Development workflow
 
-`main` is merged repository reality. Independent review is not established until Issue #15
-acceptance evidence exists. Changes belong on bounded branches with tests and pull requests. AI may
-propose patches or rules, but activation remains governed, versioned, testable, and reversible.
+`main` is merged repository reality. Issue #27 defines the risk-tiered workflow: Tier 1 work requires
+bounded scope, exact-head CI, and fresh named merge authority; qualified review remains mandatory
+for live adapters, persistent external integration, physical equipment, production networks,
+equipment control, safety or OEM claims, and production release. Issue #31 records the disposable
+Stage 1 simulator exception under owner authority. Changes belong on bounded branches with tests
+and pull requests. AI may propose patches or rules, but activation remains governed, versioned,
+testable, and reversible.

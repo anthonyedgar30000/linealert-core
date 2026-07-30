@@ -17,7 +17,7 @@ A correctly executed lookup against the wrong repository is not valid project ev
 
 1. Pass the repository resolution gate and state the resolved `owner/repository` target.
 2. Read `active-work.json` from that repository.
-3. Confirm the live default branch, active branch, pull request, exact head SHA, changed files, CI, and deployment state in GitHub or the relevant deployment system.
+3. Confirm the live default branch, active branch, pull request, exact head SHA, changed files, CI, issue lifecycle, and deployment state in GitHub or the relevant deployment system.
 4. Verify that no other conversation owns the same branch, objective, equipment scope, or file scope.
 5. Inspect applicable equipment documentation, source identity, clock quality, calibration state, engineering units, sampling behavior, firmware, configuration, topology, test conditions, and operator interventions before changing telemetry or diagnostic behavior.
 6. Work only within the declared permitted paths and capability boundary.
@@ -26,9 +26,21 @@ A correctly executed lookup against the wrong repository is not valid project ev
 ## Reality precedence
 
 - `main` governs merged repository reality.
-- Live pull-request metadata, the exact current branch head, exact-head CI, and branch `.project/` state govern active work-in-progress reality.
+- Live issue and pull-request metadata, the exact current branch head, exact-head CI, and branch `.project/` state govern active work-in-progress reality.
 - A green check proves only that the declared CI checks passed on the inspected commit.
 - Chat history, generated reports, screenshots, and `.project/` records are coordination evidence, not substitutes for live repository, deployment, equipment, or operational evidence.
+
+## Publication rule
+
+A state-only pull request does not require another pull request merely to record its own merge. Live GitHub records that publication.
+
+Create a corrective sync only when a substantive external fact changes before merge or contradicts the published snapshot, including issue lifecycle, authority, deployment, equipment scope, branch ownership, or safety boundary.
+
+```text
+state_snapshot_published != self_sync_required
+live_scope_changed_before_merge = corrective_sync_required
+repository_state != deployment_state
+```
 
 ## State meanings
 
@@ -58,4 +70,4 @@ successful_test != safe_production_change
 
 One bounded workstream owns one named branch and declared file scope. Other conversations are review-only unless ownership is explicitly transferred and recorded here.
 
-After a pull request merges or closes, a state-only reconciliation should release its branch ownership before a new implementation increment begins.
+After a pull request merges or closes, live GitHub releases that branch lifecycle. A new implementation increment starts from current `main`; it does not require a self-referential state-only PR when no substantive fact changed.
