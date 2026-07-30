@@ -13,8 +13,8 @@ CI_WORKFLOW = PROJECT_ROOT / ".github" / "workflows" / "ci.yml"
 
 PR29_HEAD = "9146a12078394cfda22ff3e6bb9df22eaf53adaf"
 PR29_MERGE = "e8bd1b7bb58112609acf27c2576abe967eda4731"
-PR34_HEAD = "72d457a23f9e89cf3edfcff168f60e39e1f6e22c"
-PR34_MERGE = "377d57bd64107fe602d03e7ae3f9727c26a07562"
+PR36_HEAD = "a57d9ad5db12bbc5f7b510d59d5c1ee7c80ca9b9"
+PR36_MERGE = "883e2648e6884c51c8f2269239c9f68bc0bad149"
 
 
 def load_project_state() -> dict[str, Any]:
@@ -23,33 +23,31 @@ def load_project_state() -> dict[str, Any]:
     return value
 
 
-def test_state_snapshot_advances_to_pr34_main() -> None:
+def test_state_snapshot_advances_to_pr36_main() -> None:
     state = load_project_state()
     assert state["schema_version"] == "project.active-work.v1"
     assert state["repository"]["full_name"] == "anthonyedgar30000/linealert-core"
-    assert state["state_model"]["captured_from_main"] == PR34_MERGE
-    assert "supersedes cached current-state claims" in state["state_model"]["semantics"]
+    assert state["state_model"]["captured_from_main"] == PR36_MERGE
+    policy = state["state_model"]["publication_policy"]
+    assert policy["state_only_merge_requires_immediate_self_sync"] is False
+    assert "substantive external lifecycle" in policy["rule"]
 
     observation = state["live_observation"]
-    assert observation["default_branch_head"] == PR34_MERGE
+    assert observation["default_branch_head"] == PR36_MERGE
     assert observation["open_pull_requests_before_branch_creation"] == []
-    assert observation["open_issues"] == [23, 31, 35]
+    assert observation["open_issues"] == [23, 31]
+    assert observation["recently_closed_issues"]["35"]["state"] == "closed_not_planned"
     assert observation["visibility"]["status"] == "verified_public"
-    assert observation["recently_closed_issues"]["19"]["successor_issue"] == 31
 
-    baseline = state["trusted_baseline"]
-    assert baseline["commit"] == PR34_MERGE
-    assert baseline["commit_role"] == "observed_main_head_after_pr34_merge"
-    completed = baseline["last_completed_increment"]
-    assert completed["pull_request"] == 34
-    assert completed["source_head"] == PR34_HEAD
-    assert completed["merge_commit"] == PR34_MERGE
-    assert completed["pull_request_ci"]["run_id"] == 30503842026
-    assert completed["pull_request_ci"]["conclusion"] == "success"
+    completed = state["trusted_baseline"]["last_completed_increment"]
+    assert completed["pull_request"] == 36
+    assert completed["source_head"] == PR36_HEAD
+    assert completed["merge_commit"] == PR36_MERGE
+    assert completed["pull_request_ci"]["run_id"] == 30508013490
     assert completed["pull_request_ci"]["checkout_provenance"] == (
         "literal_pull_request_head_sha"
     )
-    assert completed["pull_request_ci"]["test_summary"] == "71_passed_2_xfailed"
+    assert completed["pull_request_ci"]["test_summary"] == "73_passed_2_xfailed"
     assert completed["submitted_reviews"] == 0
 
 
@@ -69,45 +67,47 @@ def test_runtime_atomicity_scope_remains_bounded() -> None:
     ]
 
     issue = state["issue_lifecycle"]["23"]
-    assert issue["state"] == "open"
     assert issue["latest_verification"] == {
-        "pull_request": 34,
-        "ci_run": 30503842026,
-        "test_summary": "71_passed_2_xfailed",
+        "pull_request": 36,
+        "ci_run": 30508013490,
+        "test_summary": "73_passed_2_xfailed",
         "remaining_xfails": ["FW-03", "FW-04"],
     }
 
 
-def test_tier_2_lab_authority_and_blockers_are_not_conflated() -> None:
+def test_stage1_authority_and_remaining_environment_gates() -> None:
     state = load_project_state()
     workstream = state["workstreams"][0]
     assert workstream["tracking_issue"] == 31
     assert workstream["state"] == (
-        "owner_authorized_but_blocked_before_stage_1_execution"
+        "owner_authorized_waiting_for_azure_environment_and_identity_package"
     )
     assert workstream["authority"] == {
         "owner_stage_1_authority": "granted_for_disposable_non_production_lab",
-        "qualified_independent_review": "not_established",
+        "independent_review_for_bounded_stage_1": (
+            "not_required_by_current_owner_risk_decision"
+        ),
+        "qualified_review_for_later_live_or_production_scope": "required",
         "live_linealert_adapter_authority": "not_granted",
         "physical_equipment_authority": "not_granted",
         "equipment_control_authority": "not_granted",
     }
-    assert workstream["linked_gates"] == {
-        "qualified_review_issue": 35,
-        "state": "open_no_accepted_review_evidence",
-    }
     assert workstream["blockers"] == [
         "no_azure_management_connection_available_in_current_workspace",
-        "qualified_review_issue_35_open_no_accepted_review_evidence",
         (
             "disposable_subscription_region_resource_group_cleanup_owner_"
             "and_credential_custodian_not_recorded"
         ),
     ]
+    assert workstream["linked_gate_disposition"] == {
+        "issue": 35,
+        "state": "closed_not_planned",
+        "review_evidence_claimed": False,
+        "scope": "bounded_disposable_stage1_only",
+    }
 
     capability = workstream["capability_boundary"]
-    assert capability["documentation_and_evidence_planning"] is True
-    assert capability["disposable_stage_1_azure_lab_after_gates"] is True
+    assert capability["disposable_stage_1_azure_lab_after_environment_gates"] is True
     for field in {
         "offline_fixture_mapping_after_captured_evidence",
         "linealert_live_opcua_or_mqtt_adapter",
@@ -119,55 +119,42 @@ def test_tier_2_lab_authority_and_blockers_are_not_conflated() -> None:
         assert capability[field] is False
 
 
-def test_issue_lifecycle_matches_selected_lab_direction() -> None:
+def test_issue_lifecycle_matches_corrected_stage1_decision() -> None:
     issues = load_project_state()["issue_lifecycle"]
-    assert issues["19"] == {
-        "title": "Plan isolated OpenPLC labeler lab emulator",
-        "state": "closed_not_planned",
-        "risk_tier": "tier_2",
-        "successor_issue": 31,
-        "disposition": "Microsoft_OPC_PLC_Azure_path_selected_first",
-        "implementation_authority": "not_granted",
-    }
-    issue_31 = issues["31"]
-    assert issue_31["state"] == (
-        "open_owner_authorized_but_blocked_before_stage_1_execution"
-    )
-    assert issue_31["owner_stage_1_authority"] == (
-        "granted_for_disposable_non_production_lab"
-    )
-    assert issue_31["azure_resources"] == "not_created"
-    assert issue_31["qualified_review"] == "not_established"
-    assert issue_31["live_adapter_authority"] == "not_granted"
-
     assert issues["35"] == {
         "title": "Qualify reviewer for Azure OPC PLC Stage 1",
-        "state": "open",
-        "risk_tier": "tier_2_review_gate",
-        "parent_issue": 31,
-        "acceptance_evidence": "not_established",
-        "execution_authority": "not_granted_by_this_issue",
-    }
-
-
-def test_issue_15_and_governance_reality_are_not_overclaimed() -> None:
-    state = load_project_state()
-    issue_15 = state["issue_lifecycle"]["15"]
-    assert issue_15 == {
-        "title": "Enforce independent review on main before further merges",
         "state": "closed_not_planned",
-        "acceptance_status": "not_satisfied",
-        "superseded_by_issue": 27,
+        "parent_issue": 31,
+        "review_evidence": "not_claimed",
+        "disposition": "review_not_required_for_bounded_disposable_stage1",
+        "later_scope_review_requirement": "preserved",
     }
 
-    controls = state["repository_controls"]
-    historical = controls["historical_main_review_gate"]
-    assert historical["observed_effect_through_pr34"] == (
-        "zero_review_merges_permitted"
+    issue_31 = issues["31"]
+    assert issue_31["state"] == "open_owner_authorized_waiting_for_environment"
+    assert issue_31["independent_review_for_stage_1"] == (
+        "not_required_by_current_owner_risk_decision"
     )
-    assert historical["status"] == "not_effective_or_not_verified"
-    assert controls["tier_1_policy"]["exact_head_ci_required"] is True
-    assert controls["tier_2_policy"]["independent_or_qualified_review_required"] is True
+    assert issue_31["azure_resources"] == "not_created"
+    assert issue_31["live_adapter_authority"] == "not_granted"
+
+    tier_2 = load_project_state()["repository_controls"]["tier_2_policy"]
+    assert tier_2["bounded_stage1_exception"]["owner_authority_sufficient"] is True
+    assert "live_linealert_adapter" in tier_2["qualified_review_required_for"]
+    assert "production_release" in tier_2["qualified_review_required_for"]
+
+
+def test_pr36_concurrent_governance_change_is_preserved() -> None:
+    history = load_project_state()["governance_incident_history"]
+    incidents = {item["id"]: item for item in history["incidents"]}
+    incident = incidents["pr36-concurrent-governance-change-not-reflected-2026-07-29"]
+    assert incident["pr"] == 36
+    assert incident["source_head"] == PR36_HEAD
+    assert incident["merge_commit"] == PR36_MERGE
+    assert incident["ci_run"] == 30508013490
+    assert incident["classification"] == (
+        "repository_state_sync_merged_after_issue35_closed_but_before_head_reconciled"
+    )
 
 
 def test_ci_workflow_verifies_literal_event_sha() -> None:
@@ -188,39 +175,25 @@ def test_ci_workflow_verifies_literal_event_sha() -> None:
     assert 'test "$actual_sha" = "$EXPECTED_SHA"' in workflow
 
 
-def test_governance_incidents_remain_append_only_through_pr34() -> None:
-    history = load_project_state()["governance_incident_history"]
-    assert "Append-only incident keys" in history["historical_detail"]
-    incidents = {item["id"]: item for item in history["incidents"]}
-    assert incidents[
-        "pr34-merged-without-separately-recorded-named-authority-2026-07-29"
-    ] == {
-        "id": (
-            "pr34-merged-without-separately-recorded-named-authority-"
-            "2026-07-29"
-        ),
-        "pr": 34,
-        "state": "merged",
-        "source_head": PR34_HEAD,
-        "merge_commit": PR34_MERGE,
-        "ci_run": 30503842026,
-        "reviews": 0,
-        "classification": (
-            "repository_state_sync_merged_without_"
-            "separately_recorded_named_authority"
-        ),
-    }
-    recent = history["recent_lifecycle"]
-    assert any(
-        item.get("pull_request") == 34 and item.get("merge_commit") == PR34_MERGE
-        for item in recent
+def test_publication_and_readme_guidance_are_current() -> None:
+    project_guidance = PROJECT_GUIDANCE.read_text(encoding="utf-8")
+    assert "## Publication rule" in project_guidance
+    assert "does not require another pull request merely to record its own merge" in (
+        project_guidance
     )
-    assert recent[-3]["issue"] == 35
-    assert recent[-3]["state"] == "open"
-    assert recent[-2]["issue"] == 19
-    assert recent[-2]["state"] == "closed_not_planned"
-    assert recent[-1]["issue"] == 31
-    assert recent[-1]["state"] == "open_owner_authorized_but_blocked"
+    assert "live_scope_changed_before_merge = corrective_sync_required" in (
+        project_guidance
+    )
+
+    readme = " ".join(ROOT_README.read_text(encoding="utf-8").split())
+    assert "Issue #27 defines the risk-tiered workflow" in readme
+    assert "Issue #15 acceptance evidence exists" not in readme
+    assert "disposable Stage 1 simulator exception" in readme
+
+    lineage = LINEAGE_GUIDANCE.read_text(encoding="utf-8")
+    assert "green_ci != authorized_merge" in lineage
+    assert "historical_pattern != current_root_cause" in lineage
+    assert "successful_test != safe_production_change" in lineage
 
 
 def test_deployment_and_equipment_reality_remain_bounded() -> None:
@@ -231,24 +204,3 @@ def test_deployment_and_equipment_reality_remain_bounded() -> None:
         "network_listener": "not_observed",
         "equipment_control_path": "not_observed",
     }
-
-
-def test_project_lookup_and_lineage_guidance_remain_bounded() -> None:
-    guidance = PROJECT_GUIDANCE.read_text(encoding="utf-8")
-    assert "## Repository resolution gate" in guidance
-    assert "exact `owner/repository` target" in guidance
-    assert "stop without drawing ownership or project-state conclusions" in guidance
-    assert "authoritative only for the resolved repository" in guidance
-
-    readme = " ".join(ROOT_README.read_text(encoding="utf-8").split())
-    lineage = LINEAGE_GUIDANCE.read_text(encoding="utf-8")
-    assert "`linealert-core`**: authoritative current LineAlert implementation" in readme
-    assert "`ContextOS`**: separate execution-containment" in readme
-    assert "`HelixMemoryService`**: early memory-service prototype" in readme
-    assert "not current LineAlert persistence" in readme
-    assert "`main` is merged repository reality" in readme
-    assert "Independent review is not established" in readme
-    assert "must not be merged into the current lineage" in lineage
-    assert "green_ci != authorized_merge" in lineage
-    assert "historical_pattern != current_root_cause" in lineage
-    assert "successful_test != safe_production_change" in lineage
