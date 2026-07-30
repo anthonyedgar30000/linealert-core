@@ -67,6 +67,9 @@ class TimingFinding:
         return f"lag:{self.topology_from}->{self.topology_to}"
 
 
+TimingCheckpoint = dict[tuple[str, str, str], MachineEvent]
+
+
 class TimingMonitor:
     """Correlate explicit event pairs and emit timing findings."""
 
@@ -87,6 +90,16 @@ class TimingMonitor:
             for rule in self.rules
             for event_type in (rule.start_event, rule.end_event)
         )
+
+    def snapshot_state(self) -> TimingCheckpoint:
+        """Return a detached checkpoint for Mosaic-managed rollback."""
+
+        return dict(self._starts)
+
+    def restore_state(self, checkpoint: TimingCheckpoint) -> None:
+        """Restore a previously captured checkpoint."""
+
+        self._starts = dict(checkpoint)
 
     def handle(self, event: MachineEvent) -> tuple[TimingFinding, ...]:
         findings: list[TimingFinding] = []

@@ -65,6 +65,8 @@ class LineAlertCore:
                 name="timing-monitor",
                 event_types=self.timing_monitor.event_types,
                 handler=self.timing_monitor.handle,
+                checkpoint=self.timing_monitor.snapshot_state,
+                restore=self.timing_monitor.restore_state,
             )
         )
 
@@ -72,17 +74,29 @@ class LineAlertCore:
         if self.machine_profile is not None:
             self.machine_profile.validate_event(event)
 
-        receipt = self.mosaic.publish(event)
-        findings = tuple(
-            output.value
-            for output in receipt.outputs
-            if isinstance(output.value, TimingFinding)
-        )
-        recommendations = tuple(
-            recommendation
-            for finding in findings
-            if (recommendation := self.diagnostics.recommend(finding)) is not None
-        )
+        transaction = self.mosaic.prepare(event)
+        try:
+            findings = tuple(
+                output.value
+                for output in transaction.receipt.outputs
+                if isinstance(output.value, TimingFinding)
+            )
+            recommendations = tuple(
+                recommendation
+                for finding in findings
+                if (recommendation := self.diagnostics.recommend(finding)) is not None
+            )
+        except Exception as error:
+            try:
+                transaction.rollback()
+            except Exception as rollback_error:
+                raise ExceptionGroup(
+                    "diagnostic derivation failed and pipeline rollback was incomplete",
+                    [error, rollback_error],
+                ) from error
+            raise
+
+        receipt = transaction.commit()
         return PipelineResult(
             receipt=receipt,
             timing_findings=findings,

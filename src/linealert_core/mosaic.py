@@ -14,6 +14,8 @@ class EventIdentityCollision(ValueError):
 
 
 EventHandler = Callable[[MachineEvent], Iterable[Any] | None]
+StateCheckpoint = Callable[[], Any]
+StateRestore = Callable[[Any], None]
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,6 +25,8 @@ class Subscription:
     name: str
     event_types: frozenset[str]
     handler: EventHandler
+    checkpoint: StateCheckpoint | None = None
+    restore: StateRestore | None = None
 
     def __post_init__(self) -> None:
         if not self.name.strip():
@@ -31,6 +35,8 @@ class Subscription:
             raise ValueError("subscription must declare at least one event type")
         if any(not event_type.strip() for event_type in self.event_types):
             raise ValueError("subscription event types must not be empty")
+        if (self.checkpoint is None) != (self.restore is None):
+            raise ValueError("checkpoint and restore must be provided together")
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,6 +57,40 @@ class EventReceipt:
     duplicate: bool = False
 
 
+@dataclass(slots=True)
+class MosaicTransaction:
+    """Prepared delivery that can be committed or rolled back exactly once."""
+
+    receipt: EventReceipt
+    _mosaic: FusionMosaic
+    _event: MachineEvent | None
+    _checkpoints: list[tuple[StateRestore, Any]]
+    _finalized: bool = False
+
+    def commit(self) -> EventReceipt:
+        """Commit event identity after all downstream derivation succeeds."""
+
+        if self._finalized:
+            raise RuntimeError("mosaic transaction is already finalized")
+        if self._event is not None:
+            self._mosaic._fingerprints_by_event_id[
+                self._event.event_id
+            ] = self._event.fingerprint
+        self._checkpoints.clear()
+        self._finalized = True
+        return self.receipt
+
+    def rollback(self) -> None:
+        """Restore declared consumer state without committing event identity."""
+
+        if self._finalized:
+            raise RuntimeError("mosaic transaction is already finalized")
+        checkpoints = self._checkpoints
+        self._checkpoints = []
+        self._finalized = True
+        self._mosaic._restore_checkpoints(checkpoints)
+
+
 class FusionMosaic:
     """Validate event identity and deliver events only to declared consumers."""
 
@@ -67,8 +107,21 @@ class FusionMosaic:
         self._subscriptions.append(subscription)
         self._subscription_names.add(subscription.name)
 
-    def publish(self, event: MachineEvent) -> EventReceipt:
-        """Deliver an event and return its exact delivery and derived outputs."""
+    @staticmethod
+    def _restore_checkpoints(
+        checkpoints: list[tuple[StateRestore, Any]],
+    ) -> None:
+        errors: list[Exception] = []
+        for restore, checkpoint in reversed(checkpoints):
+            try:
+                restore(checkpoint)
+            except Exception as error:
+                errors.append(error)
+        if errors:
+            raise ExceptionGroup("one or more consumer state restores failed", errors)
+
+    def prepare(self, event: MachineEvent) -> MosaicTransaction:
+        """Deliver an event provisionally and retain declared rollback state."""
 
         existing = self._fingerprints_by_event_id.get(event.event_id)
         if existing is not None:
@@ -76,34 +129,63 @@ class FusionMosaic:
                 raise EventIdentityCollision(
                     f"event_id {event.event_id!r} was reused for different content"
                 )
-            return EventReceipt(
-                event_id=event.event_id,
-                delivered_to=(),
-                outputs=(),
-                duplicate=True,
+            return MosaicTransaction(
+                receipt=EventReceipt(
+                    event_id=event.event_id,
+                    delivered_to=(),
+                    outputs=(),
+                    duplicate=True,
+                ),
+                _mosaic=self,
+                _event=None,
+                _checkpoints=[],
             )
 
         delivered_to: list[str] = []
         outputs: list[ConsumerOutput] = []
+        checkpoints: list[tuple[StateRestore, Any]] = []
 
-        for subscription in self._subscriptions:
-            matches_type = event.event_type in subscription.event_types
-            receives_all = "*" in subscription.event_types
-            if not matches_type and not receives_all:
-                continue
+        try:
+            for subscription in self._subscriptions:
+                matches_type = event.event_type in subscription.event_types
+                receives_all = "*" in subscription.event_types
+                if not matches_type and not receives_all:
+                    continue
 
-            delivered_to.append(subscription.name)
-            emitted = subscription.handler(event)
-            if emitted is None:
-                continue
-            outputs.extend(
-                ConsumerOutput(consumer=subscription.name, value=value)
-                for value in emitted
-            )
+                restore = subscription.restore
+                if subscription.checkpoint is not None and restore is not None:
+                    checkpoints.append((restore, subscription.checkpoint()))
 
-        self._fingerprints_by_event_id[event.event_id] = event.fingerprint
-        return EventReceipt(
-            event_id=event.event_id,
-            delivered_to=tuple(delivered_to),
-            outputs=tuple(outputs),
+                delivered_to.append(subscription.name)
+                emitted = subscription.handler(event)
+                if emitted is None:
+                    continue
+                outputs.extend(
+                    ConsumerOutput(consumer=subscription.name, value=value)
+                    for value in emitted
+                )
+        except Exception as error:
+            try:
+                self._restore_checkpoints(checkpoints)
+            except Exception as rollback_error:
+                raise ExceptionGroup(
+                    "consumer delivery failed and state rollback was incomplete",
+                    [error, rollback_error],
+                ) from error
+            raise
+
+        return MosaicTransaction(
+            receipt=EventReceipt(
+                event_id=event.event_id,
+                delivered_to=tuple(delivered_to),
+                outputs=tuple(outputs),
+            ),
+            _mosaic=self,
+            _event=event,
+            _checkpoints=checkpoints,
         )
+
+    def publish(self, event: MachineEvent) -> EventReceipt:
+        """Deliver and immediately commit one event."""
+
+        return self.prepare(event).commit()

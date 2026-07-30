@@ -40,10 +40,6 @@ def test_mosaic_handler_failure_does_not_commit_event_identity(make_event) -> No
     assert calls == ["atomic-1", "atomic-1"]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="FW-03: an earlier subscriber mutation currently survives a later failure",
-)
 def test_later_subscriber_failure_does_not_commit_earlier_subscriber_state(
     make_event,
 ) -> None:
@@ -70,6 +66,8 @@ def test_later_subscriber_failure_does_not_commit_earlier_subscriber_state(
             name="timing-monitor",
             event_types=timing.event_types,
             handler=timing.handle,
+            checkpoint=timing.snapshot_state,
+            restore=timing.restore_state,
         )
     )
     mosaic.register(
