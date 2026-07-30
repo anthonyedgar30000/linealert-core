@@ -15,13 +15,14 @@
     "semantics": "This is a time-bounded coordination snapshot. Live GitHub lifecycle, CI, review, repository-control, deployment, equipment-documentation, and equipment evidence supersedes cached current-state claims."
   },
   "live_observation": {
-    "observed_at": "2026-07-29T21:53:00-04:00",
+    "observed_at": "2026-07-29T22:12:00-04:00",
     "default_branch": "main",
     "default_branch_head": "377d57bd64107fe602d03e7ae3f9727c26a07562",
     "open_pull_requests_before_branch_creation": [],
     "open_issues": [
       23,
-      31
+      31,
+      35
     ],
     "recently_closed_issues": {
       "19": {
@@ -111,7 +112,7 @@
       },
       "blockers": [
         "no_azure_management_connection_available_in_current_workspace",
-        "qualified_independent_reviewer_not_yet_identified",
+        "qualified_review_issue_35_open_no_accepted_review_evidence",
         "disposable_subscription_region_resource_group_cleanup_owner_and_credential_custodian_not_recorded"
       ],
       "capability_boundary": {
@@ -124,7 +125,11 @@
         "physical_equipment_connection": false,
         "equipment_control": false
       },
-      "rollback": "No Azure rollback is currently required because no Azure lab resources are observed. After Stage 1 starts, execute the merged runbook teardown and verify no resource, listener, credential, certificate, workload, or control-path residue."
+      "rollback": "No Azure rollback is currently required because no Azure lab resources are observed. After Stage 1 starts, execute the merged runbook teardown and verify no resource, listener, credential, certificate, workload, or control-path residue.",
+      "linked_gates": {
+        "qualified_review_issue": 35,
+        "state": "open_no_accepted_review_evidence"
+      }
     }
   ],
   "issue_lifecycle": {
@@ -178,6 +183,14 @@
       "state": "closed_not_planned",
       "acceptance_status": "not_satisfied",
       "superseded_by_issue": 27
+    },
+    "35": {
+      "title": "Qualify reviewer for Azure OPC PLC Stage 1",
+      "state": "open",
+      "risk_tier": "tier_2_review_gate",
+      "parent_issue": 31,
+      "acceptance_evidence": "not_established",
+      "execution_authority": "not_granted_by_this_issue"
     }
   },
   "ci_policy": {
@@ -280,7 +293,7 @@
         "pr": 22,
         "state": "merged",
         "source_head": "cc6718bf76329ac28f83429204a0d5ef4b36bfe9",
-        "merge_commit": "03060ff05252e43538f86ad75527be05c96853a5",
+        "merge_commit": "03060ff05252e43538f86ad7f5527be05c96853a5",
         "ci_run": 30407732572,
         "reviews": 0,
         "classification": "proposed_architecture_evidence_not_implementation_authority"
@@ -387,6 +400,11 @@
         "state": "merged",
         "merge_commit": "377d57bd64107fe602d03e7ae3f9727c26a07562",
         "classification": "post_pr33_repository_state_sync"
+      },
+      {
+        "issue": 35,
+        "state": "open",
+        "classification": "qualified_reviewer_gate_for_issue_31_stage_1"
       },
       {
         "issue": 19,
