@@ -7,29 +7,35 @@
     "full_name": "anthonyedgar30000/linealert-core",
     "role": "authoritative_linealert_implementation"
   },
-  "updated_on": "2026-07-29",
+  "updated_on": "2026-08-02",
   "state_model": {
     "record_type": "repository_coordination_snapshot",
-    "captured_from_main": "883e2648e6884c51c8f2269239c9f68bc0bad149",
+    "captured_from_main": "06f795e760c7ad360bc51e264f8c55238a2a60da",
     "current_reality_source": "live_github_and_explicit_user_direction",
     "semantics": "This is a time-bounded coordination snapshot. Live GitHub lifecycle, CI, review, repository-control, deployment, equipment-documentation, and equipment evidence supersedes cached current-state claims.",
     "publication_policy": {
       "state_only_merge_requires_immediate_self_sync": false,
-      "rule": "A state-only publication does not require another PR merely to record its own merge. A corrective sync is required when a substantive external lifecycle, authority, deployment, equipment, or scope fact changes before merge or contradicts the published snapshot.",
-      "current_correction_reason": "Issue 35 closed as not planned immediately before PR 36 merged, so the merged head retained a reviewer blocker that live governance had removed."
+      "publication_pr_self_reference_required": false,
+      "rule": "A state-only publication does not require another pull request merely to record its own merge. A corrective sync is required when a substantive external lifecycle, authority, deployment, equipment, or scope fact changes before merge or contradicts the published snapshot.",
+      "current_correction_reason": "PR 38 merged a substantive runtime transaction change and closed Issue 23 after the PR 37 state publication, contradicting the cached PR 36 and pre-PR 38 atomicity snapshot."
     }
   },
   "live_observation": {
-    "observed_at": "2026-07-29T22:36:00-04:00",
+    "observed_at": "2026-08-02T02:16:00-04:00",
     "default_branch": "main",
-    "default_branch_head": "883e2648e6884c51c8f2269239c9f68bc0bad149",
+    "default_branch_head": "06f795e760c7ad360bc51e264f8c55238a2a60da",
     "open_pull_requests_before_branch_creation": [],
-    "open_issues": [23, 31],
+    "open_issues": [31],
     "recently_closed_issues": {
       "19": {
         "state": "closed_not_planned",
         "successor_issue": 31,
         "reason": "Microsoft_OPC_PLC_Azure_path_selected_first"
+      },
+      "23": {
+        "state": "closed_completed",
+        "closed_by_pull_request": 38,
+        "reason": "all_four_atomic_ingestion_windows_resolved"
       },
       "35": {
         "state": "closed_not_planned",
@@ -44,7 +50,7 @@
       "status": "verified_public"
     },
     "deployment": "not_deployed",
-    "azure_lab_resources": "not_created",
+    "azure_lab_resources": "not_observed",
     "physical_equipment_connection": "not_observed",
     "network_listener": "not_observed",
     "equipment_control_path": "not_observed",
@@ -52,40 +58,57 @@
   },
   "trusted_baseline": {
     "branch": "main",
-    "commit": "883e2648e6884c51c8f2269239c9f68bc0bad149",
-    "commit_role": "observed_main_head_after_pr36_merge",
+    "commit": "06f795e760c7ad360bc51e264f8c55238a2a60da",
+    "commit_role": "observed_main_head_after_pr38_merge",
     "main_ci_status": "not_exposed_or_not_verified_for_merge_commit",
     "last_completed_increment": {
-      "pull_request": 36,
-      "title": "Sync repository state through PR 34",
-      "source_head": "a57d9ad5db12bbc5f7b510d59d5c1ee7c80ca9b9",
-      "merge_commit": "883e2648e6884c51c8f2269239c9f68bc0bad149",
-      "increment_type": "tier_1_repository_state_and_test_sync",
+      "pull_request": 38,
+      "title": "Resolve remaining atomic ingestion windows",
+      "source_head": "0d5d8180a5edffaeca8a9822800d7e729ef96327",
+      "merge_commit": "06f795e760c7ad360bc51e264f8c55238a2a60da",
+      "increment_type": "tier_1_in_memory_runtime_atomicity_remediation",
       "pull_request_ci": {
-        "run_id": 30508013490,
+        "run_id": 30516440394,
         "conclusion": "success",
         "python_versions": ["3.11", "3.12"],
         "checkout_provenance": "literal_pull_request_head_sha",
-        "test_summary": "73_passed_2_xfailed"
+        "test_summary": "74_passed_0_xfailed"
       },
       "submitted_reviews": 0,
-      "post_verification_lifecycle_change": "issue_35_closed_not_planned_before_merge_and_not_reflected_in_head",
+      "merge_authority_evidence": "fresh_named_merge_instruction_not_observable_in_connected_github_evidence",
+      "deployment_status": "not_deployed"
+    },
+    "last_repository_state_increment": {
+      "pull_request": 37,
+      "title": "Correct post-PR36 Stage 1 governance state",
+      "source_head": "fc22177e1b855fd6f416f648330cd3416215a96c",
+      "merge_commit": "97256907cd428a8a0ba3dfb7d4020fa19a2485ee",
+      "increment_type": "tier_1_repository_state_and_test_correction",
+      "pull_request_ci": {
+        "run_id": 30509312378,
+        "conclusion": "success",
+        "python_versions": ["3.11", "3.12"],
+        "checkout_provenance": "literal_pull_request_head_sha",
+        "test_summary": "72_passed_2_xfailed"
+      },
+      "submitted_reviews": 0,
       "deployment_status": "not_deployed"
     },
     "last_merged_runtime_increment": {
-      "pull_request": 29,
-      "title": "Remediate Mosaic and timing evidence atomicity windows",
-      "source_head": "9146a12078394cfda22ff3e6bb9df22eaf53adaf",
-      "merge_commit": "e8bd1b7bb58112609acf27c2576abe967eda4731",
-      "verified_result": "73_passed_2_xfailed_on_synthetic_merge_ref",
+      "pull_request": 38,
+      "title": "Resolve remaining atomic ingestion windows",
+      "source_head": "0d5d8180a5edffaeca8a9822800d7e729ef96327",
+      "merge_commit": "06f795e760c7ad360bc51e264f8c55238a2a60da",
+      "verified_result": "74_passed_0_xfailed_on_literal_pull_request_head",
       "resolved_windows": [
         "FW-01_event_identity_commit",
-        "FW-02_timing_start_evidence_preservation"
-      ],
-      "remaining_windows": [
+        "FW-02_timing_start_evidence_preservation",
         "FW-03_later_subscriber_rollback",
         "FW-04_diagnostic_derivation_rollback"
       ],
+      "remaining_windows": [],
+      "transaction_boundary": "declared_mosaic_managed_consumer_state_and_event_identity_only",
+      "external_side_effect_rollback": "not_claimed",
       "deployment_status": "not_deployed"
     }
   },
@@ -104,7 +127,7 @@
         "bounded_stage_1_owner_authority_recorded",
         "openplc_predecessor_issue_19_closed_not_planned",
         "issue_35_closed_not_planned",
-        "pr36_repository_state_sync_merged"
+        "pr37_repository_state_correction_merged"
       ],
       "next_stage": "isolated_codespaces_k3s_quickstart_evidence_capture",
       "authority": {
@@ -141,20 +164,29 @@
   "issue_lifecycle": {
     "23": {
       "title": "Track atomic ingestion failure windows",
-      "state": "open",
+      "state": "closed_completed",
       "characterization": "completed_by_pr28",
-      "remediation": "FW-01_and_FW-02_merged_by_pr29",
-      "remaining_scope": [
+      "partial_remediation": "FW-01_and_FW-02_merged_by_pr29",
+      "final_remediation": "FW-03_and_FW-04_merged_by_pr38",
+      "resolved_scope": [
+        "FW-01_event_identity_commit",
+        "FW-02_timing_start_evidence_preservation",
         "FW-03_later_subscriber_rollback",
         "FW-04_diagnostic_derivation_rollback"
       ],
+      "remaining_scope": [],
       "latest_verification": {
-        "pull_request": 36,
-        "ci_run": 30508013490,
-        "test_summary": "73_passed_2_xfailed",
-        "remaining_xfails": ["FW-03", "FW-04"]
+        "pull_request": 38,
+        "ci_run": 30516440394,
+        "test_summary": "74_passed_0_xfailed",
+        "remaining_xfails": []
       },
-      "closure_rule": "Do not close until remaining windows are separately resolved, explicitly deferred, or split into successor issues with preserved traceability."
+      "limitations": [
+        "rollback_requires_declared_checkpoint_and_restore_callbacks",
+        "arbitrary_external_side_effects_are_not_transactional",
+        "nested_or_concurrent_publication_is_not_claimed",
+        "software_atomicity_does_not_establish_equipment_safety"
+      ]
     },
     "19": {
       "title": "Plan isolated OpenPLC labeler lab emulator",
@@ -172,8 +204,9 @@
       "runbook_status": "merged",
       "owner_stage_1_authority": "granted_for_disposable_non_production_lab",
       "independent_review_for_stage_1": "not_required_by_current_owner_risk_decision",
-      "azure_resources": "not_created",
+      "azure_resources": "not_observed",
       "execution_environment": "not_available_in_current_workspace",
+      "identity_resource_package": "not_recorded",
       "live_adapter_authority": "not_granted"
     },
     "35": {
@@ -228,39 +261,71 @@
     }
   },
   "governance_incident_history": {
-    "historical_detail": "Append-only incident keys remain present in this snapshot and in prior git revisions. Later policy adoption does not rewrite earlier lifecycle evidence.",
+    "historical_detail": "Historical incident identifiers remain preserved in this snapshot and in prior git revisions. Later policy adoption does not rewrite earlier lifecycle evidence.",
     "incidents": [
-      {"id": "pr12-blocked-merge-2026-07-22", "pr": 12, "state": "merged", "gate": "blocked_scope_collision"},
-      {"id": "pr13-zero-review-merge-2026-07-22", "pr": 13, "state": "merged", "reviews": 0},
-      {"id": "pr14-zero-review-merge-2026-07-23", "pr": 14, "state": "merged", "reviews": 0},
-      {"id": "pr16-zero-review-gate-bypass-2026-07-28", "pr": 16, "state": "merged", "merge_commit": "0720bbf269a571ec35a74829d72c124370afd436", "ci_run": 30385722716, "reviews": 0},
-      {"id": "pr17-zero-review-gate-bypass-2026-07-28", "pr": 17, "state": "merged", "merge_commit": "a094f0812ad85bfbcfe3c90c4cbc1d85547be7cd", "reviews": 0},
-      {"id": "pr20-zero-review-gate-bypass-2026-07-28", "pr": 20, "state": "merged", "source_head": "3f2e4b23154d34f892d6966fa1e9d72c5acb5087", "merge_commit": "f0b48f7e8966f886ff29629af0fb2eb50e366ea4", "ci_run": 30388270765, "reviews": 0, "classification": "corrective_hardening_merged_without_required_gates"},
-      {"id": "pr21-review-gate-probe-merged-zero-review-2026-07-28", "pr": 21, "state": "merged", "source_head": "19d9ce75cbff57d45a911083b84761b7aef32842", "merge_commit": "6858d4a639c0dc27853c313e545d3af467ec1412", "ci_run": 30390768815, "reviews": 0, "classification": "review_control_not_effective_for_probe_merge"},
-      {"id": "pr22-zero-review-architecture-publication-2026-07-28", "pr": 22, "state": "merged", "source_head": "cc6718bf76329ac28f83429204a0d5ef4b36bfe9", "merge_commit": "03060ff05252e43538f86ad7f5527be05c96853a5", "ci_run": 30407732572, "reviews": 0, "classification": "proposed_architecture_evidence_not_implementation_authority"},
-      {"id": "pr24-explicit-no-merge-boundary-bypassed-2026-07-28", "pr": 24, "state": "merged", "source_head": "e9e7065e7062bc9b99bbe429999e77f01b07ed99", "merge_commit": "9bc91562535f8fad681aecde61a6fc28885da69c", "ci_run": 30410780245, "reviews": 0, "classification": "state_reconciliation_merged_after_explicit_merge_not_authorized_boundary"},
-      {"id": "pr29-merged-without-separately-recorded-named-authority-2026-07-29", "pr": 29, "state": "merged", "source_head": "9146a12078394cfda22ff3e6bb9df22eaf53adaf", "merge_commit": "e8bd1b7bb58112609acf27c2576abe967eda4731", "ci_run": 30426297600, "reviews": 0, "classification": "partial_atomicity_remediation_merged_without_separately_recorded_named_authority"},
-      {"id": "pr30-merged-without-separately-recorded-named-authority-2026-07-29", "pr": 30, "state": "merged", "source_head": "1304154485039b941636616610052219513366b2", "merge_commit": "13a8a8e89dc33b2844151f4f3d26ed5e839d3005", "ci_run": 30496680414, "reviews": 0, "classification": "exact_head_ci_and_state_change_merged_without_separately_recorded_named_authority"},
-      {"id": "pr32-merged-without-separately-recorded-named-authority-2026-07-29", "pr": 32, "state": "merged", "source_head": "9d9553440cafa89b2d184ccb7c82f5455fc9716a", "merge_commit": "aa4c842447bde0bfc0ca32aab928409619e82893", "ci_run": 30498588064, "reviews": 0, "classification": "documentation_only_lab_runbook_merged_without_separately_recorded_named_authority"},
-      {"id": "pr33-merged-without-separately-recorded-named-authority-2026-07-29", "pr": 33, "state": "merged", "source_head": "8af94c7e6436a6819c15fcfb6b1cf5106afa509a", "merge_commit": "edbcd4fc8ba2d839f985be7ca190e138b365ddb4", "ci_run": 30500687408, "reviews": 0, "classification": "project_state_and_azure_gate_reconciliation_merged_without_separately_recorded_named_authority"},
-      {"id": "pr34-merged-without-separately-recorded-named-authority-2026-07-29", "pr": 34, "state": "merged", "source_head": "72d457a23f9e89cf3edfcff168f60e39e1f6e22c", "merge_commit": "377d57bd64107fe602d03e7ae3f9727c26a07562", "ci_run": 30503842026, "reviews": 0, "classification": "repository_state_sync_merged_without_separately_recorded_named_authority"},
-      {"id": "pr36-concurrent-governance-change-not-reflected-2026-07-29", "pr": 36, "state": "merged", "source_head": "a57d9ad5db12bbc5f7b510d59d5c1ee7c80ca9b9", "merge_commit": "883e2648e6884c51c8f2269239c9f68bc0bad149", "ci_run": 30508013490, "reviews": 0, "classification": "repository_state_sync_merged_after_issue35_closed_but_before_head_reconciled"}
+      {"id": "pr12-blocked-merge-2026-07-22", "pr": 12},
+      {"id": "pr13-zero-review-merge-2026-07-22", "pr": 13},
+      {"id": "pr14-zero-review-merge-2026-07-23", "pr": 14},
+      {"id": "pr16-zero-review-gate-bypass-2026-07-28", "pr": 16},
+      {"id": "pr17-zero-review-gate-bypass-2026-07-28", "pr": 17},
+      {"id": "pr20-zero-review-gate-bypass-2026-07-28", "pr": 20},
+      {"id": "pr21-review-gate-probe-merged-zero-review-2026-07-28", "pr": 21},
+      {"id": "pr22-zero-review-architecture-publication-2026-07-28", "pr": 22},
+      {"id": "pr24-explicit-no-merge-boundary-bypassed-2026-07-28", "pr": 24},
+      {"id": "pr29-merged-without-separately-recorded-named-authority-2026-07-29", "pr": 29},
+      {"id": "pr30-merged-without-separately-recorded-named-authority-2026-07-29", "pr": 30},
+      {"id": "pr32-merged-without-separately-recorded-named-authority-2026-07-29", "pr": 32},
+      {"id": "pr33-merged-without-separately-recorded-named-authority-2026-07-29", "pr": 33},
+      {"id": "pr34-merged-without-separately-recorded-named-authority-2026-07-29", "pr": 34},
+      {"id": "pr36-concurrent-governance-change-not-reflected-2026-07-29", "pr": 36},
+      {
+        "id": "pr37-state-correction-merged-2026-07-30",
+        "pr": 37,
+        "source_head": "fc22177e1b855fd6f416f648330cd3416215a96c",
+        "merge_commit": "97256907cd428a8a0ba3dfb7d4020fa19a2485ee",
+        "ci_run": 30509312378,
+        "reviews": 0,
+        "classification": "repository_state_correction"
+      },
+      {
+        "id": "pr38-runtime-atomicity-merged-2026-07-30",
+        "pr": 38,
+        "source_head": "0d5d8180a5edffaeca8a9822800d7e729ef96327",
+        "merge_commit": "06f795e760c7ad360bc51e264f8c55238a2a60da",
+        "ci_run": 30516440394,
+        "reviews": 0,
+        "classification": "runtime_atomicity_remediation_merge_authority_not_observable_in_connected_github_evidence"
+      }
     ],
     "recent_lifecycle": [
-      {"pull_request": 29, "state": "merged", "merge_commit": "e8bd1b7bb58112609acf27c2576abe967eda4731", "classification": "partial_atomicity_remediation"},
-      {"pull_request": 30, "state": "merged", "merge_commit": "13a8a8e89dc33b2844151f4f3d26ed5e839d3005", "classification": "ci_provenance_and_state_reconciliation"},
-      {"pull_request": 32, "state": "merged", "merge_commit": "aa4c842447bde0bfc0ca32aab928409619e82893", "classification": "documentation_only_azure_lab_runbook"},
-      {"pull_request": 33, "state": "merged", "merge_commit": "edbcd4fc8ba2d839f985be7ca190e138b365ddb4", "classification": "post_pr32_state_and_azure_gate_reconciliation"},
-      {"pull_request": 34, "state": "merged", "merge_commit": "377d57bd64107fe602d03e7ae3f9727c26a07562", "classification": "post_pr33_repository_state_sync"},
-      {"issue": 35, "state": "closed_not_planned", "classification": "bounded_stage1_reviewer_gate_removed_by_owner_risk_decision"},
-      {"pull_request": 36, "state": "merged", "merge_commit": "883e2648e6884c51c8f2269239c9f68bc0bad149", "classification": "state_sync_published_with_concurrent_issue35_change_not_reflected"},
-      {"issue": 31, "state": "open_owner_authorized_waiting_for_environment", "classification": "bounded_stage1_execution_ready_after_environment_identity_gates"}
+      {
+        "pull_request": 37,
+        "state": "merged",
+        "merge_commit": "97256907cd428a8a0ba3dfb7d4020fa19a2485ee",
+        "classification": "post_pr36_state_correction"
+      },
+      {
+        "pull_request": 38,
+        "state": "merged",
+        "merge_commit": "06f795e760c7ad360bc51e264f8c55238a2a60da",
+        "classification": "remaining_atomicity_remediation"
+      },
+      {
+        "issue": 23,
+        "state": "closed_completed",
+        "classification": "all_four_atomicity_windows_resolved"
+      },
+      {
+        "issue": 31,
+        "state": "open_owner_authorized_waiting_for_environment",
+        "classification": "bounded_stage1_execution_waiting_for_environment_identity_gates"
+      }
     ]
   },
   "repository_controls": {
     "historical_main_review_gate": {
       "tracking_issue": 15,
-      "observed_effect_through_pr36": "zero_review_merges_permitted",
+      "observed_effect_through_pr38": "zero_review_merges_permitted",
       "probe_pull_request": 21,
       "probe_result": "merged_with_zero_submitted_reviews",
       "status": "not_effective_or_not_verified",
@@ -298,7 +363,7 @@
   },
   "deployment_state": {
     "status": "not_deployed",
-    "azure_lab_resources": "not_created",
+    "azure_lab_resources": "not_observed",
     "physical_equipment_connection": "not_observed",
     "network_listener": "not_observed",
     "equipment_control_path": "not_observed"
