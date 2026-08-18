@@ -120,13 +120,15 @@ async def poll_opcua(endpoint: str, snapshot: Snapshot, interval: float) -> None
                         }
                     )
                     await asyncio.sleep(interval)
-        except (OSError, asyncio.TimeoutError, ConnectionError, UaError) as exc:
+        except (TimeoutError, OSError, ConnectionError, UaError) as exc:
             snapshot.replace(
                 {
                     "connected": False,
                     "profile": "microsoft-opc-plc-proxy-v1",
                     "read_only": True,
-                    "proxy_warning": "Simulator proxy evidence; not verified physical conveyor state.",
+                    "proxy_warning": (
+                        "Simulator proxy evidence; not verified physical conveyor state."
+                    ),
                     "reason_code": "EVIDENCE.OPCUA_CONNECTION_UNAVAILABLE",
                     "error": type(exc).__name__,
                     "signals": {},
