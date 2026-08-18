@@ -17,12 +17,16 @@ dependencies = []
 [project.scripts]
 linealert-replay = "linealert_core.cli:main"
 linealert-diagnose = "linealert_core.diagnostic_cli:main"
+linealert-opcua-bridge = "linealert_core.opcua_bridge:main"
 
 [project.optional-dependencies]
 dev = [
   "pytest>=8.2",
   "ruff>=0.5",
   "mypy>=1.10"
+]
+opcua = [
+  "asyncua>=1.1.5,<1.1.8"
 ]
 
 [tool.setuptools.packages.find]
