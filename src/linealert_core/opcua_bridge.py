@@ -61,6 +61,7 @@ async def _runtime_node_id(client: Any, expanded_node_id: str) -> str:
 async def poll_opcua(endpoint: str, snapshot: Snapshot, interval: float) -> None:
     try:
         from asyncua import Client
+        from asyncua.ua.uaerrors import UaError
     except ImportError as exc:
         raise SystemExit("Install the OPC UA extra: python -m pip install -e .[opcua]") from exc
 
@@ -98,7 +99,7 @@ async def poll_opcua(endpoint: str, snapshot: Snapshot, interval: float) -> None
                         }
                     )
                     await asyncio.sleep(interval)
-        except (OSError, asyncio.TimeoutError, ConnectionError) as exc:
+        except (OSError, asyncio.TimeoutError, ConnectionError, UaError) as exc:
             snapshot.replace(
                 {
                     "connected": False,
