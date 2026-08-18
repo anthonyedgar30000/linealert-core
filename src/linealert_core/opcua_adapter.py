@@ -11,7 +11,7 @@ from typing import Any
 
 class ProxySignal(StrEnum):
     RPM = "rpm"
-    ARRIVAL_MS = "arrival_ms"
+    RAW_TIMING_PROXY = "raw_timing_proxy"
     PRESSURE_PSI = "pressure_psi"
 
 
@@ -81,14 +81,34 @@ def qualify_value(mapping: NodeMapping, data_value: Any) -> QualifiedSample:
     )
 
 
+def conveyor_arrival_ms(
+    rpm: float,
+    *,
+    roller_diameter_mm: float = 100.0,
+    sensor_spacing_mm: float = 1500.0,
+    slip_pct: float = 2.5,
+    sensor_delay_ms: float = 50.0,
+) -> float:
+    """Return the deterministic center arrival for the declared conveyor model."""
+
+    values = (rpm, roller_diameter_mm, sensor_spacing_mm, slip_pct, sensor_delay_ms)
+    if not all(math.isfinite(value) for value in values):
+        raise ValueError("conveyor model inputs must be finite")
+    if rpm <= 0 or roller_diameter_mm <= 0 or sensor_spacing_mm <= 0:
+        raise ValueError("rpm, roller diameter, and sensor spacing must be positive")
+    if not 0 <= slip_pct < 100 or sensor_delay_ms < 0:
+        raise ValueError("slip and delay are outside the model domain")
+    surface_speed = math.pi * (roller_diameter_mm / 1000.0) * rpm / 60.0
+    effective_speed = surface_speed * (1.0 - slip_pct / 100.0)
+    return 1000.0 * (sensor_spacing_mm / 1000.0) / effective_speed + sensor_delay_ms
+
+
 DEFAULT_MAPPINGS = (
     NodeMapping("nsu=http://microsoft.com/Opc/OpcPlc/;s=FastDouble1", ProxySignal.RPM, "rpm"),
     NodeMapping(
         "nsu=http://microsoft.com/Opc/OpcPlc/;s=FastDouble2",
-        ProxySignal.ARRIVAL_MS,
-        "ms",
-        scale=10.0,
-        offset=1300.0,
+        ProxySignal.RAW_TIMING_PROXY,
+        "simulator-unit",
     ),
     NodeMapping(
         "nsu=http://microsoft.com/Opc/OpcPlc/;s=SlowDouble1",
