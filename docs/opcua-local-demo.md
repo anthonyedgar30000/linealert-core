@@ -26,6 +26,10 @@ python -m pip install -e ".[opcua]"
 linealert-opcua-bridge
 ```
 
+The dependency excludes `asyncua` 1.1.8 because that release returns
+`BadServerUriInvalid` when creating a session with Microsoft OPC PLC. If 1.1.8 was installed before
+this constraint was added, run `python -m pip install --force-reinstall asyncua==1.1.6`.
+
 Then open <http://localhost:8765>. Do not use the public GitHub Pages URL for the live connection;
 the local bridge serves the same dashboard and its qualified telemetry endpoint together.
 
