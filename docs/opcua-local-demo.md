@@ -9,12 +9,14 @@ conveyor measurements.
 | OPC PLC node | LineAlert proxy | Conversion |
 | --- | --- | --- |
 | `FastDouble1` | Motor RPM | value × 1 RPM |
-| `FastDouble2` | Bottle-arrival timing | value × 10 + 1300 ms |
+| `FastDouble2` | Raw independent simulator signal | retained but not treated as bottle timing |
 | `SlowDouble1` | Contact pressure | value × 1 PSI |
 
-The conversion places the generic Microsoft signal in the demo model's declared numerical range.
-It proves the protocol, timestamp, status-code, freshness, mapping, and dashboard path. It does not
-prove conveyor physics or machine causation.
+The qualified RPM proxy drives a deterministic conveyor-motion calculation using the declared
+roller diameter, sensor spacing, midpoint slip, and sensor delay. This gives the virtual operator
+display a coherent healthy relationship without pretending Microsoft's independent generic tag is
+a bottle-arrival sensor. It proves the protocol, timestamp, status-code, freshness, mapping, and
+bounded model path. It does not prove physical conveyor state or machine causation.
 
 ## Run on Windows
 
