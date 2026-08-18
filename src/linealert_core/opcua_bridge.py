@@ -13,7 +13,13 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
-from .opcua_adapter import DEFAULT_MAPPINGS, QualifiedSample, qualify_value
+from .opcua_adapter import (
+    DEFAULT_MAPPINGS,
+    ProxySignal,
+    QualifiedSample,
+    conveyor_arrival_ms,
+    qualify_value,
+)
 
 
 class Snapshot:
@@ -80,6 +86,21 @@ async def poll_opcua(endpoint: str, snapshot: Snapshot, interval: float) -> None
                         for mapping, value in zip(DEFAULT_MAPPINGS, values, strict=True)
                     ]
                     signal_map = {sample.signal.value: _sample_json(sample) for sample in samples}
+                    rpm_sample = next(
+                        sample for sample in samples if sample.signal is ProxySignal.RPM
+                    )
+                    if rpm_sample.quality == "good" and rpm_sample.value is not None:
+                        signal_map["arrival_ms"] = {
+                            "signal": "arrival_ms",
+                            "value": conveyor_arrival_ms(rpm_sample.value),
+                            "unit": "ms",
+                            "source_timestamp": rpm_sample.source_timestamp.isoformat(),
+                            "status_code": rpm_sample.status_code,
+                            "quality": "good",
+                            "reason_code": "LINEALERT.MODEL.CONVEYOR_MOTION_DERIVED",
+                            "node_id": "derived:conveyor-motion-v1",
+                            "provenance": "derived_from:rpm",
+                        }
                     all_good = all(sample.quality == "good" for sample in samples)
                     snapshot.replace(
                         {
