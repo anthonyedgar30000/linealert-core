@@ -1,5 +1,8 @@
 # LineAlert Core
 
+For the live read-only Microsoft OPC PLC dashboard lab, see
+[docs/opcua-local-demo.md](docs/opcua-local-demo.md).
+
 LineAlert Core is the deterministic machine-event reasoning layer for LineAlert.
 
 The first vertical slice implements:
