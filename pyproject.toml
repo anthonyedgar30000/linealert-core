@@ -26,7 +26,7 @@ dev = [
   "mypy>=1.10"
 ]
 opcua = [
-  "asyncua>=1.1.5,<2"
+  "asyncua>=1.1.5,<1.1.8"
 ]
 
 [tool.setuptools.packages.find]
