@@ -1,6 +1,11 @@
 from datetime import UTC, datetime
 
-from linealert_core.opcua_adapter import NodeMapping, ProxySignal, qualify_value
+from linealert_core.opcua_adapter import (
+    NodeMapping,
+    ProxySignal,
+    conveyor_arrival_ms,
+    qualify_value,
+)
 
 
 class Status:
@@ -29,12 +34,12 @@ class DataValue:
         self.SourceTimestamp = datetime(2026, 8, 18, tzinfo=UTC) if timestamp else None
 
 
-MAPPING = NodeMapping("node", ProxySignal.ARRIVAL_MS, "ms", scale=10, offset=1300)
+MAPPING = NodeMapping("node", ProxySignal.RAW_TIMING_PROXY, "simulator-unit")
 
 
 def test_good_value_is_transformed_and_evidence_preserved() -> None:
     result = qualify_value(MAPPING, DataValue(120))
-    assert result.value == 2500
+    assert result.value == 120
     assert result.quality == "good"
     assert result.status_code == "good"
     assert result.reason_code == "EVIDENCE.OPCUA_STATUS_GOOD"
@@ -51,3 +56,7 @@ def test_missing_source_timestamp_fails_closed() -> None:
     assert result.value is None
     assert result.quality == "unknown"
     assert result.reason_code == "EVIDENCE.SOURCE_TIMESTAMP_MISSING"
+
+
+def test_conveyor_arrival_is_inside_declared_center_model() -> None:
+    assert 2490 < conveyor_arrival_ms(120) < 2505
