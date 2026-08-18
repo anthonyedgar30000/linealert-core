@@ -46,6 +46,18 @@ def _sample_json(sample: QualifiedSample) -> dict[str, Any]:
     return result
 
 
+async def _runtime_node_id(client: Any, expanded_node_id: str) -> str:
+    """Resolve an nsu-based simulator identifier without pinning a namespace index."""
+
+    prefix = "nsu="
+    marker = ";s="
+    if not expanded_node_id.startswith(prefix) or marker not in expanded_node_id:
+        raise ValueError("only declared nsu string node identifiers are supported")
+    namespace_uri, identifier = expanded_node_id[len(prefix) :].split(marker, 1)
+    namespace_index = await client.get_namespace_index(namespace_uri)
+    return f"ns={namespace_index};s={identifier}"
+
+
 async def poll_opcua(endpoint: str, snapshot: Snapshot, interval: float) -> None:
     try:
         from asyncua import Client
@@ -55,7 +67,11 @@ async def poll_opcua(endpoint: str, snapshot: Snapshot, interval: float) -> None
     while True:
         try:
             async with Client(url=endpoint) as client:
-                nodes = [client.get_node(mapping.node_id) for mapping in DEFAULT_MAPPINGS]
+                runtime_ids = [
+                    await _runtime_node_id(client, mapping.node_id)
+                    for mapping in DEFAULT_MAPPINGS
+                ]
+                nodes = [client.get_node(node_id) for node_id in runtime_ids]
                 while True:
                     values = await asyncio.gather(*(node.read_data_value() for node in nodes))
                     samples = [
