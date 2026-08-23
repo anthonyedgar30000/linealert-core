@@ -56,7 +56,9 @@ class Snapshot:
                 stale = dict(signal)
                 source_timestamp = stale.get("source_timestamp")
                 try:
-                    observed = datetime.fromisoformat(source_timestamp) if source_timestamp else None
+                    observed = (
+                        datetime.fromisoformat(source_timestamp) if source_timestamp else None
+                    )
                     if observed is not None and observed.tzinfo is None:
                         observed = observed.replace(tzinfo=UTC)
                     age_ms = (received - observed).total_seconds() * 1000 if observed else None
@@ -147,8 +149,7 @@ async def poll_opcua(
         try:
             async with Client(url=endpoint) as client:
                 runtime_ids = [
-                    await _runtime_node_id(client, mapping.node_id)
-                    for mapping in DEFAULT_MAPPINGS
+                    await _runtime_node_id(client, mapping.node_id) for mapping in DEFAULT_MAPPINGS
                 ]
                 nodes = [client.get_node(node_id) for node_id in runtime_ids]
                 while True:

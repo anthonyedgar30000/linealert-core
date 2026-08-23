@@ -5,12 +5,9 @@ from pathlib import Path
 
 from linealert_core.semantic_admission import evaluate_semantic_admission
 
-
 PROFILE = json.loads(
     (
-        Path(__file__).parents[1]
-        / "profiles"
-        / "microsoft-opc-plc-proxy-v1.semantic-bindings.json"
+        Path(__file__).parents[1] / "profiles" / "microsoft-opc-plc-proxy-v1.semantic-bindings.json"
     ).read_text(encoding="utf-8")
 )
 
@@ -59,10 +56,7 @@ def test_node_identity_mismatch_fails_closed() -> None:
     result = evaluate_semantic_admission(candidate, PROFILE, now=now)
 
     assert result["admitted_count"] == 0
-    assert (
-        result["signals"]["rpm"]["reason_code"]
-        == "EVIDENCE.SEMANTIC_NODE_ID_MISMATCH"
-    )
+    assert result["signals"]["rpm"]["reason_code"] == "EVIDENCE.SEMANTIC_NODE_ID_MISMATCH"
 
 
 def test_unit_mismatch_fails_closed() -> None:
@@ -79,17 +73,12 @@ def test_unit_mismatch_fails_closed() -> None:
 def test_stale_signal_fails_closed() -> None:
     now = datetime(2026, 8, 23, 5, 0, tzinfo=UTC)
     candidate = snapshot(now)
-    candidate["signals"]["rpm"]["source_timestamp"] = (
-        now - timedelta(seconds=2)
-    ).isoformat()
+    candidate["signals"]["rpm"]["source_timestamp"] = (now - timedelta(seconds=2)).isoformat()
 
     result = evaluate_semantic_admission(candidate, PROFILE, now=now)
 
     assert result["admitted_count"] == 0
-    assert (
-        result["signals"]["rpm"]["reason_code"]
-        == "EVIDENCE.SEMANTIC_FRESHNESS_REFUSED"
-    )
+    assert result["signals"]["rpm"]["reason_code"] == "EVIDENCE.SEMANTIC_FRESHNESS_REFUSED"
 
 
 def test_bad_quality_and_scope_mismatch_fail_closed() -> None:
@@ -103,12 +92,8 @@ def test_bad_quality_and_scope_mismatch_fail_closed() -> None:
     scope_result = evaluate_semantic_admission(wrong_asset, PROFILE, now=now)
 
     assert quality_result["admitted_count"] == 0
-    assert (
-        quality_result["signals"]["rpm"]["reason_code"]
-        == "EVIDENCE.SEMANTIC_QUALITY_REFUSED"
-    )
+    assert quality_result["signals"]["rpm"]["reason_code"] == "EVIDENCE.SEMANTIC_QUALITY_REFUSED"
     assert scope_result["admitted_count"] == 0
     assert (
-        scope_result["signals"]["rpm"]["reason_code"]
-        == "EVIDENCE.SEMANTIC_SNAPSHOT_SCOPE_MISMATCH"
+        scope_result["signals"]["rpm"]["reason_code"] == "EVIDENCE.SEMANTIC_SNAPSHOT_SCOPE_MISMATCH"
     )
