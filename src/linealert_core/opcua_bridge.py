@@ -20,6 +20,7 @@ from .opcua_adapter import (
     conveyor_arrival_ms,
     qualify_value,
 )
+from .semantic_admission import evaluate_semantic_admission, load_semantic_binding_profile
 
 
 class Snapshot:
@@ -136,6 +137,11 @@ async def poll_opcua(
     except ImportError as exc:
         raise SystemExit("Install the OPC UA extra: python -m pip install -e .[opcua]") from exc
 
+    semantic_profile = load_semantic_binding_profile(
+        Path(__file__).resolve().parents[2]
+        / "profiles"
+        / "microsoft-opc-plc-proxy-v1.semantic-bindings.json"
+    )
     observation_sequence = 0
     while True:
         try:
@@ -202,6 +208,9 @@ async def poll_opcua(
                         ),
                         "signals": signal_map,
                     }
+                    payload["semantic_admission"] = evaluate_semantic_admission(
+                        payload, semantic_profile, now=received_timestamp
+                    )
                     snapshot.replace(payload)
                     if recorder is not None:
                         recorder.append(payload)
