@@ -6,9 +6,13 @@ For the live read-only Microsoft OPC PLC dashboard lab, see
 The lab bridge can capture normalized observation snapshots for deterministic replay:
 
 ```bash
-linealert-opcua-bridge --capture-jsonl evidence/opcua/microsoft-opc-plc.jsonl
+linealert-opcua-bridge --operating-mode demo_emulation --capture-jsonl evidence/opcua/microsoft-opc-plc.jsonl
 linealert-opcua-bridge --replay-jsonl evidence/opcua/microsoft-opc-plc.jsonl
 ```
+
+`demo_emulation` is an explicit source-authority setting. Selecting `physical_commissioning` or
+`physical_operational` disables this simulator source; discovering a physical connection never
+changes modes automatically. Unknown or mixed-source states fail closed.
 
 ## Hybrid role interface
 

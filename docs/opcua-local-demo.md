@@ -37,7 +37,7 @@ In a second Command Prompt, from the cloned repository directory, run:
 
 ```bat
 python -m pip install -e ".[opcua]"
-linealert-opcua-bridge --capture-jsonl evidence/opcua/microsoft-opc-plc.jsonl
+linealert-opcua-bridge --operating-mode demo_emulation --capture-jsonl evidence/opcua/microsoft-opc-plc.jsonl
 ```
 
 The dependency excludes `asyncua` 1.1.8 because that release returns
@@ -57,7 +57,7 @@ The default endpoint is `opc.tcp://localhost:50000`. Override it only when inten
 different disposable simulator:
 
 ```bat
-linealert-opcua-bridge --endpoint opc.tcp://localhost:50000
+linealert-opcua-bridge --operating-mode demo_emulation --endpoint opc.tcp://localhost:50000
 ```
 
 Stop the container while the bridge remains running. `/api/telemetry` must switch to
@@ -73,6 +73,13 @@ linealert-opcua-bridge --replay-jsonl evidence/opcua/microsoft-opc-plc.jsonl
 
 Replay preserves the original observation identifiers, source timestamps, status codes and reason
 codes. It adds replay transport metadata but does not rewrite old evidence into fresh live evidence.
+
+## Operating mode isolation
+
+This bridge is a simulator source and is enabled only in `demo_emulation`. Starting it with
+`physical_commissioning` or `physical_operational` keeps transport visible but refuses semantic
+admission and downstream claim support. A physical connection never changes the configured mode,
+and simulator plus physical sources are never combined implicitly.
 
 ## Semantic admission
 

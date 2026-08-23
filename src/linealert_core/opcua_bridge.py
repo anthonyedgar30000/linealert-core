@@ -21,6 +21,11 @@ from .opcua_adapter import (
     conveyor_arrival_ms,
     qualify_value,
 )
+from .operating_mode import (
+    enforce_operating_mode,
+    evaluate_operating_mode,
+    load_operating_mode_profile,
+)
 from .semantic_admission import evaluate_semantic_admission, load_semantic_binding_profile
 
 
@@ -166,6 +171,8 @@ async def poll_opcua(
     snapshot: Snapshot,
     interval: float,
     recorder: JsonlRecorder | None = None,
+    *,
+    operating_mode: str = "demo_emulation",
 ) -> None:
     try:
         from asyncua import Client
@@ -180,6 +187,9 @@ async def poll_opcua(
     )
     hierarchy_profile = load_evidence_hierarchy_profile(
         Path(__file__).resolve().parents[2] / "profiles" / "evidence-hierarchy-v1.json"
+    )
+    operating_mode_profile = load_operating_mode_profile(
+        Path(__file__).resolve().parents[2] / "profiles" / "operating-modes-v1.json"
     )
     observation_sequence = 0
     while True:
@@ -232,6 +242,7 @@ async def poll_opcua(
                         "connected": True,
                         "profile": "microsoft-opc-plc-proxy-v1",
                         "source_id": "microsoft-opc-plc-local",
+                        "source_kind": "simulator",
                         "asset_id": "SIM-OPCPLC-01",
                         "read_only": True,
                         "proxy_warning": (
@@ -249,6 +260,12 @@ async def poll_opcua(
                     payload["semantic_admission"] = evaluate_semantic_admission(
                         payload, semantic_profile, now=received_timestamp
                     )
+                    mode_assessment = evaluate_operating_mode(
+                        configured_mode=operating_mode,
+                        source_kinds=[payload["source_kind"]],
+                        profile=operating_mode_profile,
+                    )
+                    enforce_operating_mode(payload, mode_assessment)
                     payload["claim_evidence"] = evaluate_proxy_claims(
                         payload, hierarchy_profile
                     )
@@ -313,6 +330,12 @@ def main() -> None:
     parser.add_argument("--capture-jsonl", type=Path)
     parser.add_argument("--replay-jsonl", type=Path)
     parser.add_argument("--loop-replay", action="store_true")
+    parser.add_argument(
+        "--operating-mode",
+        choices=("demo_emulation", "physical_commissioning", "physical_operational"),
+        default="demo_emulation",
+        help="Explicit evidence-source mode; physical modes refuse this simulator bridge.",
+    )
     args = parser.parse_args()
     docs = Path(__file__).resolve().parents[2] / "docs"
     snapshot = Snapshot()
@@ -324,7 +347,13 @@ def main() -> None:
                 args.replay_jsonl, snapshot, args.poll_seconds, loop=args.loop_replay
             )
         else:
-            await poll_opcua(args.endpoint, snapshot, args.poll_seconds, recorder)
+            await poll_opcua(
+                args.endpoint,
+                snapshot,
+                args.poll_seconds,
+                recorder,
+                operating_mode=args.operating_mode,
+            )
 
     thread = threading.Thread(
         target=lambda: asyncio.run(runtime()),
@@ -337,6 +366,7 @@ def main() -> None:
         print(f"Deterministic replay: {args.replay_jsonl}")
     else:
         print(f"Read-only OPC UA endpoint: {args.endpoint}")
+        print(f"Operating mode: {args.operating_mode}")
         if args.capture_jsonl:
             print(f"Capturing observation snapshots: {args.capture_jsonl}")
     try:

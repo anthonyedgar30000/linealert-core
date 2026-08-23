@@ -16,7 +16,7 @@ if (-not (Test-Path $python)) {
 $bridgeReady = Test-NetConnection -ComputerName 127.0.0.1 -Port 8765 -InformationLevel Quiet -WarningAction SilentlyContinue
 if (-not $bridgeReady) {
     $startedBridge = Start-Process -FilePath $python `
-        -ArgumentList "-m", "linealert_core.opcua_bridge", "--capture-jsonl", $capture `
+        -ArgumentList "-m", "linealert_core.opcua_bridge", "--operating-mode", "demo_emulation", "--capture-jsonl", $capture `
         -WorkingDirectory $repoRoot `
         -PassThru
     Start-Sleep -Seconds 2
