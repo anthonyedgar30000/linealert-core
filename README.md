@@ -10,6 +10,31 @@ linealert-opcua-bridge --capture-jsonl evidence/opcua/microsoft-opc-plc.jsonl
 linealert-opcua-bridge --replay-jsonl evidence/opcua/microsoft-opc-plc.jsonl
 ```
 
+## Hybrid role interface
+
+The current role-based interface is included in `ui/`. It reads qualified observations through a
+same-origin server route and privately proxies them to the local read-only bridge. The legacy
+dashboard remains in `docs/` as a compact diagnostics reference.
+
+On Windows, with the OPC PLC container running and the Python environment installed:
+
+```powershell
+.\scripts\start-hybrid.ps1
+```
+
+Open `http://localhost:8766`. The evidence console must report `LIVE OPC UA` and identify
+`SIM-OPCPLC-01`. If the bridge retains stale observations after a disconnect, the interface reports
+`STALE · FAIL CLOSED`; it does not silently treat the last value as current.
+
+The local process boundary is:
+
+```text
+OPC UA simulator :50000
+→ Python evidence bridge :8765
+→ same-origin UI telemetry route :8766/api/telemetry
+→ role-based interface :8766
+```
+
 LineAlert Core is the deterministic machine-event reasoning layer for LineAlert.
 
 The first vertical slice implements:
