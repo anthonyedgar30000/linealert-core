@@ -10,3 +10,6 @@ build/
 *.egg-info/
 coverage.xml
 .coverage
+ui/node_modules/
+ui/.next/
+evidence/**/*.jsonl
