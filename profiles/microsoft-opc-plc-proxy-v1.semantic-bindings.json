@@ -1,0 +1,34 @@
+{
+  "schema_version": "linealert.semantic-binding-profile.v1",
+  "profile_id": "microsoft-opc-plc-proxy-semantic-v1",
+  "profile_version": 1,
+  "scope": "simulator_only",
+  "source_profile": "microsoft-opc-plc-proxy-v1",
+  "source_id": "microsoft-opc-plc-local",
+  "asset_id": "SIM-OPCPLC-01",
+  "bindings": {
+    "rpm": {
+      "admitted": true,
+      "semantic": "simulated_motor_speed_proxy",
+      "scope": "simulator_only",
+      "node_id": "nsu=http://microsoft.com/Opc/OpcPlc/;s=FastDouble1",
+      "unit": "rpm",
+      "max_age_ms": 1500
+    },
+    "pressure_psi": {
+      "admitted": false,
+      "semantic": null,
+      "scope": "display_only"
+    },
+    "arrival_ms": {
+      "admitted": false,
+      "semantic": null,
+      "scope": "context_only"
+    },
+    "raw_timing_proxy": {
+      "admitted": false,
+      "semantic": null,
+      "scope": "unmapped"
+    }
+  }
+}
