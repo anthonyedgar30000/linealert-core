@@ -195,9 +195,9 @@ a.cta-button svg{width:13px;height:13px;}
       <div class="titles">
         <h1 class="title">LABELING TROUBLESHOOTING GUIDE</h1>
         <p class="subtitle">Use this guide to quickly identify the issue you see, follow the checks, and make adjustments — then rehearse the same pattern live in the LineAlert simulator.</p>
-        <a class="sim-pill" href="https://anthonyedgar30000.github.io/linealert-core/" target="_blank" rel="noopener">
+        <a class="sim-pill" data-linealert-workflow-link href="https://anthonyedgar30000.github.io/linealert-core/" target="_blank" rel="noopener">
           <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"></circle><path d="M9 8l6 4-6 4V8z" fill="currentColor"></path></svg>
-          Live companion: LineAlert simulator ↗
+          <span data-linealert-workflow-label>Open public synthetic demonstration ↗</span>
         </a>
       </div>
     </div>
@@ -522,9 +522,9 @@ a.cta-button svg{width:13px;height:13px;}
       </div>
       <div class="bridge-cta">
         <h4>Try it live</h4>
-        <a class="cta-button" href="https://anthonyedgar30000.github.io/linealert-core/" target="_blank" rel="noopener">
+        <a class="cta-button" data-linealert-workflow-link href="https://anthonyedgar30000.github.io/linealert-core/" target="_blank" rel="noopener">
           <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"></circle><path d="M9 8l6 4-6 4V8z" fill="currentColor"></path></svg>
-          Open LineAlert simulator ↗
+          <span data-linealert-workflow-label>Open public synthetic demonstration ↗</span>
         </a>
         <p class="epistemics">Telemetry ≠ diagnosis · anomaly ≠ fault · model match ≠ proof. Confirm root cause before permanent changes and follow OEM / lockout-tagout procedures.</p>
         <p class="no-plc">Both this guide and the simulator are read-only aids — the simulator has no PLC or equipment-control path.</p>
@@ -539,5 +539,29 @@ a.cta-button svg{width:13px;height:13px;}
 
 </div>
 
+
+<script>
+  (() => {
+    const isLocalBridge =
+      (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") &&
+      window.location.port === "8765";
+    const href = isLocalBridge
+      ? `${window.location.protocol}//${window.location.hostname}:8766/`
+      : "https://anthonyedgar30000.github.io/linealert-core/";
+    const label = isLocalBridge
+      ? "Return to active LineAlert workflow ↗"
+      : "Open public synthetic demonstration ↗";
+
+    document.querySelectorAll("[data-linealert-workflow-link]").forEach((link) => {
+      link.setAttribute("href", href);
+      if (isLocalBridge) {
+        link.removeAttribute("target");
+      }
+    });
+    document.querySelectorAll("[data-linealert-workflow-label]").forEach((node) => {
+      node.textContent = label;
+    });
+  })();
+</script>
 
 </body></html>
