@@ -1,0 +1,44 @@
+{
+  "schema_version": "linealert.troubleshooting-route-profile.v1",
+  "profile_id": "speedway-labeler-troubleshooting-v1",
+  "profile_version": 1,
+  "guide_path": "/troubleshooting-guide.html",
+  "allowed_finding_scope": "synthetic_demo",
+  "procedures": {
+    "LINEALERT.DEMO.LABEL_ALIGNMENT_OFF": {
+      "procedure_id": "LABEL_ALIGNMENT_OFF",
+      "default_check": "Inspect Lane B release",
+      "required_semantics": ["arrival_phase", "merge_spacing"]
+    },
+    "LINEALERT.DEMO.LABEL_FOLDS": {
+      "procedure_id": "LABEL_FOLDS",
+      "default_check": "Inspect belt contact",
+      "required_semantics": ["surface_slip", "contact_state"]
+    },
+    "LINEALERT.DEMO.LABEL_STRETCH_LINES": {
+      "procedure_id": "LABEL_STRETCH_LINES",
+      "default_check": "Verify web tension",
+      "required_semantics": ["web_tension"]
+    },
+    "LINEALERT.DEMO.LABEL_BUBBLES": {
+      "procedure_id": "LABEL_BUBBLES",
+      "default_check": "Inspect applicator pressure",
+      "required_semantics": ["application_pressure", "contact_time"]
+    },
+    "LINEALERT.DEMO.MULTIPLE_LABELS": {
+      "procedure_id": "MULTIPLE_LABELS",
+      "default_check": "Inspect gap sensor condition",
+      "required_semantics": ["gap_detection", "label_spacing"]
+    }
+  },
+  "role_checks": {
+    "operator": "Perform the displayed inspection only; do not adjust outside operator scope.",
+    "senior-operator": "Confirm the inspection result and preserve any justified override.",
+    "millwright": "Localize the mechanical relationship before adjustment.",
+    "maintenance": "Review the bounded procedure and intervention history.",
+    "technician": "Compare controller intent with the verified physical response.",
+    "qa": "Verify the defect against the active sampling plan.",
+    "engineering": "Review the envelope and evidence before changing the model.",
+    "plant-manager": "Assign the next qualified owner; do not diagnose the machine."
+  }
+}
