@@ -13,6 +13,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
+from .evidence_hierarchy import evaluate_claim_evidence, load_evidence_hierarchy_profile
 from .opcua_adapter import (
     DEFAULT_MAPPINGS,
     ProxySignal,
@@ -127,6 +128,39 @@ async def _runtime_node_id(client: Any, expanded_node_id: str) -> str:
     return f"ns={namespace_index};s={identifier}"
 
 
+def evaluate_proxy_claims(
+    payload: dict[str, Any], hierarchy_profile: dict[str, Any]
+) -> dict[str, Any]:
+    """Assess one admitted proxy against simulator and physical claims separately."""
+
+    rpm = payload.get("signals", {}).get("rpm", {})
+    decision = payload.get("semantic_admission", {}).get("signals", {}).get("rpm", {})
+    observation = {
+        "observation_id": rpm.get("observation_id"),
+        "category": "controller_internal_state",
+        "supported_claims": ["simulator.motor_speed_proxy", "physical.motor_speed"],
+        "supports": True,
+        "failure_domain": "microsoft-opc-plc-simulator",
+        "scope": decision.get("scope"),
+        "semantic_admitted": decision.get("admitted", False),
+        "quality": rpm.get("quality"),
+        "fresh": decision.get("admitted", False),
+        "binding_verified": decision.get("admitted", False),
+    }
+    return {
+        "schema_version": "linealert.claim-evidence-set.v1",
+        "assessments": {
+            claim_id: evaluate_claim_evidence(
+                claim_id=claim_id,
+                observations=[observation],
+                profile=hierarchy_profile,
+            )
+            for claim_id in ("simulator.motor_speed_proxy", "physical.motor_speed")
+        },
+        "authorized_action": False,
+    }
+
+
 async def poll_opcua(
     endpoint: str,
     snapshot: Snapshot,
@@ -143,6 +177,9 @@ async def poll_opcua(
         Path(__file__).resolve().parents[2]
         / "profiles"
         / "microsoft-opc-plc-proxy-v1.semantic-bindings.json"
+    )
+    hierarchy_profile = load_evidence_hierarchy_profile(
+        Path(__file__).resolve().parents[2] / "profiles" / "evidence-hierarchy-v1.json"
     )
     observation_sequence = 0
     while True:
@@ -211,6 +248,9 @@ async def poll_opcua(
                     }
                     payload["semantic_admission"] = evaluate_semantic_admission(
                         payload, semantic_profile, now=received_timestamp
+                    )
+                    payload["claim_evidence"] = evaluate_proxy_claims(
+                        payload, hierarchy_profile
                     )
                     snapshot.replace(payload)
                     if recorder is not None:
