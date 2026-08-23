@@ -8,7 +8,6 @@ from linealert_core.operating_mode import (
     load_operating_mode_profile,
 )
 
-
 PROFILE = load_operating_mode_profile(
     Path(__file__).resolve().parents[1] / "profiles" / "operating-modes-v1.json"
 )
