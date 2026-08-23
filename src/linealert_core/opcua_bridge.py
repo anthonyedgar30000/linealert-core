@@ -14,17 +14,17 @@ from pathlib import Path
 from typing import Any
 
 from .evidence_hierarchy import evaluate_claim_evidence, load_evidence_hierarchy_profile
-from .operating_mode import (
-    enforce_operating_mode,
-    evaluate_operating_mode,
-    load_operating_mode_profile,
-)
 from .opcua_adapter import (
     DEFAULT_MAPPINGS,
     ProxySignal,
     QualifiedSample,
     conveyor_arrival_ms,
     qualify_value,
+)
+from .operating_mode import (
+    enforce_operating_mode,
+    evaluate_operating_mode,
+    load_operating_mode_profile,
 )
 from .semantic_admission import evaluate_semantic_admission, load_semantic_binding_profile
 
