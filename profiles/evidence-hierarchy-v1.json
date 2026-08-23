@@ -1,0 +1,33 @@
+{
+  "schema_version": "linealert.evidence-hierarchy-profile.v1",
+  "profile_id": "linealert-claim-relative-evidence-v1",
+  "profile_version": 1,
+  "levels": {
+    "unknown": 0,
+    "controller_intent": 1,
+    "controller_internal_state": 1,
+    "verified_field_input": 2,
+    "device_feedback": 2,
+    "independent_sensor": 3,
+    "camera_observation": 3,
+    "physical_inspection": 3,
+    "verified_outcome": 5
+  },
+  "physical_claim_prefixes": [
+    "physical.",
+    "product.",
+    "process."
+  ],
+  "corroboration": {
+    "derived_level": 4,
+    "minimum_sources": 2,
+    "minimum_failure_domains": 2,
+    "minimum_source_level": 2
+  },
+  "required_quality": "good",
+  "required_calibration_state": "current",
+  "verified_outcome_results": [
+    "accepted",
+    "rejected"
+  ]
+}
