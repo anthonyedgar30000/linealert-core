@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { liveEvidenceRouteBoundary, resolveSyntheticTroubleshootingRoute } from "../lib/troubleshooting-routing";
+
 type Stage = "detected" | "inspection" | "guided" | "changed" | "validated" | "released";
 type FaultKey = "alignment" | "folds" | "stretch" | "bubbles" | "multiple";
 type Role = "operator" | "senior-operator" | "millwright" | "maintenance" | "technician" | "qa" | "engineering" | "plant-manager";
@@ -161,6 +163,8 @@ export default function Home() {
         : role === "operator"
           ? language === "ES" ? scenario.spanishMove : scenario.bestMove
           : scenario.maintenanceMove;
+  const troubleshootingRoute = resolveSyntheticTroubleshootingRoute(activeFault, role);
+  const liveRouteBoundary = liveEvidenceRouteBoundary(semanticAdmission?.scope);
   const selectFault = (fault: FaultKey) => { const result = automaticVisionResult(fault); setActiveFault(fault); setStage("detected"); setCycles(0); setShowWhy(false); setReasonDepth(0); setAcademyInterest(false); setInspectionNote(""); setTargetSetpointRecorded(false); setReviewedOemFields([]); setOpenOemField(null); setShowHistory(false); setShowParameterHistory(false); setVirtualInspected(result.points); setActiveInspectionPoint(null); setInspectionFindings(result.findings); setFastLaneAccepted(false); setVisionSorted(true); setRouteTarget(""); setAssignedTo(""); };
   const openMachineFlow = (focus: "process" | "aligner" = "process") => { setFlowFocus(focus); setShowMachineFlow(true); };
 
@@ -376,6 +380,10 @@ export default function Home() {
             <div className="recommendation-top"><span className="eyebrow">{role.toUpperCase()} GUIDANCE · OEM-BOUNDED</span><span className="risk-pill">LOW RISK</span></div>
             <div className="factor-lockup"><span className="factor-symbol">{scenario.symbol}</span><div><small>{scenario.parameter}</small><b>{scenario.drift}</b></div></div>
             {scenario.parameter === "Aligner speed" && <button className="component-aid" onClick={() => openMachineFlow("aligner")}><span><small>COMPONENT VISUAL AID</small><b>Locate the bottle aligner</b></span><strong>View in full topology ↗</strong></button>}
+            <div className="guardrail"><span>Procedure route</span><b>{troubleshootingRoute.procedureId} · {troubleshootingRoute.reasonCode}</b></div>
+            <p className="verify-copy"><b>First check:</b> {troubleshootingRoute.firstCheck}. {troubleshootingRoute.roleInstruction}</p>
+            <a className="component-aid" href="http://127.0.0.1:8765/troubleshooting-guide.html" target="_blank" rel="noreferrer"><span><small>PETER-INFORMED REFERENCE</small><b>Open labeling troubleshooting guide</b></span><strong>Reference only ↗</strong></a>
+            <div className="guardrail"><span>Live OPC procedure selection</span><b>{liveRouteBoundary.decision} · {liveRouteBoundary.reasonCode}</b></div>
             <span className="eyebrow">MOST PROMISING NEXT MOVE</span>
             <h2>{roleMove}</h2>
             <p className="verify-copy">{language === "ES" ? "Revise las próximas 5 botellas." : "Check the next 5 bottles."}</p>

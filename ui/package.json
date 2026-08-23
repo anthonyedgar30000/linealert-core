@@ -12,7 +12,7 @@
     "lint": "eslint . --ignore-pattern .next"
   },
   "dependencies": {
-    "next": "16.2.6",
+    "next": "16.3.2",
     "react": "19.2.6",
     "react-dom": "19.2.6"
   },
@@ -20,6 +20,8 @@
     "@types/node": "22.19.19",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "16.3.2",
     "typescript": "5.9.3"
   },
   "type": "module",
