@@ -74,6 +74,15 @@ linealert-opcua-bridge --replay-jsonl evidence/opcua/microsoft-opc-plc.jsonl
 Replay preserves the original observation identifiers, source timestamps, status codes and reason
 codes. It adds replay transport metadata but does not rewrite old evidence into fresh live evidence.
 
+## Semantic admission
+
+Transport qualification and semantic admission are separate gates. The versioned profile at
+`profiles/microsoft-opc-plc-proxy-v1.semantic-bindings.json` admits only `FastDouble1` as
+`simulated_motor_speed_proxy`, and only when profile, source, asset, read-only state, node identity,
+unit, OPC quality and freshness all match. Its scope remains `simulator_only`; it cannot support a
+physical-machine claim. Pressure, derived arrival and the raw timing proxy remain visible but
+diagnostically inadmissible.
+
 ## Enforced boundary
 
 - no automatic node browsing;
