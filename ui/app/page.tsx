@@ -8,7 +8,9 @@ type Role = "operator" | "senior-operator" | "millwright" | "maintenance" | "tec
 type Language = "EN" | "ES";
 type ResponseMode = "automatic" | "confirm" | "guided" | "escalate";
 type EvidenceSignal = { value:number | null; unit:string; quality:string; reason_code:string; provenance?:string; age_ms?:number };
-type TelemetrySnapshot = { connected:boolean; source_id:string; asset_id:string; read_only:boolean; reason_code:string; proxy_warning?:string; observation_sequence?:number; bridge_timestamp?:string; signals:Record<string,EvidenceSignal> };
+type SemanticDecision = { admitted:boolean; reason_code:string; semantic?:string | null; scope?:string };
+type SemanticAdmission = { profile_id:string; profile_version:number; scope:string; admitted_count:number; total_count:number; reason_code:string; signals:Record<string,SemanticDecision> };
+type TelemetrySnapshot = { connected:boolean; source_id:string; asset_id:string; read_only:boolean; reason_code:string; proxy_warning?:string; observation_sequence?:number; bridge_timestamp?:string; semantic_admission?:SemanticAdmission; signals:Record<string,EvidenceSignal> };
 
 const rolePacks: Record<Role, { label:string; short:string; icon:string; headline:string; focus:string; contribution:string; authority:string; handoff:string; learns:string }> = {
   operator: { label:"Operator", short:"OPS", icon:"◎", headline:"One clear move. Five fresh bottles.", focus:"Safe recovery · current bottle outcome", contribution:"Physical nuance and current-event confirmation", authority:"Within operator scope", handoff:"Maintenance receives the symptom, checks and fresh outcomes—not a vague call.", learns:"Recognize when a pattern needs maintenance without taking maintenance authority." },
@@ -141,6 +143,9 @@ export default function Home() {
   const liveRawTiming = telemetry?.signals?.raw_timing_proxy?.value ?? 886 + Math.round(Math.sin(signalTick / 11) * 4);
   const evidenceConnected = telemetryReachable && Boolean(telemetry?.connected);
   const evidenceStale = telemetryReachable && !telemetry?.connected;
+  const semanticAdmission = telemetry?.semantic_admission;
+  const admittedSignals = semanticAdmission?.admitted_count ?? 0;
+  const totalSemanticSignals = semanticAdmission?.total_count ?? 4;
   const isOperatorView = role === "operator";
   const isManagerView = role === "plant-manager";
   const isDecisionView = role === "operator" || role === "senior-operator" || role === "qa" || isManagerView;
@@ -336,10 +341,10 @@ export default function Home() {
           <div className="evidence-chain">
             <span><small>SOURCE</small><b>{evidenceConnected ? "Allow-listed OPC UA nodes" : "Scenario generator"}</b></span><i>→</i>
             <span><small>QUALIFICATION</small><b>{evidenceStale ? "Current use refused" : "Status · timestamp · identity"}</b></span><i>→</i>
-            <span><small>SEMANTIC ADMISSION</small><b>{evidenceConnected ? "0 / 4 signals admitted to diagnostics" : "No live signals admitted"}</b></span><i>→</i>
+            <span><small>SEMANTIC ADMISSION</small><b>{evidenceConnected ? `${admittedSignals} / ${totalSemanticSignals} signals admitted · ${semanticAdmission?.scope ?? "profile required"}` : "No live signals admitted"}</b></span><i>→</i>
             <span><small>ROLE LENS</small><b>{rolePack.label} receives decision-relevant evidence</b></span>
           </div>
-          {evidenceConnected && <div className="semantic-boundary"><div><small>PROXY BOUNDARY</small><b>{telemetry?.proxy_warning ?? "Simulator evidence is not verified physical machine state."}</b></div><div className="binding-row"><span><b>rpm</b><small>Display only · physical drive mapping absent</small></span><span><b>pressure_psi</b><small>Display only · applicator sensor mapping absent</small></span><span><b>arrival_ms</b><small>Context only · derived proxy ≠ arrival phase</small></span><span><b>raw_timing_proxy</b><small>Unmapped · diagnostically inadmissible</small></span></div><strong>EVIDENCE.SEMANTIC_BINDING_REQUIRED · transport qualified, diagnostic use refused</strong></div>}<div className="evidence-provenance"><span><b>{telemetry?.reason_code ?? "LINEALERT.DEMO.EVIDENCE_STREAM"}</b><small>{telemetry?.observation_sequence ? `Observation ${telemetry.observation_sequence}` : "No claim of physical machine state"}</small></span><span><b>{telemetry?.read_only === false ? "WRITE CAPABILITY PRESENT" : "No writes · no browse expansion"}</b><small>{telemetry?.bridge_timestamp ? new Date(telemetry.bridge_timestamp).toLocaleTimeString() : "Demonstration clock only"}</small></span><span><b>Evidence ≠ root cause</b><small>Corroboration and a fresh outcome still control the next gate.</small></span></div>
+          {evidenceConnected && <div className="semantic-boundary"><div><small>PROXY BOUNDARY</small><b>{telemetry?.proxy_warning ?? "Simulator evidence is not verified physical machine state."}</b></div><div className="binding-row"><span><b>rpm</b><small>{semanticAdmission?.signals?.rpm?.admitted ? "Admitted · simulated motor-speed proxy only" : "Display only · binding absent or refused"}</small></span><span><b>pressure_psi</b><small>Display only · applicator sensor mapping absent</small></span><span><b>arrival_ms</b><small>Context only · derived proxy ≠ arrival phase</small></span><span><b>raw_timing_proxy</b><small>Unmapped · diagnostically inadmissible</small></span></div><strong>{semanticAdmission?.reason_code ?? "EVIDENCE.SEMANTIC_BINDING_REQUIRED"} · {admittedSignals ? "bounded simulator admission active; physical-machine claims still refused" : "transport qualified, diagnostic use refused"}</strong></div>}<div className="evidence-provenance"><span><b>{telemetry?.reason_code ?? "LINEALERT.DEMO.EVIDENCE_STREAM"}</b><small>{telemetry?.observation_sequence ? `Observation ${telemetry.observation_sequence}` : "No claim of physical machine state"}</small></span><span><b>{telemetry?.read_only === false ? "WRITE CAPABILITY PRESENT" : "No writes · no browse expansion"}</b><small>{telemetry?.bridge_timestamp ? new Date(telemetry.bridge_timestamp).toLocaleTimeString() : "Demonstration clock only"}</small></span><span><b>Evidence ≠ root cause</b><small>Corroboration and a fresh outcome still control the next gate.</small></span></div>
         </div>}
       </section>
 
