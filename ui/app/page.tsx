@@ -8,7 +8,7 @@ type Role = "operator" | "senior-operator" | "millwright" | "maintenance" | "tec
 type Language = "EN" | "ES";
 type ResponseMode = "automatic" | "confirm" | "guided" | "escalate";
 type EvidenceSignal = { value:number | null; unit:string; quality:string; reason_code:string; provenance?:string; age_ms?:number };
-type TelemetrySnapshot = { connected:boolean; source_id:string; asset_id:string; read_only:boolean; reason_code:string; observation_sequence?:number; bridge_timestamp?:string; signals:Record<string,EvidenceSignal> };
+type TelemetrySnapshot = { connected:boolean; source_id:string; asset_id:string; read_only:boolean; reason_code:string; proxy_warning?:string; observation_sequence?:number; bridge_timestamp?:string; signals:Record<string,EvidenceSignal> };
 
 const rolePacks: Record<Role, { label:string; short:string; icon:string; headline:string; focus:string; contribution:string; authority:string; handoff:string; learns:string }> = {
   operator: { label:"Operator", short:"OPS", icon:"◎", headline:"One clear move. Five fresh bottles.", focus:"Safe recovery · current bottle outcome", contribution:"Physical nuance and current-event confirmation", authority:"Within operator scope", handoff:"Maintenance receives the symptom, checks and fresh outcomes—not a vague call.", learns:"Recognize when a pattern needs maintenance without taking maintenance authority." },
@@ -328,20 +328,22 @@ export default function Home() {
         </header>
         {showEvidenceConsole && <div className="evidence-console-body">
           <div className="evidence-gauges">
-            <EvidenceGauge label="Motor speed" value={liveRpm} unit="rpm" quality={telemetry?.signals?.rpm?.quality ?? "demo"}/>
-            <EvidenceGauge label="Derived arrival" value={liveArrival} unit="ms" quality={telemetry?.signals?.arrival_ms?.quality ?? "demo"}/>
-            <EvidenceGauge label="Contact pressure" value={livePressure} unit="psi" quality={telemetry?.signals?.pressure_psi?.quality ?? "demo"}/>
-            <EvidenceGauge label="Timing proxy" value={liveRawTiming} unit="unit" quality={telemetry?.signals?.raw_timing_proxy?.quality ?? "demo"}/>
+            <EvidenceGauge label="Motor speed proxy" value={liveRpm} unit="rpm" quality={telemetry?.signals?.rpm?.quality ?? "demo"}/>
+            <EvidenceGauge label="Derived arrival proxy" value={liveArrival} unit="ms" quality={telemetry?.signals?.arrival_ms?.quality ?? "demo"}/>
+            <EvidenceGauge label="Contact pressure proxy" value={livePressure} unit="psi" quality={telemetry?.signals?.pressure_psi?.quality ?? "demo"}/>
+            <EvidenceGauge label="Unmapped timing proxy" value={liveRawTiming} unit="unit" quality={telemetry?.signals?.raw_timing_proxy?.quality ?? "demo"}/>
           </div>
           <div className="evidence-chain">
             <span><small>SOURCE</small><b>{evidenceConnected ? "Allow-listed OPC UA nodes" : "Scenario generator"}</b></span><i>→</i>
             <span><small>QUALIFICATION</small><b>{evidenceStale ? "Current use refused" : "Status · timestamp · identity"}</b></span><i>→</i>
-            <span><small>RELATIONSHIP</small><b>Values interpreted inside declared envelopes</b></span><i>→</i>
+            <span><small>SEMANTIC ADMISSION</small><b>{evidenceConnected ? "0 / 4 signals admitted to diagnostics" : "No live signals admitted"}</b></span><i>→</i>
             <span><small>ROLE LENS</small><b>{rolePack.label} receives decision-relevant evidence</b></span>
           </div>
-          <div className="evidence-provenance"><span><b>{telemetry?.reason_code ?? "LINEALERT.DEMO.EVIDENCE_STREAM"}</b><small>{telemetry?.observation_sequence ? `Observation ${telemetry.observation_sequence}` : "No claim of physical machine state"}</small></span><span><b>{telemetry?.read_only === false ? "WRITE CAPABILITY PRESENT" : "No writes · no browse expansion"}</b><small>{telemetry?.bridge_timestamp ? new Date(telemetry.bridge_timestamp).toLocaleTimeString() : "Demonstration clock only"}</small></span><span><b>Evidence ≠ root cause</b><small>Corroboration and a fresh outcome still control the next gate.</small></span></div>
+          {evidenceConnected && <div className="semantic-boundary"><div><small>PROXY BOUNDARY</small><b>{telemetry?.proxy_warning ?? "Simulator evidence is not verified physical machine state."}</b></div><div className="binding-row"><span><b>rpm</b><small>Display only · physical drive mapping absent</small></span><span><b>pressure_psi</b><small>Display only · applicator sensor mapping absent</small></span><span><b>arrival_ms</b><small>Context only · derived proxy ≠ arrival phase</small></span><span><b>raw_timing_proxy</b><small>Unmapped · diagnostically inadmissible</small></span></div><strong>EVIDENCE.SEMANTIC_BINDING_REQUIRED · transport qualified, diagnostic use refused</strong></div>}<div className="evidence-provenance"><span><b>{telemetry?.reason_code ?? "LINEALERT.DEMO.EVIDENCE_STREAM"}</b><small>{telemetry?.observation_sequence ? `Observation ${telemetry.observation_sequence}` : "No claim of physical machine state"}</small></span><span><b>{telemetry?.read_only === false ? "WRITE CAPABILITY PRESENT" : "No writes · no browse expansion"}</b><small>{telemetry?.bridge_timestamp ? new Date(telemetry.bridge_timestamp).toLocaleTimeString() : "Demonstration clock only"}</small></span><span><b>Evidence ≠ root cause</b><small>Corroboration and a fresh outcome still control the next gate.</small></span></div>
         </div>}
       </section>
+
+      <div className="scenario-boundary"><span>COMMISSIONING SCENARIO · SIMULATED DIAGNOSTIC MODEL</span><b>The cards below are generated scenario evidence—not measurements derived from the live OPC proxy above.</b></div>
 
       <section className="workspace">
         <aside className="sidebar">
