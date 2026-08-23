@@ -194,21 +194,21 @@ a.cta-button svg{width:13px;height:13px;}
       </svg>
       <div class="titles">
         <h1 class="title">LABELING TROUBLESHOOTING GUIDE</h1>
-        <p class="subtitle">Use this guide to quickly identify the issue you see, follow the checks, and make adjustments — then rehearse the same pattern live in the LineAlert simulator.</p>
-        <a class="sim-pill" data-linealert-workflow-link href="https://anthonyedgar30000.github.io/linealert-core/" target="_blank" rel="noopener">
+        <p class="subtitle">Controlled reference for understanding visible labeling issues, bounded checks, escalation conditions and the operational knowledge behind a LineAlert procedure route.</p>
+        <a class="sim-pill" data-linealert-workflow-link href="https://linealert-operator-view.anthonyedgar30000.chatgpt.site/" target="_blank" rel="noopener">
           <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"></circle><path d="M9 8l6 4-6 4V8z" fill="currentColor"></path></svg>
           <span data-linealert-workflow-label>Open public synthetic demonstration ↗</span>
         </a>
       </div>
     </div>
     <div class="how-to-box">
-      <h2>How to use this guide + simulator</h2>
+      <h2>How to use this controlled reference</h2>
       <ol>
-        <li>Identify the issue you are seeing.</li>
-        <li>Follow the questions/checks in that column.</li>
-        <li>Make the recommended adjustments.</li>
-        <li>If the issue remains, move to related areas (arrows).</li>
-        <li class="sim-step">Open the LineAlert simulator, inject the matching fault, and validate the fix across 5 fresh cycles before touching the machine.</li>
+        <li>Start from the procedure routed by the active LineAlert workflow.</li>
+        <li>Review the checks and related issue areas without assuming root cause.</li>
+        <li>Perform only the inspection or task allowed for your role.</li>
+        <li>Return to LineAlert and record what the current inspection established.</li>
+        <li class="sim-step">Continue, validate or escalate through the assigned operational authority.</li>
       </ol>
     </div>
   </div>
@@ -494,46 +494,46 @@ a.cta-button svg{width:13px;height:13px;}
     </div>
   </div>
 
-  <!-- ================= BRIDGE BAND ================= -->
+  <!-- ================= CONTROLLED REFERENCE BAND ================= -->
   <div class="bridge-band">
-    <h2>Poster ↔ simulator: same logic, two views</h2>
-    <p class="lede">This guide shows the static relationships between defects. LineAlert's simulator shows the same relationships developing live, cycle by cycle, so you can rehearse a fix before you touch the machine.</p>
+    <h2>Controlled procedure reference</h2>
+    <p class="lede">This guide preserves troubleshooting knowledge behind a routed LineAlert procedure. It explains candidate checks and escalation conditions; it does not diagnose the current machine or authorize an adjustment.</p>
     <div class="bridge-grid">
       <div class="bridge-steps">
-        <h4>Combined workflow</h4>
+        <h4>Governed workflow</h4>
         <ol>
-          <li>Identify the issue on the bottle (columns above).</li>
-          <li>Run the Checks for that column.</li>
-          <li>Open the simulator and inject the matching fault noted in that card.</li>
-          <li>Watch the same relationship the Checks describe play out as live telemetry, until LineAlert reaches a Bounded finding.</li>
-          <li>Compare LineAlert's suggested adjustment to the poster's Actions list.</li>
-          <li>Apply it, confirm the Before / After score across 5 fresh cycles — then make the real adjustment and Document &amp; Track it.</li>
+          <li>LineAlert qualifies the available evidence and publishes a bounded finding.</li>
+          <li>A versioned rule routes the finding to one controlled procedure.</li>
+          <li>The assigned role performs the displayed check within its authority.</li>
+          <li>The inspection result is recorded in the active recovery workflow.</li>
+          <li>Fresh evidence determines whether to continue, validate or escalate.</li>
+          <li>Qualified human authority retains adjustment, safety and release decisions.</li>
         </ol>
       </div>
-      <div class="bridge-glossary">
-        <h4>Term mapping</h4>
-        <table class="glossary-table">
-          <tbody><tr><td class="poster-term">Checks</td><td class="sim-term">Machine relationship envelopes</td></tr>
-          <tr><td class="poster-term">Actions</td><td class="sim-term">Suggested simulated adjustment</td></tr>
-          <tr><td class="poster-term">Key Point</td><td class="sim-term">Bounded finding</td></tr>
-          <tr><td class="poster-term">Related issues (arrows)</td><td class="sim-term">Shared envelope drift across faults</td></tr>
-          <tr><td class="poster-term">When to escalate</td><td class="sim-term">Finding persists after 5 fresh cycles</td></tr>
+      <div class="bridge-map">
+        <h4>Reference terms</h4>
+        <table><tbody>
+          <tr><th>Checks</th><td>Candidate observations for the routed procedure</td></tr>
+          <tr><th>Actions</th><td>Potential OEM-governed tasks—not automatic authority</td></tr>
+          <tr><th>Key point</th><td>Relationship context—not root-cause proof</td></tr>
+          <tr><th>Related issues</th><td>Adjacent fault domains requiring separation</td></tr>
+          <tr><th>When to escalate</th><td>Boundary for qualified human review</td></tr>
         </tbody></table>
       </div>
       <div class="bridge-cta">
-        <h4>Try it live</h4>
-        <a class="cta-button" data-linealert-workflow-link href="https://anthonyedgar30000.github.io/linealert-core/" target="_blank" rel="noopener">
+        <h4>Return to the active workflow</h4>
+        <a class="cta-button" data-linealert-workflow-link href="https://linealert-operator-view.anthonyedgar30000.chatgpt.site/" target="_blank" rel="noopener">
           <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"></circle><path d="M9 8l6 4-6 4V8z" fill="currentColor"></path></svg>
-          <span data-linealert-workflow-label>Open public synthetic demonstration ↗</span>
+          <span data-linealert-workflow-label>Open current public LineAlert demonstration ↗</span>
         </a>
-        <p class="epistemics">Telemetry ≠ diagnosis · anomaly ≠ fault · model match ≠ proof. Confirm root cause before permanent changes and follow OEM / lockout-tagout procedures.</p>
-        <p class="no-plc">Both this guide and the simulator are read-only aids — the simulator has no PLC or equipment-control path.</p>
+        <p class="epistemic">Procedure route ≠ root cause. Candidate task ≠ authorized action. Record current evidence and follow OEM, site-safety and lockout/tagout requirements.</p>
+        <p class="no-plc">This reference has no PLC or equipment-control path.</p>
       </div>
     </div>
   </div>
 
   <div class="poster-footer">
-    Companion reference for the LineAlert relational troubleshooting simulator ·
+    Controlled labeling troubleshooting reference ·
     <a href="https://github.com/anthonyedgar30000/linealert-core" target="_blank" rel="noopener">linealert-core</a>
   </div>
 
@@ -547,10 +547,10 @@ a.cta-button svg{width:13px;height:13px;}
       window.location.port === "8765";
     const href = isLocalBridge
       ? `${window.location.protocol}//${window.location.hostname}:8766/`
-      : "https://anthonyedgar30000.github.io/linealert-core/";
+      : "https://linealert-operator-view.anthonyedgar30000.chatgpt.site/";
     const label = isLocalBridge
       ? "Return to active LineAlert workflow ↗"
-      : "Open public synthetic demonstration ↗";
+      : "Open current public LineAlert demonstration ↗";
 
     document.querySelectorAll("[data-linealert-workflow-link]").forEach((link) => {
       link.setAttribute("href", href);

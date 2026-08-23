@@ -13,8 +13,9 @@ linealert-opcua-bridge --replay-jsonl evidence/opcua/microsoft-opc-plc.jsonl
 ## Hybrid role interface
 
 The current role-based interface is included in `ui/`. It reads qualified observations through a
-same-origin server route and privately proxies them to the local read-only bridge. The legacy
-dashboard remains in `docs/` as a compact diagnostics reference.
+same-origin server route and privately proxies them to the local read-only bridge. The standalone
+guide at `docs/troubleshooting-guide.html` preserves controlled troubleshooting knowledge; the
+retired static dashboard remains available only through Git history.
 
 On Windows, with the OPC PLC container running and the Python environment installed:
 
