@@ -1,0 +1,20 @@
+{
+  "schema_version": "linealert.operating-mode-profile.v1",
+  "profile_id": "linealert-operating-modes-v1",
+  "profile_version": 1,
+  "default_mode": "demo_emulation",
+  "modes": {
+    "demo_emulation": {
+      "allowed_source_kinds": ["simulator"],
+      "scope": "simulator_only"
+    },
+    "physical_commissioning": {
+      "allowed_source_kinds": ["physical"],
+      "scope": "commissioning_only"
+    },
+    "physical_operational": {
+      "allowed_source_kinds": ["physical"],
+      "scope": "physical_operational"
+    }
+  }
+}
