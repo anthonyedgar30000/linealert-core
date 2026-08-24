@@ -1,12 +1,14 @@
 import json
 from pathlib import Path
 
-from linealert_core.condition_projection import (
+from linealert_core import (
+    build_core_from_config,
     condition_signal_projection_to_dict,
     load_condition_signal_bindings,
+    load_events,
     project_replay_condition_signals,
+    replay_events,
 )
-from linealert_core.replay import build_core_from_config, load_events, replay_events
 
 
 ROOT = Path(__file__).resolve().parents[1]
