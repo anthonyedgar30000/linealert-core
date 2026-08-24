@@ -32,18 +32,23 @@ http://127.0.0.1:8765/api/condition
 
 The API reports whether a condition stream is configured, whether it is still running, the source mode, measurement and refusal counts, the retained claim boundary, and the exact `LiveConditionConsumer` evidence payload.
 
-The Next.js health UI proxies that endpoint through `/api/condition`. It no longer promotes an arbitrary OPC UA proxy into the condition relationship merely because the units or values appear useful.
+The Next.js health UI proxies that endpoint through `/api/condition`. It does not promote an arbitrary OPC UA proxy into the condition relationship merely because the units or values appear useful.
 
-For a local deterministic runtime demonstration, start the bridge with the checked-in labeler event stream, configuration, and condition binding:
+For a local deterministic runtime demonstration, start the bridge with the repeated labeler condition fixture, configuration, and condition binding:
 
 ```bash
 linealert-opcua-bridge \
-  --condition-events-jsonl examples/labeler_demo_events.jsonl \
+  --condition-events-jsonl examples/labeler_condition_drift_events.jsonl \
   --condition-config examples/labeler_demo_config.json \
-  --condition-bindings examples/condition_signal_bindings.json
+  --condition-bindings examples/condition_signal_bindings.json \
+  --condition-replay-seconds 0.25
 ```
 
-The condition runtime is explicitly labelled `deterministic_event_replay`. The checked-in cycle produces the measured `label_presentation_delay_ms` value of 550 ms against the approved 50–350 ms envelope. That is runtime publication of deterministic event evidence, not current physical-machine telemetry.
+The fixture contains ten independently correlated cycles whose measured presentation delay progresses from 240 ms to 550 ms. The approved envelope remains 50–350 ms, so the first four measurements are within the configured relationship and the remaining six are late. This lets the health UI demonstrate the distinction between a single deviation and repeated relationship degradation using actual deterministic-core output.
+
+The UI waits for at least five admitted measurements before interpreting a runtime trend. Its displayed trend compares an early three-measurement window with the most recent three-measurement window. That is a bounded description of movement in the measured relationship; it is not a failure forecast.
+
+The condition runtime remains explicitly labelled `deterministic_event_replay`. The repeated fixture is runtime publication of deterministic event evidence, not current physical-machine telemetry. `scripts/start-hybrid.ps1` launches this replay alongside the read-only OPC UA simulator context so the two evidence classes remain visibly separate.
 
 A physical source adapter remains a separate integration step. When one is eventually connected, it must supply governed `MachineEvent` envelopes with preserved source identity, sequence/session integrity, event quality, and clock evidence; the runtime publication layer does not waive those requirements.
 

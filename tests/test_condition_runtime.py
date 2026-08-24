@@ -54,6 +54,48 @@ def test_condition_runtime_publishes_demo_event_measurement() -> None:
     assert observation["clock_evidence"]["basis"] == "same_source_relative_interval"
 
 
+def test_condition_runtime_retains_repeated_drift_cycles_in_order() -> None:
+    snapshot = ConditionRuntimeSnapshot()
+
+    summary = asyncio.run(
+        replay_condition_events(
+            PROJECT_ROOT / "examples" / "labeler_condition_drift_events.jsonl",
+            PROJECT_ROOT / "examples" / "labeler_demo_config.json",
+            PROJECT_ROOT / "examples" / "condition_signal_bindings.json",
+            snapshot,
+            interval_seconds=0,
+        )
+    )
+    payload = snapshot.get()
+    observations = payload["condition"]["condition_signals"]["observations"]
+
+    assert summary.measurement_count == 10
+    assert payload["measurement_count"] == 10
+    assert payload["refusal_count"] == 0
+    assert [observation["value"] for observation in observations] == pytest.approx(
+        [240.0, 260.0, 300.0, 340.0, 370.0, 400.0, 430.0, 470.0, 510.0, 550.0]
+    )
+    assert [observation["temporal_rule_status"] for observation in observations] == [
+        "within",
+        "within",
+        "within",
+        "within",
+        "late",
+        "late",
+        "late",
+        "late",
+        "late",
+        "late",
+    ]
+    assert [observation["correlation_id"] for observation in observations] == [
+        f"drift-cycle-{cycle}" for cycle in range(2001, 2011)
+    ]
+    assert all(
+        observation["clock_evidence"]["basis"] == "same_source_relative_interval"
+        for observation in observations
+    )
+
+
 def test_condition_runtime_rejects_negative_replay_interval() -> None:
     snapshot = ConditionRuntimeSnapshot()
 

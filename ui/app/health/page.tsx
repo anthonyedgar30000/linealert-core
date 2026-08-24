@@ -226,11 +226,12 @@ export default function MachineHealthPage() {
   const arrivalSeries = useMemo(() => signalSeries(history, "arrival_ms"), [history]);
 
   const runtimeState = useMemo<HealthState>(() => {
-    const recent = conditionSeries.slice(-20);
-    const first = conditionSeries.slice(0, Math.min(20, conditionSeries.length));
+    const trendWindowSize = Math.max(1, Math.min(3, Math.floor(conditionSeries.length / 2)));
+    const recent = conditionSeries.slice(-trendWindowSize);
+    const first = conditionSeries.slice(0, trendWindowSize);
     const rollingAverage = average(recent);
     const startingAverage = average(first) || rollingAverage;
-    const trendPercent = conditionSeries.length >= 2 && startingAverage
+    const trendPercent = conditionTrendAvailable && startingAverage
       ? ((rollingAverage - startingAverage) / startingAverage) * 100
       : 0;
     const violations = conditionSeries
@@ -337,12 +338,12 @@ export default function MachineHealthPage() {
           <small>Commissioned envelope {baselineLow}–{baselineHigh} {baselineUnit}</small>
         </article>
         <article className={styles.metricCard}>
-          <span>CURRENT ROLLING AVERAGE</span><strong>{state.rollingAverage.toFixed(conditionEvidenceAvailable ? 1 : 0)} ms</strong>
+          <span>RECENT ROLLING AVERAGE</span><strong>{state.rollingAverage.toFixed(conditionEvidenceAvailable ? 1 : 0)} ms</strong>
           <small>{deviationDetected ? "Outside commissioned baseline" : "Inside commissioned baseline"}</small>
         </article>
         <article className={styles.metricCard}>
-          <span>{conditionEvidenceAvailable ? "RUNTIME TREND" : "SIMULATED TREND"}</span><strong>{trendLabel}</strong>
-          <small>{conditionEvidenceAvailable && !conditionTrendAvailable ? `${conditionSeries.length}/5 measurements collected before trend interpretation` : "Direction matters before a hard alarm does"}</small>
+          <span>{conditionEvidenceAvailable ? "EARLY → RECENT TREND" : "SIMULATED TREND"}</span><strong>{trendLabel}</strong>
+          <small>{conditionEvidenceAvailable && !conditionTrendAvailable ? `${conditionSeries.length}/5 measurements collected before trend interpretation` : conditionEvidenceAvailable ? "Compares early and recent three-measurement windows" : "Direction matters before a hard alarm does"}</small>
         </article>
         <article className={styles.metricCard}>
           <span>ENVELOPE VIOLATIONS</span><strong>{state.violations} {conditionEvidenceAvailable ? "runtime" : "simulated"}</strong>
