@@ -1,4 +1,4 @@
-"""Runtime publication of bounded live-condition evidence."""
+"""Runtime publication of governed live-condition evidence."""
 
 from __future__ import annotations
 
@@ -11,13 +11,17 @@ from pathlib import Path
 from typing import Any
 
 from .condition_projection import load_condition_signal_bindings
-from .live_condition import LiveConditionConsumer, LiveConditionSummary, live_condition_summary_to_dict
+from .live_condition import (
+    LiveConditionConsumer,
+    LiveConditionSummary,
+    live_condition_summary_to_dict,
+)
 from .replay import build_core_from_config, load_events
 from .simulator import DeterministicStreamSimulator
 
 
 class ConditionRuntimeSnapshot:
-    """Thread-safe API snapshot for the latest bounded condition-stream state."""
+    """Thread-safe API snapshot for the latest condition-stream state."""
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
