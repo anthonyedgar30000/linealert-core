@@ -65,6 +65,68 @@
   background: rgba(120, 53, 15, 0.14);
 }
 
+.coreEvidenceCard {
+  display: grid;
+  grid-template-columns: 1.5fr repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 12px;
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  border-radius: 14px;
+  background: rgba(8, 47, 73, 0.24);
+}
+
+.coreEvidenceIdentity,
+.coreEvidenceMetric {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 11px;
+  border-radius: 10px;
+  background: rgba(2, 6, 23, 0.28);
+}
+
+.coreEvidenceIdentity span,
+.coreEvidenceMetric span {
+  color: #7dd3fc;
+  font-size: 0.67rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.coreEvidenceIdentity b,
+.coreEvidenceMetric b {
+  color: #e8f4ff;
+  font-size: 1rem;
+}
+
+.coreEvidenceIdentity small,
+.coreEvidenceMetric small {
+  color: #9fb0c6;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.coreEvidenceMetric b {
+  font-size: 1.15rem;
+}
+
+.coreEvidenceProvenance {
+  margin: 0 0 12px;
+  padding: 9px 12px;
+  border-radius: 9px;
+  background: rgba(2, 6, 23, 0.34);
+  color: #8fa4bd;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.coreEvidenceProvenance b {
+  color: #cfe9ff;
+}
+
 .sourceGrid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -192,6 +254,7 @@
 }
 
 @media (max-width: 1000px) {
+  .coreEvidenceCard,
   .sourceGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -202,6 +265,7 @@
     flex-direction: column;
   }
 
+  .coreEvidenceCard,
   .sourceGrid,
   .signalGrid {
     grid-template-columns: 1fr;
