@@ -1,283 +1,142 @@
 # LineAlert Core
 
-For the live read-only Microsoft OPC PLC dashboard lab, see
-[docs/opcua-local-demo.md](docs/opcua-local-demo.md).
+LineAlert is an industrial systems prototype for connecting machine evidence, commissioned expectations, condition drift, and human-facing operational context without overstating what the evidence establishes.
 
-The lab bridge can capture normalized observation snapshots for deterministic replay:
+The current project has two deliberately separated demonstrations:
 
-```bash
-linealert-opcua-bridge --operating-mode demo_emulation --capture-jsonl evidence/opcua/microsoft-opc-plc.jsonl
-linealert-opcua-bridge --replay-jsonl evidence/opcua/microsoft-opc-plc.jsonl
+- **Operator / troubleshooting view** — bounded troubleshooting, role-specific evidence, visual machine relationships, deterministic routing, and explicit authority limits.
+- **Machine Health view (`/health`)** — commissioned baselines, recent observation history, condition drift, and the path from deviation detection toward evidence-backed predictive maintenance.
+
+## Product thesis
+
+LineAlert's primary economic hypothesis is condition monitoring that can eventually support earlier maintenance intervention when real production history demonstrates that specific drift patterns reliably precede downtime, scrap, or emergency maintenance.
+
+The maturity sequence is intentionally explicit:
+
+1. **Deviation detected** — a named machine relationship moves outside a commissioned envelope.
+2. **Condition degradation detected** — the deviation persists or trends across repeated qualified observations.
+3. **Failure prediction validated** — only after real maintenance outcomes establish repeatable predictive value.
+
+LineAlert does **not** treat stage 1 or 2 as proof of root cause or future failure.
+
+The same machine relationship model may also support operator, OEM, school, and industrial-lab learning. That is a useful secondary application rather than the main production ROI claim.
+
+## Machine Health prototype
+
+Run the Next.js UI and open:
+
+```text
+http://localhost:8766/health
 ```
 
-`demo_emulation` is an explicit source-authority setting. Selecting `physical_commissioning` or
-`physical_operational` disables this simulator source; discovering a physical connection never
-changes modes automatically. Unknown or mixed-source states fail closed.
+The Machine Health view demonstrates a photoeye-to-label-feed response relationship with a commissioned 120–140 ms envelope and a simulated degradation sequence. It also reads the local LineAlert bridge when available.
 
-## Hybrid role interface
+Live bridge evidence remains separate from the simulated condition model unless an exact condition signal named `label_feed_response_ms` is both present and semantically admitted. Existing simulator proxies such as RPM or derived conveyor arrival timing are shown as live context; they are not silently reinterpreted as the condition signal.
 
-The current role-based interface is included in `ui/`. It reads qualified observations through a
-same-origin server route and privately proxies them to the local read-only bridge. The standalone
-guide at `docs/troubleshooting-guide.html` preserves controlled troubleshooting knowledge; the
-retired static dashboard remains available only through Git history.
+## Recent observation history
 
-On Windows, with the OPC PLC container running and the Python environment installed:
+The OPC UA bridge now retains a bounded recent history and exposes it at:
+
+```text
+http://127.0.0.1:8765/api/history?limit=240
+```
+
+The default recent buffer is 7,200 snapshots and can be changed with:
 
 ```powershell
-.\scripts\start-hybrid.ps1
+python -m linealert_core.opcua_bridge --history-size 14400
 ```
 
-Open `http://localhost:8766`. The evidence console must report `LIVE OPC UA` and identify
-`SIM-OPCPLC-01`. If the bridge retains stale observations after a disconnect, the interface reports
-`STALE · FAIL CLOSED`; it does not silently treat the last value as current.
+The in-memory history is useful for live drift views but is not durable. To preserve complete observation snapshots for later replay and analysis, enable JSONL capture:
 
-The local process boundary is:
+```powershell
+python -m linealert_core.opcua_bridge `
+  --capture-jsonl .\captures\linealert-observations.jsonl
+```
+
+When JSONL capture is enabled, the history API reports `jsonl_capture` as its persistence mode while continuing to serve a bounded recent window to the dashboard.
+
+Replay the exact captured observations with:
+
+```powershell
+python -m linealert_core.opcua_bridge `
+  --replay-jsonl .\captures\linealert-observations.jsonl
+```
+
+## Local hybrid demo
+
+The UI expects its telemetry route at `/api/telemetry`; the Next.js server proxies that request to the local bridge at:
 
 ```text
-OPC UA simulator :50000
-→ Python evidence bridge :8765
-→ same-origin UI telemetry route :8766/api/telemetry
-→ role-based interface :8766
+http://127.0.0.1:8765/api/telemetry
 ```
 
-LineAlert Core is the deterministic machine-event reasoning layer for LineAlert.
+The history route `/api/history` similarly proxies the bridge's recent-history API. Override the endpoints with `LINEALERT_BRIDGE_URL` and `LINEALERT_HISTORY_URL` when needed.
 
-The first vertical slice implements:
+A typical local workflow is:
+
+```powershell
+# Terminal 1: start the read-only OPC UA bridge
+python -m linealert_core.opcua_bridge --endpoint opc.tcp://localhost:50000 --capture-jsonl .\captures\demo.jsonl
+
+# Terminal 2: start the Next.js UI
+cd ui
+npm run dev
+```
+
+Then browse to:
 
 ```text
-typed machine events
-→ Fusion Mosaic subscription routing
-→ correlation-aware timing relationship
-→ approved timing-envelope comparison
-→ topology-aware diagnostic recommendation
-→ replayable deterministic tests
+http://localhost:8766/
+http://localhost:8766/health
 ```
 
-The output is deliberately bounded. A timing deviation can localize the first observed process
-relationship that moved outside its envelope and recommend low-risk checks. It does not claim
-to prove a root cause.
+## Evidence boundaries
 
-## Repository boundary
+LineAlert uses explicit evidence boundaries throughout the prototype:
 
-- **`linealert-core`**: authoritative current LineAlert implementation for machine events, Fusion
-  Mosaic, temporal relationships, topology, expected-versus-observed reasoning, governed baseline
-  resolution, replay-baseline assessment, bounded recommendations, PMV, and rule promotion.
-- **`helix-protocol-kernel`**: separate governed evidence-package and transport-contract boundary.
-- **`ContextOS`**: separate execution-containment and policy-enforcement boundary.
-- **`HelixMemoryService`**: early memory-service prototype retained as design archaeology; it is not
-  current LineAlert persistence, retrieval, or lifecycle-system authority.
-- Other legacy LineAlert repositories are design archaeology. Their code or ideas become current
-  only through bounded reimplementation, source attribution, tests, review, and explicit approval.
+- Transport connectivity does not establish semantic meaning.
+- Simulator evidence does not establish physical machine state.
+- A derived proxy does not become a different machine relationship because the units look compatible.
+- Historical similarity does not establish root cause.
+- Evidence quality does not grant action authority.
+- Condition degradation does not become predictive maintenance until maintenance outcomes validate predictive value.
 
-No current persistence or retrieval integration is established by installing a legacy repository.
-Future integration must use an explicit package boundary, current data and provenance contracts,
-tests, deployment evidence, rollback, and review. The initial package does not directly install the
-private protocol repository, keeping public CI self-contained.
+The operator interface and Machine Health interface are therefore designed to fail closed when an evidence binding required for a stronger claim is absent.
 
-## Quick start
+## Development
 
-```bash
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\Activate.ps1
+Python core:
+
+```powershell
 python -m pip install -e ".[dev]"
 ruff check .
 pytest
 ```
 
-## Python example
+UI:
 
-```python
-from datetime import UTC, datetime, timedelta
-
-from linealert_core import (
-    DependencyEdge,
-    LineAlertCore,
-    MachineEvent,
-    TemporalRule,
-    TopologyGraph,
-)
-
-topology = TopologyGraph(
-    [
-        DependencyEdge("ProductDetected", "ActuatorCommand"),
-        DependencyEdge("ActuatorCommand", "ProductTransfer"),
-    ]
-)
-rule = TemporalRule(
-    rule_id="transfer-delay",
-    start_event="ActuatorCommand",
-    end_event="ProductTransfer",
-    min_delay_seconds=2.0,
-    max_delay_seconds=4.0,
-    topology_from="ActuatorCommand",
-    topology_to="ProductTransfer",
-)
-core = LineAlertCore(rules=[rule], topology=topology)
-
-started = datetime(2026, 7, 19, 12, 0, tzinfo=UTC)
-core.ingest(
-    MachineEvent(
-        event_id="e-1",
-        source_id="plc-1",
-        asset_id="LABELER-04",
-        component_id="label-feed",
-        event_type="ActuatorCommand",
-        timestamp=started,
-        correlation_id="cycle-1",
-    )
-)
-result = core.ingest(
-    MachineEvent(
-        event_id="e-2",
-        source_id="plc-1",
-        asset_id="LABELER-04",
-        component_id="transfer",
-        event_type="ProductTransfer",
-        timestamp=started + timedelta(seconds=5),
-        correlation_id="cycle-1",
-    )
-)
-
-print(result.timing_findings[0].status)
-print(result.recommendations[0].summary)
+```powershell
+cd ui
+npm ci
+npm run lint
+npm run build
 ```
 
-## Replay captured or simulated data
+GitHub Actions runs the Python test matrix and the UI lint/build checks for pull requests.
 
-The replay adapter accepts an ordered event stream in JSON Lines or CSV. A source adapter can
-therefore export PLC, Node-RED, MQTT, historian, or simulated observations without being coupled
-to the reasoning core.
-
-Run the small smoke-test example:
-
-```bash
-linealert-replay \
-  --config examples/replay_config.json \
-  --input examples/events.jsonl \
-  --output replay-report.json
-```
-
-The command processes records in file order and writes a machine-readable JSON report containing:
-
-- the loaded machine profile, when one is supplied;
-- the approved process topology;
-- exact Fusion Mosaic delivery receipts;
-- duplicate-event status;
-- timing findings;
-- topology-aware recommendations;
-- retained uncertainty.
-
-Each JSONL record is one `MachineEvent`:
-
-```json
-{
-  "event_id": "evt-1001",
-  "source_id": "plc-labeler-04",
-  "asset_id": "LABELER-04",
-  "component_id": "label-feed-servo",
-  "event_type": "ServoCurrent",
-  "timestamp": "2026-07-19T12:00:00Z",
-  "correlation_id": "cycle-827",
-  "value": 3.8,
-  "unit": "A",
-  "quality": "good",
-  "attributes": {
-    "recipe": "500ml"
-  }
-}
-```
-
-Required columns for CSV are the same required event fields. Optional columns are `value`, `unit`,
-`quality`, and `attributes`. The `attributes` cell must contain a JSON object. Timestamps must be
-ISO 8601 and timezone-aware.
-
-A replay configuration defines the approved topology and timing envelopes:
-
-```json
-{
-  "topology": {
-    "dependencies": [
-      {"from": "ActuatorCommand", "to": "ProductTransfer"}
-    ]
-  },
-  "temporal_rules": [
-    {
-      "rule_id": "transfer-delay",
-      "start_event": "ActuatorCommand",
-      "end_event": "ProductTransfer",
-      "min_delay_seconds": 2.0,
-      "max_delay_seconds": 4.0,
-      "topology_from": "ActuatorCommand",
-      "topology_to": "ProductTransfer"
-    }
-  ]
-}
-```
-
-## Full pressure-sensitive labeler demo
-
-The full demo requires an explicit machine profile rather than treating structurally valid events
-as automatically applicable. The profile declares:
-
-- the asset identity;
-- twelve physical and logical components;
-- functional dependencies between those components;
-- event-to-component bindings;
-- the approved operating mode;
-- the forward process graph;
-- nine timing envelopes.
-
-Run it with:
-
-```bash
-linealert-replay \
-  --config examples/labeler_demo_config.json \
-  --input examples/labeler_demo_events.jsonl \
-  --output labeler-demo-report.json
-```
-
-The demo process topology is:
+## Repository structure
 
 ```text
-BottleDetected
-      ↓
-SpacingConfirmed
-      ↓
-AlignmentConfirmed ───────────────┐
-      ↓                           │
-LabelFeedCommand ← WebTensionStable
-      ↓
-LabelAtPeelPoint
-      ↓
-InitialContact
-      ↓
-WipeDownComplete
-      ↓
-InspectionComplete
-      ↓
-ProductReleased
+src/linealert_core/   deterministic core, evidence handling, OPC UA bridge
+profiles/             machine/evidence/operating-mode profiles
+tests/                unit and replay tests
+ui/                   Next.js operator and Machine Health interfaces
+docs/                 supporting demo/reference material
+examples/             replayable examples
+scripts/              local startup helpers
 ```
 
-The sample cycle keeps every approved relationship within its envelope except
-`LabelFeedCommand → LabelAtPeelPoint`. That relationship takes 0.55 seconds against an approved
-0.05–0.35 second envelope. The core localizes the observed deviation to the label-presentation
-handoff and recommends bounded checks without declaring a root cause.
+## Current status
 
-When a machine profile is loaded, the core rejects:
-
-- events for another asset;
-- undeclared components;
-- undeclared event types;
-- event types emitted by the wrong component;
-- operating modes outside the approved profile;
-- topology or timing rules that reference undeclared events.
-
-## Development workflow
-
-`main` is merged repository reality. Issue #27 defines the risk-tiered workflow: Tier 1 work requires
-bounded scope, exact-head CI, and fresh named merge authority; qualified review remains mandatory
-for live adapters, persistent external integration, physical equipment, production networks,
-equipment control, safety or OEM claims, and production release. Issue #31 records the disposable
-Stage 1 simulator exception under owner authority. Changes belong on bounded branches with tests
-and pull requests. AI may propose patches or rules, but activation remains governed, versioned,
-testable, and reversible.
+This repository is a prototype and validation environment. Simulated scenarios are clearly identified as such. Physical-machine claims require explicitly mapped and qualified evidence, and predictive-maintenance claims require real outcome validation before they are represented as established capability.
