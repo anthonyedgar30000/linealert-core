@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
+from .condition_runtime import ConditionRuntimeSnapshot, replay_condition_events
 from .evidence_hierarchy import evaluate_claim_evidence, load_evidence_hierarchy_profile
 from .opcua_adapter import (
     DEFAULT_MAPPINGS,
@@ -243,7 +244,8 @@ async def poll_opcua(
                             sample,
                             received_timestamp=received_timestamp,
                             observation_id=(
-                                f"microsoft-opc-plc-local:{observation_sequence}:{sample.signal.value}"
+                                f"microsoft-opc-plc-local:{observation_sequence}:"
+                                f"{sample.signal.value}"
                             ),
                         )
                         for sample in samples
@@ -345,7 +347,10 @@ async def replay_jsonl(
 
 
 def handler_for(
-    docs: Path, snapshot: Snapshot, history: ObservationHistory | None = None
+    docs: Path,
+    snapshot: Snapshot,
+    history: ObservationHistory | None = None,
+    condition: ConditionRuntimeSnapshot | None = None,
 ) -> type[SimpleHTTPRequestHandler]:
     class Handler(SimpleHTTPRequestHandler):
         def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -383,6 +388,14 @@ def handler_for(
                 )
                 self._send_json(payload)
                 return
+            if request.path == "/api/condition":
+                payload = (
+                    condition.get()
+                    if condition is not None
+                    else ConditionRuntimeSnapshot().get()
+                )
+                self._send_json(payload)
+                return
             return super().do_GET()
 
     return Handler
@@ -397,6 +410,21 @@ def main() -> None:
     parser.add_argument("--capture-jsonl", type=Path)
     parser.add_argument("--replay-jsonl", type=Path)
     parser.add_argument("--loop-replay", action="store_true")
+    parser.add_argument("--condition-events-jsonl", type=Path)
+    parser.add_argument("--condition-config", type=Path)
+    parser.add_argument("--condition-bindings", type=Path)
+    parser.add_argument(
+        "--condition-replay-seconds",
+        type=float,
+        default=0.1,
+        help="Delay between deterministic condition-event replay envelopes.",
+    )
+    parser.add_argument(
+        "--condition-clock-quality",
+        choices=("synchronized", "degraded", "unsynchronized", "unknown"),
+        default="synchronized",
+        help="Transport clock evidence declared by the deterministic condition replay.",
+    )
     parser.add_argument(
         "--history-size",
         type=int,
@@ -410,6 +438,19 @@ def main() -> None:
         help="Explicit evidence-source mode; physical modes refuse this simulator bridge.",
     )
     args = parser.parse_args()
+
+    condition_paths = (
+        args.condition_events_jsonl,
+        args.condition_config,
+        args.condition_bindings,
+    )
+    condition_requested = any(path is not None for path in condition_paths)
+    if condition_requested and not all(path is not None for path in condition_paths):
+        parser.error(
+            "--condition-events-jsonl, --condition-config, and --condition-bindings "
+            "must be supplied together"
+        )
+
     docs = Path(__file__).resolve().parents[2] / "docs"
     snapshot = Snapshot()
     recorder = JsonlRecorder(args.capture_jsonl) if args.capture_jsonl else None
@@ -420,6 +461,7 @@ def main() -> None:
     else:
         history_persistence = "memory_only"
     history = ObservationHistory(args.history_size, persistence=history_persistence)
+    condition_snapshot = ConditionRuntimeSnapshot()
 
     async def runtime() -> None:
         if args.replay_jsonl:
@@ -445,12 +487,42 @@ def main() -> None:
         daemon=True,
     )
     thread.start()
-    server = ThreadingHTTPServer((args.host, args.port), handler_for(docs, snapshot, history))
+
+    if condition_requested:
+        condition_events = args.condition_events_jsonl
+        condition_config = args.condition_config
+        condition_bindings = args.condition_bindings
+        if condition_events is None or condition_config is None or condition_bindings is None:
+            raise AssertionError("condition replay paths passed parser validation")
+
+        async def condition_runtime() -> None:
+            await replay_condition_events(
+                condition_events,
+                condition_config,
+                condition_bindings,
+                condition_snapshot,
+                interval_seconds=args.condition_replay_seconds,
+                clock_quality=args.condition_clock_quality,
+            )
+
+        condition_thread = threading.Thread(
+            target=lambda: asyncio.run(condition_runtime()),
+            daemon=True,
+        )
+        condition_thread.start()
+
+    server = ThreadingHTTPServer(
+        (args.host, args.port),
+        handler_for(docs, snapshot, history, condition_snapshot),
+    )
     print(f"LineAlert dashboard: http://{args.host}:{args.port}")
     print(
         f"Recent history API: http://{args.host}:{args.port}/api/history "
         f"({args.history_size} snapshots · {history_persistence})"
     )
+    print(f"Condition API: http://{args.host}:{args.port}/api/condition")
+    if condition_requested:
+        print(f"Condition event replay: {args.condition_events_jsonl}")
     if args.replay_jsonl:
         print(f"Deterministic replay: {args.replay_jsonl}")
     else:
