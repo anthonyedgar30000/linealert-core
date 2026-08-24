@@ -7,11 +7,13 @@ import asyncio
 import json
 import threading
 import time
+from collections import deque
 from dataclasses import asdict
 from datetime import UTC, datetime
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qs, urlparse
 
 from .evidence_hierarchy import evaluate_claim_evidence, load_evidence_hierarchy_profile
 from .opcua_adapter import (
@@ -94,6 +96,34 @@ class Snapshot:
             return dict(self._payload)
 
 
+class ObservationHistory:
+    """Thread-safe recent observation history for condition-monitoring clients."""
+
+    def __init__(self, maxlen: int = 7200, *, persistence: str = "memory_only") -> None:
+        if maxlen < 1:
+            raise ValueError("history maxlen must be at least 1")
+        self._lock = threading.Lock()
+        self._records: deque[dict[str, Any]] = deque(maxlen=maxlen)
+        self._maxlen = maxlen
+        self.persistence = persistence
+
+    def append(self, payload: dict[str, Any]) -> None:
+        immutable_copy = json.loads(json.dumps(payload))
+        with self._lock:
+            self._records.append(immutable_copy)
+
+    def get(self, *, limit: int = 240) -> dict[str, Any]:
+        bounded_limit = max(1, min(limit, self._maxlen))
+        with self._lock:
+            observations = list(self._records)[-bounded_limit:]
+        return {
+            "schema_version": "linealert.observation.history.v1",
+            "persistence": self.persistence,
+            "count": len(observations),
+            "observations": observations,
+        }
+
+
 class JsonlRecorder:
     """Append complete immutable observation snapshots for deterministic replay."""
 
@@ -171,6 +201,7 @@ async def poll_opcua(
     snapshot: Snapshot,
     interval: float,
     recorder: JsonlRecorder | None = None,
+    history: ObservationHistory | None = None,
     *,
     operating_mode: str = "demo_emulation",
 ) -> None:
@@ -270,6 +301,8 @@ async def poll_opcua(
                         payload, hierarchy_profile
                     )
                     snapshot.replace(payload)
+                    if history is not None:
+                        history.append(payload)
                     if recorder is not None:
                         recorder.append(payload)
                     await asyncio.sleep(interval)
@@ -278,13 +311,20 @@ async def poll_opcua(
                 reason_code="EVIDENCE.OPCUA_CONNECTION_UNAVAILABLE",
                 error=type(exc).__name__,
             )
+            if history is not None:
+                history.append(unavailable)
             if recorder is not None:
                 recorder.append(unavailable)
             await asyncio.sleep(2)
 
 
 async def replay_jsonl(
-    path: Path, snapshot: Snapshot, interval: float, *, loop: bool = False
+    path: Path,
+    snapshot: Snapshot,
+    interval: float,
+    history: ObservationHistory | None = None,
+    *,
+    loop: bool = False,
 ) -> None:
     """Serve captured snapshots in file order without reinterpreting their evidence."""
 
@@ -297,26 +337,53 @@ async def replay_jsonl(
             replayed["transport"] = "deterministic-replay"
             replayed["replay_timestamp"] = datetime.now(UTC).isoformat()
             snapshot.replace(replayed)
+            if history is not None:
+                history.append(replayed)
             await asyncio.sleep(interval)
         if not loop:
             return
 
 
-def handler_for(docs: Path, snapshot: Snapshot) -> type[SimpleHTTPRequestHandler]:
+def handler_for(
+    docs: Path, snapshot: Snapshot, history: ObservationHistory | None = None
+) -> type[SimpleHTTPRequestHandler]:
     class Handler(SimpleHTTPRequestHandler):
         def __init__(self, *args: Any, **kwargs: Any) -> None:
             super().__init__(*args, directory=str(docs), **kwargs)
 
-        def do_GET(self) -> None:  # noqa: N802
-            if self.path.split("?", 1)[0] != "/api/telemetry":
-                return super().do_GET()
-            body = json.dumps(snapshot.get(), separators=(",", ":")).encode()
+        def _send_json(self, payload: dict[str, Any]) -> None:
+            body = json.dumps(payload, separators=(",", ":")).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.send_header("Cache-Control", "no-store")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
+
+        def do_GET(self) -> None:  # noqa: N802
+            request = urlparse(self.path)
+            if request.path == "/api/telemetry":
+                self._send_json(snapshot.get())
+                return
+            if request.path == "/api/history":
+                query = parse_qs(request.query)
+                try:
+                    limit = int(query.get("limit", ["240"])[0])
+                except ValueError:
+                    limit = 240
+                payload = (
+                    history.get(limit=limit)
+                    if history is not None
+                    else {
+                        "schema_version": "linealert.observation.history.v1",
+                        "persistence": "unavailable",
+                        "count": 0,
+                        "observations": [],
+                    }
+                )
+                self._send_json(payload)
+                return
+            return super().do_GET()
 
     return Handler
 
@@ -331,6 +398,12 @@ def main() -> None:
     parser.add_argument("--replay-jsonl", type=Path)
     parser.add_argument("--loop-replay", action="store_true")
     parser.add_argument(
+        "--history-size",
+        type=int,
+        default=7200,
+        help="Recent snapshots retained for the dashboard history API.",
+    )
+    parser.add_argument(
         "--operating-mode",
         choices=("demo_emulation", "physical_commissioning", "physical_operational"),
         default="demo_emulation",
@@ -340,11 +413,22 @@ def main() -> None:
     docs = Path(__file__).resolve().parents[2] / "docs"
     snapshot = Snapshot()
     recorder = JsonlRecorder(args.capture_jsonl) if args.capture_jsonl else None
+    if args.replay_jsonl:
+        history_persistence = "deterministic_replay"
+    elif recorder is not None:
+        history_persistence = "jsonl_capture"
+    else:
+        history_persistence = "memory_only"
+    history = ObservationHistory(args.history_size, persistence=history_persistence)
 
     async def runtime() -> None:
         if args.replay_jsonl:
             await replay_jsonl(
-                args.replay_jsonl, snapshot, args.poll_seconds, loop=args.loop_replay
+                args.replay_jsonl,
+                snapshot,
+                args.poll_seconds,
+                history,
+                loop=args.loop_replay,
             )
         else:
             await poll_opcua(
@@ -352,6 +436,7 @@ def main() -> None:
                 snapshot,
                 args.poll_seconds,
                 recorder,
+                history,
                 operating_mode=args.operating_mode,
             )
 
@@ -360,8 +445,12 @@ def main() -> None:
         daemon=True,
     )
     thread.start()
-    server = ThreadingHTTPServer((args.host, args.port), handler_for(docs, snapshot))
+    server = ThreadingHTTPServer((args.host, args.port), handler_for(docs, snapshot, history))
     print(f"LineAlert dashboard: http://{args.host}:{args.port}")
+    print(
+        f"Recent history API: http://{args.host}:{args.port}/api/history "
+        f"({args.history_size} snapshots · {history_persistence})"
+    )
     if args.replay_jsonl:
         print(f"Deterministic replay: {args.replay_jsonl}")
     else:
