@@ -58,6 +58,16 @@ from .diagnostic_projection import (
 )
 from .diagnostics import DiagnosticEngine, DiagnosticRecommendation
 from .events import EventQuality, MachineEvent
+from .live_condition import (
+    LiveClockEvidence,
+    LiveConditionConsumer,
+    LiveConditionMeasurement,
+    LiveConditionRefusal,
+    LiveConditionResult,
+    LiveConditionSummary,
+    consume_live_condition_stream,
+    live_condition_summary_to_dict,
+)
 from .machine import (
     ComponentDefinition,
     ComponentDependency,
@@ -144,6 +154,12 @@ __all__ = [
     "EventReceipt",
     "FusionMosaic",
     "LineAlertCore",
+    "LiveClockEvidence",
+    "LiveConditionConsumer",
+    "LiveConditionMeasurement",
+    "LiveConditionRefusal",
+    "LiveConditionResult",
+    "LiveConditionSummary",
     "MachineEvent",
     "MachineProfile",
     "MachineProfileError",
@@ -182,7 +198,9 @@ __all__ = [
     "collect_timing_findings",
     "compare_to_baseline",
     "condition_signal_projection_to_dict",
+    "consume_live_condition_stream",
     "consume_stream",
+    "live_condition_summary_to_dict",
     "load_baseline_registry",
     "load_condition_signal_bindings",
     "load_diagnostic_engine",
