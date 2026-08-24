@@ -28,6 +28,9 @@ dev = [
 opcua = [
   "asyncua>=1.1.5,<1.1.8"
 ]
+historian = [
+  "psycopg[binary]>=3.2,<4"
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]
