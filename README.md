@@ -40,6 +40,45 @@ OPC UA simulator :50000
 → role-based interface :8766
 ```
 
+## Machine health / condition monitoring prototype
+
+The `/health` UI reuses the same evidence boundary for a separate condition-monitoring experiment.
+Its primary economic hypothesis is earlier maintenance intervention when real production history
+shows that specific relationship drift reliably precedes downtime, scrap, or emergency maintenance.
+
+The maturity sequence is explicit:
+
+```text
+deviation detected
+→ persistent condition degradation detected
+→ failure prediction validated only after real maintenance outcomes support it
+```
+
+The initial screen demonstrates a simulated `Photoeye → label-feed response` relationship with a
+120–140 ms commissioned envelope. It also reads the local bridge and recent observation history,
+but it does not reinterpret existing simulator proxies as that response-time relationship.
+
+A live condition view is enabled only when a signal named `label_feed_response_ms` is both present
+and semantically admitted. Until then, RPM, derived conveyor-arrival timing, and pressure remain
+live context beside the clearly labelled simulated condition model.
+
+The bridge exposes recent observation history at:
+
+```text
+http://127.0.0.1:8765/api/history?limit=240
+```
+
+The default history buffer is 7,200 snapshots and can be changed with `--history-size`. The buffer
+is not durable by itself. Use the existing `--capture-jsonl` option to retain the same qualified
+observation snapshots for later replay and analysis. The Next.js route `/api/history` proxies the
+recent-history endpoint just as `/api/telemetry` proxies the current snapshot.
+
+Open the condition-monitoring screen locally at:
+
+```text
+http://localhost:8766/health
+```
+
 LineAlert Core is the deterministic machine-event reasoning layer for LineAlert.
 
 The first vertical slice implements:
