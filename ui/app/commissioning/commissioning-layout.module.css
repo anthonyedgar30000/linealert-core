@@ -1,0 +1,44 @@
+.ribbon {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: center;
+  padding: 12px clamp(16px, 3vw, 40px);
+  border-bottom: 1px solid #6d531f;
+  background: #17120a;
+  color: #f4e7c5;
+}
+
+.ribbon span {
+  display: block;
+  font-size: 0.68rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: #c6a862;
+}
+
+.ribbon b {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.86rem;
+}
+
+.ribbon a {
+  color: #fff6df;
+  text-decoration: none;
+  border: 1px solid #765d2d;
+  border-radius: 8px;
+  padding: 8px 11px;
+  white-space: nowrap;
+}
+
+@media (max-width: 680px) {
+  .ribbon {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+}
