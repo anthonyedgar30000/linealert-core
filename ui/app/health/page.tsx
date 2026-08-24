@@ -217,11 +217,9 @@ export default function MachineHealthPage() {
   );
   const latestRuntimeEvidence = conditionObservations.at(-1);
   const displayEvidence = latestRuntimeEvidence ?? coreEvidence;
-  const baseline = {
-    low: displayEvidence.min_value,
-    high: displayEvidence.max_value,
-    unit: displayEvidence.unit,
-  };
+  const baselineLow = displayEvidence.min_value;
+  const baselineHigh = displayEvidence.max_value;
+  const baselineUnit = displayEvidence.unit;
   const relationshipLabel = `${displayEvidence.topology_from} → ${displayEvidence.topology_to}`;
   const conditionEvidenceAvailable = conditionSeries.length > 0;
   const conditionTrendAvailable = conditionSeries.length >= 5;
@@ -237,9 +235,9 @@ export default function MachineHealthPage() {
       : 0;
     const violations = conditionSeries
       .slice(-120)
-      .filter((value) => value < baseline.low || value > baseline.high).length;
-    const deviation = rollingAverage < baseline.low || rollingAverage > baseline.high;
-    const severe = rollingAverage > baseline.high + 20 || rollingAverage < baseline.low - 20;
+      .filter((value) => value < baselineLow || value > baselineHigh).length;
+    const deviation = rollingAverage < baselineLow || rollingAverage > baselineHigh;
+    const severe = rollingAverage > baselineHigh + 20 || rollingAverage < baselineLow - 20;
     const persistent = conditionTrendAvailable && violations >= 3;
     const status: HealthStatus = persistent && (severe || violations >= 10)
       ? "ATTENTION"
@@ -260,21 +258,24 @@ export default function MachineHealthPage() {
           ? "A runtime event relationship is outside its commissioned envelope. More repeated measurements are required before calling the deviation persistent degradation."
           : "Runtime evidence is inside the commissioned envelope, but more repeated measurements are required before making a trend claim.",
     };
-  }, [baseline.high, baseline.low, conditionSeries, conditionTrendAvailable]);
+  }, [baselineHigh, baselineLow, conditionSeries, conditionTrendAvailable]);
 
   const state = conditionEvidenceAvailable ? runtimeState : demoStates[demoIndex];
-  const chartSeries = conditionEvidenceAvailable ? conditionSeries.slice(-80) : seriesByState[demoIndex];
+  const chartSeries = useMemo(
+    () => conditionEvidenceAvailable ? conditionSeries.slice(-80) : seriesByState[demoIndex],
+    [conditionEvidenceAvailable, conditionSeries, demoIndex],
+  );
   const bridgeConnected = Boolean(telemetryReachable && telemetry?.connected);
   const runtimeConfigured = Boolean(conditionReachable && conditionRuntime?.configured);
 
   const chart = useMemo(() => {
-    const series = chartSeries.length ? chartSeries : [baseline.low, baseline.high];
+    const series = chartSeries.length ? chartSeries : [baselineLow, baselineHigh];
     const width = 700;
     const height = 250;
     const paddingX = 34;
     const paddingY = 24;
-    const observedMin = Math.min(baseline.low, ...series);
-    const observedMax = Math.max(baseline.high, ...series);
+    const observedMin = Math.min(baselineLow, ...series);
+    const observedMax = Math.max(baselineHigh, ...series);
     const span = Math.max(observedMax - observedMin, 40);
     const margin = Math.max(10, span * 0.12);
     const min = observedMin - margin;
@@ -283,23 +284,23 @@ export default function MachineHealthPage() {
     const x = (index: number) => paddingX + (index / denominator) * (width - paddingX * 2);
     const y = (value: number) =>
       paddingY + ((max - value) / (max - min)) * (height - paddingY * 2);
-    const ticks = Array.from(new Set([baseline.low, baseline.high, Math.round(max)]))
+    const ticks = Array.from(new Set([baselineLow, baselineHigh, Math.round(max)]))
       .sort((left, right) => left - right)
       .map((value) => ({ value, y: y(value) }));
     return {
       width,
       height,
       points: series.map((value, index) => `${x(index)},${y(value)}`).join(" "),
-      baselineTop: y(baseline.high),
-      baselineBottom: y(baseline.low),
+      baselineTop: y(baselineHigh),
+      baselineBottom: y(baselineLow),
       currentX: x(series.length - 1),
       currentY: y(series[series.length - 1]),
       ticks,
     };
-  }, [baseline.high, baseline.low, chartSeries]);
+  }, [baselineHigh, baselineLow, chartSeries]);
 
   const deviationDetected =
-    state.rollingAverage < baseline.low || state.rollingAverage > baseline.high;
+    state.rollingAverage < baselineLow || state.rollingAverage > baselineHigh;
   const conditionDegradation = conditionEvidenceAvailable
     ? conditionTrendAvailable && runtimeState.violations >= 3
     : demoIndex >= 2;
@@ -333,7 +334,7 @@ export default function MachineHealthPage() {
         </article>
         <article className={styles.metricCard}>
           <span>MONITORED RELATIONSHIP</span><strong>{relationshipLabel}</strong>
-          <small>Commissioned envelope {baseline.low}–{baseline.high} {baseline.unit}</small>
+          <small>Commissioned envelope {baselineLow}–{baselineHigh} {baselineUnit}</small>
         </article>
         <article className={styles.metricCard}>
           <span>CURRENT ROLLING AVERAGE</span><strong>{state.rollingAverage.toFixed(conditionEvidenceAvailable ? 1 : 0)} ms</strong>
@@ -445,7 +446,7 @@ export default function MachineHealthPage() {
         <aside className={styles.sideColumn}>
           <article className={styles.panel}>
             <p className={styles.eyebrow}>MEASURED RELATIONSHIP</p><h2>Where the timing evidence lives</h2>
-            <div className={styles.processFlow}><div><span>CMD</span><b>Label feed command</b><small>Configured start event</small></div><i>→</i><div className={styles.activeNode}><span>Δt</span><b>Presentation window</b><small>{baseline.low}–{baseline.high} ms expected</small></div><i>→</i><div><span>S2</span><b>Label at peel point</b><small>Configured end event</small></div><i>→</i><div><span>QA</span><b>Inspection</b><small>Outcome retained separately</small></div></div>
+            <div className={styles.processFlow}><div><span>CMD</span><b>Label feed command</b><small>Configured start event</small></div><i>→</i><div className={styles.activeNode}><span>Δt</span><b>Presentation window</b><small>{baselineLow}–{baselineHigh} ms expected</small></div><i>→</i><div><span>S2</span><b>Label at peel point</b><small>Configured end event</small></div><i>→</i><div><span>QA</span><b>Inspection</b><small>Outcome retained separately</small></div></div>
             <p className={styles.boundaryCopy}>LineAlert is measuring the relationship between admitted events. It is not claiming that the servo, web tension, peel plate, PLC logic, sensor, or another component is the physical root cause.</p>
           </article>
           <article className={styles.panel}>
