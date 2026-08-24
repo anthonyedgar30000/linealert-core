@@ -63,6 +63,8 @@ class ConditionProjectionTests(unittest.TestCase):
         self.assertEqual(observation.signal_name, "label_presentation_delay_ms")
         self.assertAlmostEqual(observation.value, 155.0)
         self.assertEqual(observation.unit, "ms")
+        self.assertEqual(observation.min_value, 50.0)
+        self.assertEqual(observation.max_value, 350.0)
         self.assertEqual(observation.relationship_id, "relationship:label-presentation-delay")
         self.assertEqual(observation.temporal_rule_status, "within")
         self.assertEqual(observation.quality, "good")
@@ -142,6 +144,24 @@ class ConditionProjectionTests(unittest.TestCase):
 
             with self.assertRaisesRegex(ConditionProjectionError, "rule IDs must be unique"):
                 load_condition_signal_bindings(path)
+
+    def test_health_fixture_matches_deterministic_labeler_replay(self) -> None:
+        from linealert_core.replay import build_core_from_config, load_events, replay_events
+
+        root = Path(__file__).resolve().parents[1]
+        core = build_core_from_config(root / "examples" / "labeler_demo_config.json")
+        events = load_events(root / "examples" / "labeler_demo_events.jsonl")
+        summary = replay_events(core, events)
+        bindings = load_condition_signal_bindings(
+            root / "examples" / "condition_signal_bindings.json"
+        )
+        rendered = condition_signal_projection_to_dict(
+            project_replay_condition_signals(summary, bindings)
+        )
+
+        fixture_path = root / "ui" / "app" / "health" / "core-condition-evidence.json"
+        fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+        self.assertEqual(rendered, fixture)
 
 
 if __name__ == "__main__":
