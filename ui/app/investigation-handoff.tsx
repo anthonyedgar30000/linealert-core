@@ -60,6 +60,63 @@ type HistorianState = {
   count?: number;
 };
 
+type HistorianMeasurement = {
+  observed_at: string;
+  observation_id: string;
+  episode_id: string;
+  asset_id: string;
+  relationship_id: string;
+  signal: string;
+  value: number;
+  unit: string;
+  min_value: number;
+  max_value: number;
+  temporal_rule_status: string;
+  quality: string;
+  reason_code: string;
+  correlation_id: string;
+  topology_from: string;
+  topology_to: string;
+  source_mode: string;
+};
+
+type HistorianOutcome = {
+  recorded_at: string;
+  outcome_id: string;
+  asset_id: string;
+  relationship_id: string;
+  outcome_type: string;
+  status: string;
+  actor_role?: string | null;
+  note?: string | null;
+  related_observation_id?: string | null;
+  verification_value?: number | null;
+  verification_unit?: string | null;
+  verification_status?: string | null;
+};
+
+type HistorianEpisode = {
+  schema_version: string;
+  episode_id: string;
+  condition_measurements: HistorianMeasurement[];
+  outcomes: HistorianOutcome[];
+  claim_boundary?: string;
+};
+
+type EpisodeTimelineState = {
+  state: "idle" | "active" | "unavailable";
+  episode?: HistorianEpisode;
+};
+
+type EpisodeMoment = {
+  key: string;
+  label: string;
+  detail: string;
+  timestamp: string;
+  tone: "normal" | "attention" | "outcome" | "recovered";
+  meta: string;
+};
+
 const humanizeRelationship = (from: string, to: string) => {
   const labels: Record<string, string> = {
     LabelFeedCommand: "Label feed command",
@@ -74,16 +131,158 @@ const parseNumber = (value: string | null) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
+const isOutsideEnvelope = (measurement: HistorianMeasurement) => (
+  measurement.value < measurement.min_value || measurement.value > measurement.max_value
+);
+
+const formatEpisodeTime = (timestamp: string) => {
+  const parsed = new Date(timestamp);
+  if (Number.isNaN(parsed.getTime())) return timestamp;
+  return parsed.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const buildEpisodeMoments = (episode: HistorianEpisode): EpisodeMoment[] => {
+  const measurements = episode.condition_measurements ?? [];
+  const outcomes = episode.outcomes ?? [];
+  if (!measurements.length && !outcomes.length) return [];
+
+  const moments: EpisodeMoment[] = [];
+  const first = measurements.at(0);
+  const firstOutside = measurements.find(isOutsideEnvelope);
+  const latest = measurements.at(-1);
+
+  if (first) {
+    moments.push({
+      key: `start:${first.observation_id}`,
+      label: "Episode evidence begins",
+      detail: `${first.value.toFixed(0)} ${first.unit} · ${isOutsideEnvelope(first) ? "outside" : "inside"} commissioned envelope`,
+      timestamp: first.observed_at,
+      tone: isOutsideEnvelope(first) ? "attention" : "normal",
+      meta: first.correlation_id,
+    });
+  }
+
+  if (firstOutside && firstOutside.observation_id !== first?.observation_id) {
+    moments.push({
+      key: `deviation:${firstOutside.observation_id}`,
+      label: "First boundary exit",
+      detail: `${firstOutside.value.toFixed(0)} ${firstOutside.unit} · ${firstOutside.temporal_rule_status}`,
+      timestamp: firstOutside.observed_at,
+      tone: "attention",
+      meta: firstOutside.correlation_id,
+    });
+  }
+
+  if (latest && latest.observation_id !== first?.observation_id) {
+    moments.push({
+      key: `latest:${latest.observation_id}`,
+      label: "Latest persisted condition",
+      detail: `${latest.value.toFixed(0)} ${latest.unit} · ${latest.temporal_rule_status}`,
+      timestamp: latest.observed_at,
+      tone: isOutsideEnvelope(latest) ? "attention" : "normal",
+      meta: latest.correlation_id,
+    });
+  }
+
+  const operatorOutcomes = outcomes.filter((outcome) => outcome.actor_role === "operator_view");
+  const visibleOutcomes = (operatorOutcomes.length ? operatorOutcomes : outcomes).slice(-2);
+  for (const outcome of visibleOutcomes) {
+    const recovered = outcome.status === "recovered";
+    const value = typeof outcome.verification_value === "number"
+      ? `${outcome.verification_value.toFixed(0)} ${outcome.verification_unit ?? ""}`.trim()
+      : "Outcome recorded";
+    moments.push({
+      key: `outcome:${outcome.outcome_id}`,
+      label: recovered ? "Recovery verification recorded" : "Verification recorded",
+      detail: `${value} · ${outcome.status}`,
+      timestamp: outcome.recorded_at,
+      tone: recovered ? "recovered" : "outcome",
+      meta: outcome.actor_role ?? outcome.outcome_type,
+    });
+  }
+
+  return moments.sort((left, right) => (
+    new Date(left.timestamp).getTime() - new Date(right.timestamp).getTime()
+  ));
+};
+
 const subscribeLocation = () => () => undefined;
 const getPathname = () => window.location.pathname;
 const getSearch = () => window.location.search;
 const getServerLocation = () => "";
+
+function EpisodeTimeline({ timeline }: { timeline: EpisodeTimelineState }) {
+  if (timeline.state === "idle") {
+    return (
+      <section className={styles.episodeTimeline} aria-label="Shared historian episode timeline">
+        <div className={styles.timelineHeader}>
+          <div>
+            <span>SHARED EPISODE</span>
+            <b>Loading durable evidence timeline…</b>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (timeline.state === "unavailable" || !timeline.episode) {
+    return (
+      <section className={styles.episodeTimeline} aria-label="Shared historian episode timeline">
+        <div className={styles.timelineHeader}>
+          <div>
+            <span>SHARED EPISODE</span>
+            <b>Durable timeline unavailable</b>
+          </div>
+          <small>Live evidence remains usable; no historical inference is substituted.</small>
+        </div>
+      </section>
+    );
+  }
+
+  const episode = timeline.episode;
+  const moments = buildEpisodeMoments(episode);
+  return (
+    <section className={styles.episodeTimeline} aria-label="Shared historian episode timeline">
+      <div className={styles.timelineHeader}>
+        <div>
+          <span>SHARED EPISODE · {episode.episode_id}</span>
+          <b>{episode.condition_measurements.length} measurements · {episode.outcomes.length} outcome records</b>
+        </div>
+        <small>Sequence and association only · root cause is not inferred</small>
+      </div>
+      {moments.length > 0 ? (
+        <div className={styles.timelineTrack}>
+          {moments.map((moment) => (
+            <article
+              className={`${styles.timelineMoment} ${styles[`timeline_${moment.tone}`]}`}
+              key={moment.key}
+            >
+              <span className={styles.timelineDot} aria-hidden="true" />
+              <small>{formatEpisodeTime(moment.timestamp)}</small>
+              <b>{moment.label}</b>
+              <p>{moment.detail}</p>
+              <em>{moment.meta}</em>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <small className={styles.timelineEmpty}>Episode exists but has no retained records yet.</small>
+      )}
+    </section>
+  );
+}
 
 export default function InvestigationHandoff() {
   const path = useSyncExternalStore(subscribeLocation, getPathname, getServerLocation);
   const search = useSyncExternalStore(subscribeLocation, getSearch, getServerLocation);
   const [healthContext, setHealthContext] = useState<HandoffContext | null>(null);
   const [historian, setHistorian] = useState<HistorianState>({ state: "unknown" });
+  const [episodeTimeline, setEpisodeTimeline] = useState<EpisodeTimelineState>({ state: "idle" });
   const [dismissed, setDismissed] = useState(false);
   const [verification, setVerification] = useState<VerificationResult>({ state: "idle" });
 
@@ -199,6 +398,40 @@ export default function InvestigationHandoff() {
     };
   }, [path]);
 
+  const episodeId = path === "/health"
+    ? healthContext?.episodeId
+    : incomingContext?.episodeId;
+
+  useEffect(() => {
+    if ((path !== "/" && path !== "/health") || !episodeId) return;
+    let active = true;
+
+    const readEpisode = async () => {
+      try {
+        const response = await fetch(
+          `/api/historian/episodes/${encodeURIComponent(episodeId)}?limit=500`,
+          { cache: "no-store" },
+        );
+        if (!active) return;
+        if (!response.ok) {
+          setEpisodeTimeline({ state: "unavailable" });
+          return;
+        }
+        const episode = (await response.json()) as HistorianEpisode;
+        setEpisodeTimeline({ state: "active", episode });
+      } catch {
+        if (active) setEpisodeTimeline({ state: "unavailable" });
+      }
+    };
+
+    readEpisode();
+    const timer = window.setInterval(readEpisode, 2500);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [episodeId, path, verification.history]);
+
   const investigationHref = useMemo(() => {
     if (!healthContext) return "/?source=health";
     const params = new URLSearchParams({
@@ -299,6 +532,8 @@ export default function InvestigationHandoff() {
   };
 
   if (path === "/health") {
+    const episode = episodeTimeline.episode;
+    const latestPersisted = episode?.condition_measurements.at(-1);
     return (
       <aside className={styles.healthHandoff} aria-label="Condition investigation handoff">
         <div>
@@ -309,8 +544,18 @@ export default function InvestigationHandoff() {
               ? `${healthContext.latest.toFixed(0)} ${healthContext.unit} latest · ${healthContext.violations} envelope violation${healthContext.violations === 1 ? "" : "s"}`
               : "Pass the current station condition into the troubleshooting workflow"}
           </small>
-          {historian.state === "active" && <small>Shared history active · durable condition timeline available</small>}
-          {historian.state === "unavailable" && <small>Shared history unavailable · live evidence remains visible</small>}
+          {episodeTimeline.state === "active" && episode && (
+            <small className={styles.healthHistorySummary}>
+              Shared episode · {episode.condition_measurements.length} measurements · {episode.outcomes.length} outcomes
+              {latestPersisted ? ` · latest persisted ${latestPersisted.value.toFixed(0)} ${latestPersisted.unit}` : ""}
+            </small>
+          )}
+          {historian.state === "active" && episodeTimeline.state !== "active" && (
+            <small>Shared history active · loading durable episode</small>
+          )}
+          {historian.state === "unavailable" && (
+            <small>Shared history unavailable · live evidence remains visible</small>
+          )}
         </div>
         <a className={styles.primaryAction} href={investigationHref}>Investigate →</a>
       </aside>
@@ -345,6 +590,7 @@ export default function InvestigationHandoff() {
       <p>
         Treat the scenario cards below as candidate checks, not as the explanation for this condition. Improvement in arrival phase or another local metric does not clear the handoff until LineAlert re-measures this original relationship inside its commissioned envelope.
       </p>
+      <EpisodeTimeline timeline={episodeTimeline} />
       {verification.state !== "idle" && (
         <div className={`${styles.verificationResult} ${styles[`verification_${verification.state}`]}`} role="status">
           {verification.state === "checking" && <><span>VERIFYING ORIGINAL RELATIONSHIP</span><b>Reading the latest admitted condition measurement…</b></>}
@@ -357,7 +603,14 @@ export default function InvestigationHandoff() {
       )}
       <div className={styles.operatorActions}>
         <a href="/health">← Machine Health</a>
-        <button className={styles.verifyAction} type="button" onClick={verifyCondition} disabled={verification.state === "checking"}>Verify original condition</button>
+        <button
+          className={styles.verifyAction}
+          type="button"
+          onClick={verifyCondition}
+          disabled={verification.state === "checking"}
+        >
+          Verify original condition
+        </button>
         <span>Context retained from the condition evidence chain</span>
       </div>
     </aside>
