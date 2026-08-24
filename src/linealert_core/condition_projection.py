@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .events import EventQuality
 from .replay import ReplaySummary
 from .timing import TimingFinding
 
@@ -60,6 +61,12 @@ class ConditionSignalObservation:
     scope: str
     relationship_id: str
     observation_id: str
+    quality: str
+    reason_code: str
+    start_event_id: str | None
+    end_event_id: str | None
+    start_source_id: str | None
+    end_source_id: str | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -76,6 +83,17 @@ def _converted_delay(finding: TimingFinding, unit: str) -> float:
     if unit == "ms":
         return finding.delay_seconds * 1000.0
     raise ConditionProjectionError(f"unsupported condition signal unit {unit!r}")
+
+
+def _combined_quality(finding: TimingFinding) -> tuple[str, str]:
+    qualities = (finding.start_quality, finding.end_quality)
+    if EventQuality.BAD in qualities:
+        return "bad", "EVIDENCE.RELATIONSHIP_INPUT_BAD"
+    if EventQuality.SUSPECT in qualities:
+        return "suspect", "EVIDENCE.RELATIONSHIP_INPUT_SUSPECT"
+    if EventQuality.UNKNOWN in qualities:
+        return "unknown", "EVIDENCE.RELATIONSHIP_INPUT_UNKNOWN"
+    return "good", "EVIDENCE.RELATIONSHIP_DELAY_MEASURED"
 
 
 def project_timing_finding(
@@ -95,6 +113,7 @@ def project_timing_finding(
         f"{finding.asset_id}:{finding.correlation_id}:"
         f"{binding.signal_name}:{end_timestamp}"
     )
+    quality, reason_code = _combined_quality(finding)
     return ConditionSignalObservation(
         signal_name=binding.signal_name,
         value=_converted_delay(finding, binding.unit),
@@ -112,6 +131,12 @@ def project_timing_finding(
         scope=binding.scope,
         relationship_id=binding.relationship_id,
         observation_id=observation_id,
+        quality=quality,
+        reason_code=reason_code,
+        start_event_id=finding.start_event_id,
+        end_event_id=finding.end_event_id,
+        start_source_id=finding.start_source_id,
+        end_source_id=finding.end_source_id,
     )
 
 
@@ -220,6 +245,10 @@ def condition_signal_projection_to_dict(
                 "source_timestamp": observation.source_timestamp,
                 "start_timestamp": observation.start_timestamp,
                 "end_timestamp": observation.end_timestamp,
+                "start_event_id": observation.start_event_id,
+                "end_event_id": observation.end_event_id,
+                "start_source_id": observation.start_source_id,
+                "end_source_id": observation.end_source_id,
                 "topology_from": observation.topology_from,
                 "topology_to": observation.topology_to,
                 "temporal_rule_status": observation.temporal_rule_status,
@@ -227,8 +256,8 @@ def condition_signal_projection_to_dict(
                 "scope": observation.scope,
                 "relationship_id": observation.relationship_id,
                 "observation_id": observation.observation_id,
-                "quality": "good",
-                "reason_code": "EVIDENCE.RELATIONSHIP_DELAY_MEASURED",
+                "quality": observation.quality,
+                "reason_code": observation.reason_code,
                 "provenance": "correlated_machine_event_source_timestamps",
             }
             for observation in projection.observations
