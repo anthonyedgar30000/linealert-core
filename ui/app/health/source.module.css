@@ -1,0 +1,209 @@
+.sourcePanel {
+  max-width: 1500px;
+  margin: 0 auto 18px;
+  padding: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.9);
+}
+
+.sourceHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.sourceHeader h2 {
+  margin: 4px 0 6px;
+  font-size: 1.25rem;
+}
+
+.sourceHeader p {
+  margin: 0;
+  color: #9fb0c6;
+  line-height: 1.45;
+}
+
+.eyebrow {
+  margin: 0;
+  color: #7dd3fc;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.sourceState {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 11px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.sourceState i {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.sourceLive {
+  color: #86efac;
+  border: 1px solid rgba(74, 222, 128, 0.28);
+  background: rgba(22, 101, 52, 0.14);
+}
+
+.sourceDemo {
+  color: #fcd34d;
+  border: 1px solid rgba(251, 191, 36, 0.28);
+  background: rgba(120, 53, 15, 0.14);
+}
+
+.sourceGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.sourceCard {
+  min-height: 98px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 13px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 12px;
+  background: rgba(30, 41, 59, 0.58);
+}
+
+.sourceCard span,
+.signalCard span {
+  color: #8ea0b8;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.sourceCard b {
+  color: #e5edf8;
+  font-size: 0.94rem;
+}
+
+.sourceCard small,
+.signalCard small {
+  color: #9fb0c6;
+  line-height: 1.35;
+}
+
+.sourceGood {
+  border-color: rgba(74, 222, 128, 0.22);
+}
+
+.sourceWarn {
+  border-color: rgba(251, 191, 36, 0.26);
+}
+
+.signalGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.signalCard {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 12px;
+  background: rgba(2, 6, 23, 0.34);
+}
+
+.signalValue {
+  color: #dbeafe;
+  font-size: 1.15rem;
+  font-weight: 900;
+}
+
+.signalMeta {
+  color: #7f90a8;
+  font-size: 0.72rem;
+}
+
+.sourceBoundary {
+  margin-top: 12px;
+  padding: 11px 13px;
+  border-left: 3px solid rgba(125, 211, 252, 0.62);
+  border-radius: 8px;
+  background: rgba(14, 116, 144, 0.1);
+  color: #b7c4d6;
+  line-height: 1.45;
+}
+
+.sourceBoundary b {
+  color: #dbeafe;
+}
+
+.bindingBadge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 4px 7px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+
+.liveBadge {
+  color: #86efac;
+  background: rgba(22, 101, 52, 0.18);
+}
+
+.disabledBadge {
+  color: #fcd34d;
+  background: rgba(120, 53, 15, 0.18);
+}
+
+.historianStatus {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+}
+
+.historianDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #7dd3fc;
+}
+
+.historyNote {
+  margin-top: 10px;
+  color: #7f90a8;
+  font-size: 0.76rem;
+}
+
+@media (max-width: 1000px) {
+  .sourceGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .sourceHeader {
+    flex-direction: column;
+  }
+
+  .sourceGrid,
+  .signalGrid {
+    grid-template-columns: 1fr;
+  }
+}
