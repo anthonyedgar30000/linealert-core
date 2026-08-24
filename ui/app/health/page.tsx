@@ -57,31 +57,38 @@ const demoStates: DemoState[] = [
   },
 ];
 
-const trendSeries = [126, 127, 128, 130, 132, 135, 139, 143, 148, 154];
+const seriesByState = [
+  [126, 127, 128],
+  [126, 127, 128, 130, 133],
+  [126, 127, 128, 130, 132, 135, 139, 145],
+  [126, 127, 128, 130, 132, 135, 139, 143, 148, 154],
+  [126, 127, 128, 130, 132, 135, 139, 143, 148, 154, 160, 166],
+];
 
 export default function MachineHealthPage() {
   const [stateIndex, setStateIndex] = useState(3);
   const state = demoStates[stateIndex];
 
   const chart = useMemo(() => {
+    const series = seriesByState[stateIndex];
     const width = 700;
     const height = 250;
     const paddingX = 34;
     const paddingY = 24;
     const min = 110;
     const max = 170;
-    const x = (index: number) => paddingX + (index / (trendSeries.length - 1)) * (width - paddingX * 2);
+    const x = (index: number) => paddingX + (index / (series.length - 1)) * (width - paddingX * 2);
     const y = (value: number) => paddingY + ((max - value) / (max - min)) * (height - paddingY * 2);
     return {
       width,
       height,
-      points: trendSeries.map((value, index) => `${x(index)},${y(value)}`).join(" "),
+      points: series.map((value, index) => `${x(index)},${y(value)}`).join(" "),
       baselineTop: y(baseline.high),
       baselineBottom: y(baseline.low),
-      currentX: x(trendSeries.length - 1),
-      currentY: y(trendSeries[trendSeries.length - 1]),
+      currentX: x(series.length - 1),
+      currentY: y(series[series.length - 1]),
     };
-  }, []);
+  }, [stateIndex]);
 
   return (
     <main className={styles.shell}>
@@ -147,7 +154,7 @@ export default function MachineHealthPage() {
           </div>
 
           <div className={styles.chartWrap}>
-            <svg viewBox={`0 0 ${chart.width} ${chart.height}`} role="img" aria-label="Simulated response-time trend">
+            <svg viewBox={`0 0 ${chart.width} ${chart.height}`} role="img" aria-label={`Simulated response-time trend through ${state.label}`}>
               <rect
                 x="34"
                 y={chart.baselineTop}
@@ -167,9 +174,9 @@ export default function MachineHealthPage() {
               })}
               <polyline points={chart.points} className={styles.trendLine}/>
               <circle cx={chart.currentX} cy={chart.currentY} r="7" className={styles.currentPoint}/>
-              <text x={chart.currentX - 14} y={chart.currentY - 14} className={styles.currentLabel}>154 ms</text>
-              <text x="34" y="244" className={styles.axisText}>7 days ago</text>
-              <text x="612" y="244" className={styles.axisText}>Today</text>
+              <text x={chart.currentX - 46} y={chart.currentY - 14} className={styles.currentLabel}>{state.rollingAverage} ms</text>
+              <text x="34" y="244" className={styles.axisText}>Commissioned start</text>
+              <text x="612" y="244" className={styles.axisText}>{state.label}</text>
             </svg>
           </div>
 
