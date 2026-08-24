@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { useSyncExternalStore } from "react";
 
@@ -78,10 +79,10 @@ export default function OperatorModeBoundary({ children }: { children: ReactNode
         </div>
 
         <div className={styles.actions}>
-          <a href="/health">← Machine Health</a>
-          <a className={styles.secondaryAction} href="/?mode=commissioning">
+          <Link href="/health">← Machine Health</Link>
+          <Link className={styles.secondaryAction} href="/?mode=commissioning">
             Open commissioning fault-injection lab
-          </a>
+          </Link>
         </div>
       </section>
 
