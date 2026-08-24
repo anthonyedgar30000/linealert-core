@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import coreEvidenceFixture from "./core-condition-evidence.json";
 import styles from "./health.module.css";
 import sourceStyles from "./source.module.css";
 
@@ -30,9 +31,30 @@ type HealthState = {
   violations: number;
   note: string;
 };
+type CoreEvidenceObservation = {
+  signal: string;
+  value: number;
+  unit: string;
+  min_value: number;
+  max_value: number;
+  asset_id: string;
+  correlation_id: string;
+  start_event_id: string | null;
+  end_event_id: string | null;
+  start_source_id: string | null;
+  end_source_id: string | null;
+  topology_from: string;
+  topology_to: string;
+  temporal_rule_status: string;
+  semantic: string;
+  quality: string;
+  reason_code: string;
+  provenance: string;
+};
 
 const baseline = { low: 120, high: 140, unit: "ms" };
 const conditionSignalName = "label_feed_response_ms";
+const coreEvidence = coreEvidenceFixture.observations[0] as CoreEvidenceObservation;
 
 const demoStates: HealthState[] = [
   { label: "Day 1", status: "HEALTHY", rollingAverage: 128, trendPercent: 0, violations: 0, note: "Commissioned timing is stable inside the expected envelope." },
@@ -261,14 +283,40 @@ export default function MachineHealthPage() {
         </article>
       </section>
 
-      <section className={sourceStyles.sourcePanel} aria-label="Live telemetry and history context">
+      <section className={sourceStyles.sourcePanel} aria-label="Live telemetry, deterministic core evidence, and history context">
         <div className={sourceStyles.sourceHeader}>
           <div>
-            <p className={sourceStyles.eyebrow}>LIVE EVIDENCE CONTEXT</p>
-            <h2>Bridge observations now sit beside the condition model</h2>
-            <p>Live proxies remain context until the exact condition relationship is explicitly mapped and semantically admitted.</p>
+            <p className={sourceStyles.eyebrow}>EVIDENCE CONTEXT</p>
+            <h2>Core-produced relationship evidence now sits beside the live bridge</h2>
+            <p>The replay card below is generated from the deterministic timing engine and CI-verified against the checked-in demo events. Live proxies remain context until the exact production relationship is explicitly mapped and admitted.</p>
           </div>
           <span className={`${sourceStyles.sourceState} ${bridgeConnected ? sourceStyles.sourceLive : sourceStyles.sourceDemo}`}><i/>{bridgeConnected ? "BRIDGE CONNECTED" : "DEMO FALLBACK"}</span>
+        </div>
+
+        <div className={sourceStyles.coreEvidenceCard}>
+          <div className={sourceStyles.coreEvidenceIdentity}>
+            <span>CORE REPLAY EVIDENCE · CI-VERIFIED</span>
+            <b>{coreEvidence.topology_from} → {coreEvidence.topology_to}</b>
+            <small>{coreEvidence.semantic}</small>
+          </div>
+          <div className={sourceStyles.coreEvidenceMetric}>
+            <span>MEASURED DELAY</span>
+            <b>{coreEvidence.value.toFixed(0)} {coreEvidence.unit}</b>
+            <small>{coreEvidence.correlation_id} · {coreEvidence.quality} evidence</small>
+          </div>
+          <div className={sourceStyles.coreEvidenceMetric}>
+            <span>APPROVED ENVELOPE</span>
+            <b>{coreEvidence.min_value.toFixed(0)}–{coreEvidence.max_value.toFixed(0)} {coreEvidence.unit}</b>
+            <small>Temporal status: {coreEvidence.temporal_rule_status.toUpperCase()}</small>
+          </div>
+          <div className={sourceStyles.coreEvidenceMetric}>
+            <span>TREND</span>
+            <b>Not inferred</b>
+            <small>One measured cycle establishes deviation only, not condition degradation.</small>
+          </div>
+        </div>
+        <div className={sourceStyles.coreEvidenceProvenance}>
+          <b>Provenance:</b> {coreEvidence.start_event_id} ({coreEvidence.start_source_id}) → {coreEvidence.end_event_id} ({coreEvidence.end_source_id}) · {coreEvidence.provenance}. This replay evidence is not current physical-machine telemetry.
         </div>
 
         <div className={sourceStyles.sourceGrid}>
@@ -298,7 +346,7 @@ export default function MachineHealthPage() {
         </div>
 
         <div className={sourceStyles.sourceBoundary}>
-          <b>Binding boundary:</b> simulator RPM, derived arrival timing, and pressure do not become the 120–140 ms photoeye-to-label-feed relationship because the units or trend look convenient. A named qualified mapping must exist first.
+          <b>Binding boundary:</b> simulator RPM, derived arrival timing, pressure, and deterministic replay evidence do not become the 120–140 ms photoeye-to-label-feed relationship because the units or trend look convenient. A named qualified live mapping must exist first.
         </div>
         <div className={sourceStyles.historyNote}>{history?.persistence === "jsonl_capture" ? "Durable JSONL capture is enabled; the dashboard exposes a bounded recent window from that observation stream." : "Recent history is memory-backed. Start the bridge with --capture-jsonl to retain the same observations durably for replay and analysis."}</div>
       </section>

@@ -1,0 +1,44 @@
+{
+  "schema_version": "linealert.condition-signal-projection.v1",
+  "claim_boundary": "Measured correlated-event delay only. This does not establish physical root cause, component health, remaining useful life, or future failure.",
+  "count": 1,
+  "bindings": [
+    {
+      "signal_name": "label_presentation_delay_ms",
+      "rule_id": "label-presentation-delay",
+      "semantic": "measured_label_feed_command_to_label_at_peel_point_delay",
+      "scope": "replay_measurement_candidate",
+      "unit": "ms",
+      "relationship_id": "relationship:label-presentation-delay"
+    }
+  ],
+  "observations": [
+    {
+      "signal": "label_presentation_delay_ms",
+      "value": 550.0,
+      "unit": "ms",
+      "min_value": 50.0,
+      "max_value": 350.0,
+      "asset_id": "LABELER-DEMO-01",
+      "rule_id": "label-presentation-delay",
+      "correlation_id": "cycle-1001",
+      "source_timestamp": "2026-07-19T14:00:01.200000+00:00",
+      "start_timestamp": "2026-07-19T14:00:00.650000+00:00",
+      "end_timestamp": "2026-07-19T14:00:01.200000+00:00",
+      "start_event_id": "labeler-cycle-1001-05",
+      "end_event_id": "labeler-cycle-1001-06",
+      "start_source_id": "plc-labeler-demo",
+      "end_source_id": "plc-labeler-demo",
+      "topology_from": "LabelFeedCommand",
+      "topology_to": "LabelAtPeelPoint",
+      "temporal_rule_status": "late",
+      "semantic": "measured_label_feed_command_to_label_at_peel_point_delay",
+      "scope": "replay_measurement_candidate",
+      "relationship_id": "relationship:label-presentation-delay",
+      "observation_id": "LABELER-DEMO-01:cycle-1001:label_presentation_delay_ms:2026-07-19T14:00:01.200000+00:00",
+      "quality": "good",
+      "reason_code": "EVIDENCE.RELATIONSHIP_DELAY_MEASURED",
+      "provenance": "correlated_machine_event_source_timestamps"
+    }
+  ]
+}

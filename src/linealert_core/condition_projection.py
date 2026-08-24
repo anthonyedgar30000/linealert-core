@@ -48,6 +48,8 @@ class ConditionSignalObservation:
     signal_name: str
     value: float
     unit: str
+    min_value: float
+    max_value: float
     asset_id: str
     rule_id: str
     correlation_id: str
@@ -77,11 +79,11 @@ class ConditionSignalProjection:
     observations: tuple[ConditionSignalObservation, ...]
 
 
-def _converted_delay(finding: TimingFinding, unit: str) -> float:
+def _convert_seconds(value: float, unit: str) -> float:
     if unit == "s":
-        return finding.delay_seconds
+        return value
     if unit == "ms":
-        return finding.delay_seconds * 1000.0
+        return value * 1000.0
     raise ConditionProjectionError(f"unsupported condition signal unit {unit!r}")
 
 
@@ -116,8 +118,10 @@ def project_timing_finding(
     quality, reason_code = _combined_quality(finding)
     return ConditionSignalObservation(
         signal_name=binding.signal_name,
-        value=_converted_delay(finding, binding.unit),
+        value=_convert_seconds(finding.delay_seconds, binding.unit),
         unit=binding.unit,
+        min_value=_convert_seconds(finding.min_delay_seconds, binding.unit),
+        max_value=_convert_seconds(finding.max_delay_seconds, binding.unit),
         asset_id=finding.asset_id,
         rule_id=finding.rule_id,
         correlation_id=finding.correlation_id,
@@ -239,6 +243,8 @@ def condition_signal_projection_to_dict(
                 "signal": observation.signal_name,
                 "value": observation.value,
                 "unit": observation.unit,
+                "min_value": observation.min_value,
+                "max_value": observation.max_value,
                 "asset_id": observation.asset_id,
                 "rule_id": observation.rule_id,
                 "correlation_id": observation.correlation_id,
