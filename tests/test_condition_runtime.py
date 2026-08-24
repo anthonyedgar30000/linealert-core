@@ -96,6 +96,29 @@ def test_condition_runtime_retains_repeated_drift_cycles_in_order() -> None:
     )
 
 
+def test_condition_runtime_calls_persistence_hook_only_for_measurements() -> None:
+    snapshot = ConditionRuntimeSnapshot()
+    persisted = []
+
+    summary = asyncio.run(
+        replay_condition_events(
+            PROJECT_ROOT / "examples" / "labeler_condition_drift_events.jsonl",
+            PROJECT_ROOT / "examples" / "labeler_demo_config.json",
+            PROJECT_ROOT / "examples" / "condition_signal_bindings.json",
+            snapshot,
+            interval_seconds=0,
+            on_measurement=persisted.append,
+        )
+    )
+
+    assert summary.measurement_count == 10
+    assert len(persisted) == 10
+    assert [measurement.observation.value for measurement in persisted] == pytest.approx(
+        [240.0, 260.0, 300.0, 340.0, 370.0, 400.0, 430.0, 470.0, 510.0, 550.0]
+    )
+    assert all(measurement.observation.quality == "good" for measurement in persisted)
+
+
 def test_condition_runtime_rejects_negative_replay_interval() -> None:
     snapshot = ConditionRuntimeSnapshot()
 
