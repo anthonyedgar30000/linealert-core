@@ -15,6 +15,11 @@ from .baseline_replay import (
     load_timing_baseline_contexts,
     timing_baseline_assessment_to_dict,
 )
+from .condition_projection import (
+    condition_signal_projection_to_dict,
+    load_condition_signal_bindings,
+    project_replay_condition_signals,
+)
 from .replay import (
     ReplayInputError,
     build_core_from_config,
@@ -40,6 +45,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="input format; inferred from the file extension by default",
     )
     parser.add_argument("--output", type=Path, help="write the JSON report to this file")
+    parser.add_argument(
+        "--condition-signal-bindings",
+        type=Path,
+        help=(
+            "optional mapping from measured timing rules to named condition-monitoring signals"
+        ),
+    )
     parser.add_argument(
         "--baseline-registry",
         type=Path,
@@ -83,6 +95,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         events = load_events(args.input, input_format=args.format)
         summary = replay_events(core, events)
         report = summary_to_dict(summary)
+
+        if args.condition_signal_bindings is not None:
+            bindings = load_condition_signal_bindings(args.condition_signal_bindings)
+            projection = project_replay_condition_signals(summary, bindings)
+            report["condition_signal_projection"] = condition_signal_projection_to_dict(
+                projection
+            )
 
         if args.baseline_registry is not None:
             registry = load_baseline_registry(args.baseline_registry)
