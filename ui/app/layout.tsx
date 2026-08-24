@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
 import InvestigationHandoff from "./investigation-handoff";
-import OperatorModeBoundary from "./operator-mode-boundary";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -22,7 +21,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
         <InvestigationHandoff />
-        <OperatorModeBoundary>{children}</OperatorModeBoundary>
+        {children}
       </body>
     </html>
   );
