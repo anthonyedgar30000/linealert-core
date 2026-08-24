@@ -44,6 +44,14 @@ type HandoffContext = {
   correlationId?: string;
 };
 
+type VerificationResult = {
+  state: "idle" | "checking" | "recovered" | "persists" | "unavailable";
+  latest?: number;
+  unit?: string;
+  min?: number;
+  max?: number;
+};
+
 const humanizeRelationship = (from: string, to: string) => {
   const labels: Record<string, string> = {
     LabelFeedCommand: "Label feed command",
@@ -68,6 +76,7 @@ export default function InvestigationHandoff() {
   const search = useSyncExternalStore(subscribeLocation, getSearch, getServerLocation);
   const [healthContext, setHealthContext] = useState<HandoffContext | null>(null);
   const [dismissed, setDismissed] = useState(false);
+  const [verification, setVerification] = useState<VerificationResult>({ state: "idle" });
 
   const incomingContext = useMemo<HandoffContext | null>(() => {
     if (path !== "/") return null;
@@ -151,11 +160,15 @@ export default function InvestigationHandoff() {
     };
   }, [path]);
 
+  useEffect(() => {
+    setVerification({ state: "idle" });
+  }, [incomingContext?.observationId, incomingContext?.signal]);
+
   const investigationHref = useMemo(() => {
-    if (!healthContext) return "/?source=health&fault=alignment";
+    if (!healthContext) return "/?source=health";
     const params = new URLSearchParams({
       source: "health",
-      fault: "alignment",
+      focus: "label-presentation-response",
       asset: healthContext.asset,
       relationship: healthContext.relationship,
       signal: healthContext.signal,
@@ -172,6 +185,41 @@ export default function InvestigationHandoff() {
     if (healthContext.correlationId) params.set("correlationId", healthContext.correlationId);
     return `/?${params.toString()}`;
   }, [healthContext]);
+
+  const verifyCondition = async () => {
+    if (!incomingContext) return;
+    setVerification({ state: "checking" });
+    try {
+      const response = await fetch("/api/condition", { cache: "no-store" });
+      if (!response.ok) {
+        setVerification({ state: "unavailable" });
+        return;
+      }
+      const payload = (await response.json()) as ConditionPayload;
+      const matching = payload.condition?.condition_signals?.observations?.filter(
+        (observation) => observation.quality === "good"
+          && Number.isFinite(observation.value)
+          && observation.signal === incomingContext.signal
+          && humanizeRelationship(observation.topology_from, observation.topology_to) === incomingContext.relationship,
+      ) ?? [];
+      const latest = matching.at(-1);
+      if (!latest) {
+        setVerification({ state: "unavailable" });
+        return;
+      }
+
+      const recovered = latest.value >= latest.min_value && latest.value <= latest.max_value;
+      setVerification({
+        state: recovered ? "recovered" : "persists",
+        latest: latest.value,
+        unit: latest.unit,
+        min: latest.min_value,
+        max: latest.max_value,
+      });
+    } catch {
+      setVerification({ state: "unavailable" });
+    }
+  };
 
   if (path === "/health") {
     return (
@@ -209,13 +257,26 @@ export default function InvestigationHandoff() {
         <div><span>Latest</span><b>{incomingContext.latest.toFixed(0)} {incomingContext.unit}</b></div>
         <div><span>Commissioned</span><b>{incomingContext.min}–{incomingContext.max} {incomingContext.unit}</b></div>
         <div><span>Violations</span><b>{incomingContext.violations}</b></div>
-        <div><span>Suggested scenario</span><b>Arrival phase drift</b></div>
+        <div><span>Investigation target</span><b>Label presentation response</b></div>
+      </div>
+      <div className={styles.claimBoundary}>
+        <div><span>KNOWN</span><b>The command → peel-point relationship is degraded.</b></div>
+        <div><span>NOT YET KNOWN</span><b>Which physical, controls, timing, or coordination condition caused it.</b></div>
       </div>
       <p>
-        Condition monitoring has established relationship degradation only. Physical root cause remains unproven; use the role-bounded operator workflow to inspect, escalate, and verify recovery.
+        Treat the scenario cards below as candidate checks, not as the explanation for this condition. Improvement in arrival phase or another local metric does not clear the handoff until LineAlert re-measures this original relationship inside its commissioned envelope.
       </p>
+      {verification.state !== "idle" && (
+        <div className={`${styles.verificationResult} ${styles[`verification_${verification.state}`]}`} role="status">
+          {verification.state === "checking" && <><span>VERIFYING ORIGINAL RELATIONSHIP</span><b>Reading the latest admitted condition measurement…</b></>}
+          {verification.state === "recovered" && <><span>CONDITION RECOVERED</span><b>{verification.latest?.toFixed(0)} {verification.unit} is inside {verification.min}–{verification.max} {verification.unit}.</b><small>Recovery is established for this relationship; physical root cause is still not proven.</small></>}
+          {verification.state === "persists" && <><span>DEGRADATION PERSISTS</span><b>{verification.latest?.toFixed(0)} {verification.unit} remains outside {verification.min}–{verification.max} {verification.unit}.</b><small>Continue the bounded investigation; a local improvement elsewhere did not clear the original condition.</small></>}
+          {verification.state === "unavailable" && <><span>VERIFICATION UNAVAILABLE</span><b>No fresh admitted measurement for the original relationship is available.</b><small>Do not infer recovery from a different metric or scenario outcome.</small></>}
+        </div>
+      )}
       <div className={styles.operatorActions}>
         <a href="/health">← Machine Health</a>
+        <button className={styles.verifyAction} type="button" onClick={verifyCondition} disabled={verification.state === "checking"}>Verify original condition</button>
         <span>Context retained from the condition evidence chain</span>
       </div>
     </aside>
