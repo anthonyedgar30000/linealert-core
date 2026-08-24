@@ -101,6 +101,16 @@ from .streaming import (
     consume_stream,
     stream_summary_to_dict,
 )
+from .live_condition import (
+    LiveClockEvidence,
+    LiveConditionConsumer,
+    LiveConditionMeasurement,
+    LiveConditionRefusal,
+    LiveConditionResult,
+    LiveConditionSummary,
+    consume_live_condition_stream,
+    live_condition_summary_to_dict,
+)
 from .timing import TemporalRule, TimingFinding, TimingMonitor, TimingStatus
 from .topology import DependencyEdge, TopologyContext, TopologyGraph
 
@@ -144,6 +154,12 @@ __all__ = [
     "EventReceipt",
     "FusionMosaic",
     "LineAlertCore",
+    "LiveClockEvidence",
+    "LiveConditionConsumer",
+    "LiveConditionMeasurement",
+    "LiveConditionRefusal",
+    "LiveConditionResult",
+    "LiveConditionSummary",
     "MachineEvent",
     "MachineProfile",
     "MachineProfileError",
@@ -182,7 +198,9 @@ __all__ = [
     "collect_timing_findings",
     "compare_to_baseline",
     "condition_signal_projection_to_dict",
+    "consume_live_condition_stream",
     "consume_stream",
+    "live_condition_summary_to_dict",
     "load_baseline_registry",
     "load_condition_signal_bindings",
     "load_diagnostic_engine",
