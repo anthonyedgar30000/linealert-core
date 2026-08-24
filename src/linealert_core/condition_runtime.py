@@ -6,6 +6,7 @@ import asyncio
 import json
 import math
 import threading
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -13,6 +14,7 @@ from typing import Any
 from .condition_projection import load_condition_signal_bindings
 from .live_condition import (
     LiveConditionConsumer,
+    LiveConditionMeasurement,
     LiveConditionSummary,
     live_condition_summary_to_dict,
 )
@@ -107,8 +109,13 @@ async def replay_condition_events(
     interval_seconds: float = 0.1,
     clock_quality: str = "synchronized",
     session_id: str = "condition-runtime-replay",
+    on_measurement: Callable[[LiveConditionMeasurement], None] | None = None,
 ) -> LiveConditionSummary:
-    """Publish a deterministic event replay through the same incremental condition path."""
+    """Publish deterministic replay and optionally persist each admitted measurement.
+
+    The callback is invoked only after the stream/core path has admitted the envelope and
+    projected a condition measurement. It is deliberately outside the core transaction.
+    """
 
     if not math.isfinite(interval_seconds) or interval_seconds < 0:
         raise ValueError("condition replay interval must be a finite non-negative number")
@@ -131,8 +138,11 @@ async def replay_condition_events(
     )
     try:
         for envelope in simulator:
-            consumer.consume(envelope)
+            result = consumer.consume(envelope)
             snapshot.update(consumer.summary(), source_mode=source_mode, running=True)
+            if on_measurement is not None:
+                for measurement in result.measurements:
+                    on_measurement(measurement)
             if interval_seconds:
                 await asyncio.sleep(interval_seconds)
     except Exception as exc:
