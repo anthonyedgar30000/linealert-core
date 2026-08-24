@@ -32,6 +32,8 @@ type ConditionPayload = {
 type HandoffContext = {
   asset: string;
   relationship: string;
+  relationshipId: string;
+  episodeId: string;
   signal: string;
   latest: number;
   unit: string;
@@ -50,6 +52,12 @@ type VerificationResult = {
   unit?: string;
   min?: number;
   max?: number;
+  history?: "persisted" | "unavailable";
+};
+
+type HistorianState = {
+  state: "unknown" | "active" | "unavailable";
+  count?: number;
 };
 
 const humanizeRelationship = (from: string, to: string) => {
@@ -75,6 +83,7 @@ export default function InvestigationHandoff() {
   const path = useSyncExternalStore(subscribeLocation, getPathname, getServerLocation);
   const search = useSyncExternalStore(subscribeLocation, getSearch, getServerLocation);
   const [healthContext, setHealthContext] = useState<HandoffContext | null>(null);
+  const [historian, setHistorian] = useState<HistorianState>({ state: "unknown" });
   const [dismissed, setDismissed] = useState(false);
   const [verification, setVerification] = useState<VerificationResult>({ state: "idle" });
 
@@ -92,13 +101,19 @@ export default function InvestigationHandoff() {
     return {
       asset: params.get("asset") ?? "label-application-station",
       relationship: params.get("relationship") ?? "Label feed command → Label at peel point",
+      relationshipId: params.get("relationshipId") ?? "relationship:label-presentation-delay",
+      episodeId: params.get("episodeId") ?? "condition-runtime-replay",
       signal: params.get("signal") ?? "label_presentation_delay_ms",
       latest,
       unit: params.get("unit") ?? "ms",
       min,
       max,
       violations,
-      status: params.get("status") === "DEGRADED" ? "DEGRADED" : params.get("status") === "DRIFTING" ? "DRIFTING" : "HEALTHY",
+      status: params.get("status") === "DEGRADED"
+        ? "DEGRADED"
+        : params.get("status") === "DRIFTING"
+          ? "DRIFTING"
+          : "HEALTHY",
       sourceMode: params.get("sourceMode") ?? "unknown",
       observationId: params.get("observationId") ?? undefined,
       correlationId: params.get("correlationId") ?? undefined,
@@ -124,7 +139,8 @@ export default function InvestigationHandoff() {
           (observation) => observation.signal === latest.signal,
         );
         const violations = related.filter(
-          (observation) => observation.value < observation.min_value || observation.value > observation.max_value,
+          (observation) => observation.value < observation.min_value
+            || observation.value > observation.max_value,
         ).length;
         const latestOutside = latest.value < latest.min_value || latest.value > latest.max_value;
         const status: HandoffContext["status"] = violations >= 3
@@ -132,10 +148,15 @@ export default function InvestigationHandoff() {
           : latestOutside
             ? "DRIFTING"
             : "HEALTHY";
+        const sourceMode = payload.source_mode ?? "unknown";
 
         setHealthContext({
           asset: latest.asset_id || "label-application-station",
           relationship: humanizeRelationship(latest.topology_from, latest.topology_to),
+          relationshipId: latest.relationship_id ?? `relationship:${latest.signal}`,
+          episodeId: sourceMode === "deterministic_event_replay"
+            ? "condition-runtime-replay"
+            : `runtime:${latest.correlation_id ?? latest.observation_id ?? latest.signal}`,
           signal: latest.signal,
           latest: latest.value,
           unit: latest.unit,
@@ -143,7 +164,7 @@ export default function InvestigationHandoff() {
           max: latest.max_value,
           violations,
           status,
-          sourceMode: payload.source_mode ?? "unknown",
+          sourceMode,
           observationId: latest.observation_id,
           correlationId: latest.correlation_id,
         });
@@ -152,11 +173,29 @@ export default function InvestigationHandoff() {
       }
     };
 
+    const readHistorian = async () => {
+      try {
+        const response = await fetch("/api/historian/conditions?limit=1", { cache: "no-store" });
+        if (!active) return;
+        if (!response.ok) {
+          setHistorian({ state: "unavailable" });
+          return;
+        }
+        const payload = (await response.json()) as { count?: number };
+        setHistorian({ state: "active", count: payload.count ?? 0 });
+      } catch {
+        if (active) setHistorian({ state: "unavailable" });
+      }
+    };
+
     readCondition();
-    const timer = window.setInterval(readCondition, 1500);
+    readHistorian();
+    const conditionTimer = window.setInterval(readCondition, 1500);
+    const historianTimer = window.setInterval(readHistorian, 3000);
     return () => {
       active = false;
-      window.clearInterval(timer);
+      window.clearInterval(conditionTimer);
+      window.clearInterval(historianTimer);
     };
   }, [path]);
 
@@ -167,6 +206,8 @@ export default function InvestigationHandoff() {
       focus: "label-presentation-response",
       asset: healthContext.asset,
       relationship: healthContext.relationship,
+      relationshipId: healthContext.relationshipId,
+      episodeId: healthContext.episodeId,
       signal: healthContext.signal,
       latest: String(healthContext.latest),
       unit: healthContext.unit,
@@ -182,6 +223,43 @@ export default function InvestigationHandoff() {
     return `/?${params.toString()}`;
   }, [healthContext]);
 
+  const persistVerification = async (
+    context: HandoffContext,
+    observation: RuntimeObservation,
+    recovered: boolean,
+  ) => {
+    try {
+      const response = await fetch("/api/historian/outcomes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          episode_id: context.episodeId,
+          asset_id: context.asset,
+          relationship_id: context.relationshipId,
+          outcome_type: "condition_verification",
+          status: recovered ? "recovered" : "persists",
+          actor_role: "operator_view",
+          related_observation_id: observation.observation_id,
+          verification_value: observation.value,
+          verification_unit: observation.unit,
+          verification_status: recovered
+            ? "inside_commissioned_envelope"
+            : "outside_commissioned_envelope",
+          details: {
+            handoff_observation_id: context.observationId,
+            handoff_correlation_id: context.correlationId,
+            verification_correlation_id: observation.correlation_id,
+            source_mode: context.sourceMode,
+          },
+        }),
+        cache: "no-store",
+      });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  };
+
   const verifyCondition = async () => {
     if (!incomingContext) return;
     setVerification({ state: "checking" });
@@ -196,7 +274,8 @@ export default function InvestigationHandoff() {
         (observation) => observation.quality === "good"
           && Number.isFinite(observation.value)
           && observation.signal === incomingContext.signal
-          && humanizeRelationship(observation.topology_from, observation.topology_to) === incomingContext.relationship,
+          && humanizeRelationship(observation.topology_from, observation.topology_to)
+            === incomingContext.relationship,
       ) ?? [];
       const latest = matching.at(-1);
       if (!latest) {
@@ -205,12 +284,14 @@ export default function InvestigationHandoff() {
       }
 
       const recovered = latest.value >= latest.min_value && latest.value <= latest.max_value;
+      const persisted = await persistVerification(incomingContext, latest, recovered);
       setVerification({
         state: recovered ? "recovered" : "persists",
         latest: latest.value,
         unit: latest.unit,
         min: latest.min_value,
         max: latest.max_value,
+        history: persisted ? "persisted" : "unavailable",
       });
     } catch {
       setVerification({ state: "unavailable" });
@@ -228,6 +309,8 @@ export default function InvestigationHandoff() {
               ? `${healthContext.latest.toFixed(0)} ${healthContext.unit} latest · ${healthContext.violations} envelope violation${healthContext.violations === 1 ? "" : "s"}`
               : "Pass the current station condition into the troubleshooting workflow"}
           </small>
+          {historian.state === "active" && <small>Shared history active · durable condition timeline available</small>}
+          {historian.state === "unavailable" && <small>Shared history unavailable · live evidence remains visible</small>}
         </div>
         <a className={styles.primaryAction} href={investigationHref}>Investigate →</a>
       </aside>
@@ -268,6 +351,8 @@ export default function InvestigationHandoff() {
           {verification.state === "recovered" && <><span>CONDITION RECOVERED</span><b>{verification.latest?.toFixed(0)} {verification.unit} is inside {verification.min}–{verification.max} {verification.unit}.</b><small>Recovery is established for this relationship; physical root cause is still not proven.</small></>}
           {verification.state === "persists" && <><span>DEGRADATION PERSISTS</span><b>{verification.latest?.toFixed(0)} {verification.unit} remains outside {verification.min}–{verification.max} {verification.unit}.</b><small>Continue the bounded investigation; a local improvement elsewhere did not clear the original condition.</small></>}
           {verification.state === "unavailable" && <><span>VERIFICATION UNAVAILABLE</span><b>No fresh admitted measurement for the original relationship is available.</b><small>Do not infer recovery from a different metric or scenario outcome.</small></>}
+          {verification.history === "persisted" && <small>Verification appended to the shared historian episode.</small>}
+          {verification.history === "unavailable" && <small>Shared historian unavailable; this verification is live-only.</small>}
         </div>
       )}
       <div className={styles.operatorActions}>

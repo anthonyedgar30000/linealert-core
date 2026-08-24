@@ -18,6 +18,7 @@ dependencies = []
 linealert-replay = "linealert_core.cli:main"
 linealert-diagnose = "linealert_core.diagnostic_cli:main"
 linealert-opcua-bridge = "linealert_core.opcua_bridge:main"
+linealert-historian-service = "linealert_core.historian_service:main"
 
 [project.optional-dependencies]
 dev = [
@@ -27,6 +28,9 @@ dev = [
 ]
 opcua = [
   "asyncua>=1.1.5,<1.1.8"
+]
+historian = [
+  "psycopg[binary]>=3.2,<4"
 ]
 
 [tool.setuptools.packages.find]
