@@ -160,10 +160,6 @@ export default function InvestigationHandoff() {
     };
   }, [path]);
 
-  useEffect(() => {
-    setVerification({ state: "idle" });
-  }, [incomingContext?.observationId, incomingContext?.signal]);
-
   const investigationHref = useMemo(() => {
     if (!healthContext) return "/?source=health";
     const params = new URLSearchParams({
