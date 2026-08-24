@@ -1,0 +1,12 @@
+{
+  "schema_version": "linealert.condition-signal-bindings.v1",
+  "bindings": [
+    {
+      "signal_name": "label_presentation_delay_ms",
+      "rule_id": "label-presentation-delay",
+      "semantic": "measured_label_feed_command_to_label_at_peel_point_delay",
+      "scope": "replay_measurement_candidate",
+      "unit": "ms"
+    }
+  ]
+}

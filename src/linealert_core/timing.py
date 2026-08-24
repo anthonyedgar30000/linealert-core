@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 
-from .events import MachineEvent
+from .events import EventQuality, MachineEvent
 
 
 class TimingStatus(StrEnum):
@@ -61,6 +61,12 @@ class TimingFinding:
     status: TimingStatus
     topology_from: str
     topology_to: str
+    start_event_id: str | None = None
+    end_event_id: str | None = None
+    start_source_id: str | None = None
+    end_source_id: str | None = None
+    start_quality: EventQuality = EventQuality.UNKNOWN
+    end_quality: EventQuality = EventQuality.UNKNOWN
 
     @property
     def observation_key(self) -> str:
@@ -142,6 +148,12 @@ class TimingMonitor:
                 status=status,
                 topology_from=rule.topology_from,
                 topology_to=rule.topology_to,
+                start_event_id=start.event_id,
+                end_event_id=event.event_id,
+                start_source_id=start.source_id,
+                end_source_id=event.source_id,
+                start_quality=start.quality,
+                end_quality=event.quality,
             )
             self._starts.pop(key)
             findings.append(finding)

@@ -253,6 +253,36 @@ A replay configuration defines the approved topology and timing envelopes:
 }
 ```
 
+## Measured condition-signal projection
+
+The timing core already measures the delay between explicitly correlated machine events. A bounded
+projection can now give a selected timing rule a stable condition-monitoring signal name without
+pretending that a different proxy represents the relationship.
+
+For example, the labeler demo can project the measured
+`LabelFeedCommand → LabelAtPeelPoint` timing finding as `label_presentation_delay_ms`:
+
+```bash
+linealert-replay \
+  --config examples/labeler_demo_config.json \
+  --input examples/labeler_demo_events.jsonl \
+  --condition-signal-bindings examples/condition_signal_bindings.json \
+  --output labeler-demo-report.json
+```
+
+The resulting `condition_signal_projection` retains the rule ID, correlation ID, event-pair start
+and end timestamps, topology relationship, temporal-envelope status, and an explicit claim boundary.
+The projection establishes only a measured correlated-event delay. It does **not** establish root
+cause, component health, remaining useful life, or a future failure prediction.
+
+This increment is deliberately offline and deterministic. It adds no new PLC connector, listener,
+physical-equipment access, or deployment path. Wiring a live adapter to physical start/end signals
+remains a separate Tier 2 change requiring the repository's qualified-review gate.
+
+The current `/health` prototype still waits specifically for a semantically admitted
+`label_feed_response_ms`. The example above does not rename the different label-presentation
+relationship to make that screen appear live. The exact event pair must be mapped first.
+
 ## Full pressure-sensitive labeler demo
 
 The full demo requires an explicit machine profile rather than treating structurally valid events
