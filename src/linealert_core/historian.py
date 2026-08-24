@@ -114,7 +114,9 @@ class TimescaleHistorian:
         try:
             self._connection = psycopg.connect(dsn, autocommit=True)
         except Exception as exc:  # pragma: no cover - database integration path
-            raise HistorianError(f"unable to connect to configured historian: {type(exc).__name__}") from exc
+            raise HistorianError(
+                f"unable to connect to configured historian: {type(exc).__name__}"
+            ) from exc
         self._lock = threading.RLock()
         self.ensure_schema()
 
@@ -128,10 +130,9 @@ class TimescaleHistorian:
 
     def record_machine_observation(self, payload: dict[str, Any]) -> None:
         observed_at = payload.get("bridge_timestamp") or datetime.now(UTC).isoformat()
-        observation_id = str(
-            payload.get("observation_id")
-            or f"{payload.get('source_id', 'unknown')}:{payload.get('observation_sequence', observed_at)}"
-        )
+        source_id = payload.get("source_id", "unknown")
+        sequence = payload.get("observation_sequence", observed_at)
+        observation_id = str(payload.get("observation_id") or f"{source_id}:{sequence}")
         with self._lock, self._connection.cursor() as cursor:
             cursor.execute(
                 """
@@ -323,7 +324,12 @@ class TimescaleHistorian:
             "measurements": measurements,
         }
 
-    def observation_history(self, *, limit: int = 240, asset_id: str | None = None) -> dict[str, Any]:
+    def observation_history(
+        self,
+        *,
+        limit: int = 240,
+        asset_id: str | None = None,
+    ) -> dict[str, Any]:
         bounded_limit = max(1, min(limit, 5000))
         if asset_id:
             query = """
