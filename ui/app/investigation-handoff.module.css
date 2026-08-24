@@ -1,0 +1,175 @@
+.healthHandoff {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 60;
+  width: min(420px, calc(100vw - 32px));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 18px;
+  border: 1px solid rgba(78, 214, 176, 0.35);
+  border-radius: 14px;
+  background: rgba(8, 18, 35, 0.96);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(10px);
+  color: #f5f8ff;
+}
+
+.healthHandoff > div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.healthHandoff strong {
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.healthHandoff small {
+  color: #9fb0c8;
+  line-height: 1.35;
+}
+
+.kicker {
+  color: #65e3bc;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.primaryAction {
+  flex: 0 0 auto;
+  padding: 11px 14px;
+  border-radius: 10px;
+  background: #58d6ae;
+  color: #06121d;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.primaryAction:hover {
+  filter: brightness(1.06);
+}
+
+.operatorHandoff {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 80;
+  width: min(980px, calc(100vw - 36px));
+  padding: 18px 20px;
+  border: 1px solid rgba(88, 214, 174, 0.38);
+  border-radius: 14px;
+  background: rgba(7, 16, 31, 0.97);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(12px);
+  color: #f5f8ff;
+}
+
+.operatorHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.operatorHeader > div {
+  display: grid;
+  gap: 5px;
+}
+
+.operatorHeader strong {
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.operatorHeader button {
+  border: 0;
+  background: transparent;
+  color: #9fb0c8;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.contextGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.contextGrid > div {
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 1px solid rgba(148, 166, 194, 0.18);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.contextGrid span {
+  color: #8fa2bb;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.contextGrid b {
+  font-size: 13px;
+}
+
+.operatorHandoff p {
+  margin: 12px 0 0;
+  color: #c3cede;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.operatorActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(148, 166, 194, 0.15);
+  color: #8194ad;
+  font-size: 11px;
+}
+
+.operatorActions a {
+  color: #65e3bc;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+@media (max-width: 760px) {
+  .healthHandoff {
+    right: 16px;
+    bottom: 16px;
+    left: 16px;
+    width: auto;
+  }
+
+  .operatorHandoff {
+    top: 10px;
+    width: calc(100vw - 20px);
+    padding: 14px;
+  }
+
+  .contextGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .operatorActions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
