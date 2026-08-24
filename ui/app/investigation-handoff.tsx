@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 
 import styles from "./investigation-handoff.module.css";
 
@@ -58,27 +58,29 @@ const parseNumber = (value: string | null) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
+const subscribeLocation = () => () => undefined;
+const getPathname = () => window.location.pathname;
+const getSearch = () => window.location.search;
+const getServerLocation = () => "";
+
 export default function InvestigationHandoff() {
-  const [path, setPath] = useState<string | null>(null);
+  const path = useSyncExternalStore(subscribeLocation, getPathname, getServerLocation);
+  const search = useSyncExternalStore(subscribeLocation, getSearch, getServerLocation);
   const [healthContext, setHealthContext] = useState<HandoffContext | null>(null);
-  const [incomingContext, setIncomingContext] = useState<HandoffContext | null>(null);
   const [dismissed, setDismissed] = useState(false);
 
-  useEffect(() => {
-    setPath(window.location.pathname);
-
-    if (window.location.pathname !== "/") return;
-
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("source") !== "health") return;
+  const incomingContext = useMemo<HandoffContext | null>(() => {
+    if (path !== "/") return null;
+    const params = new URLSearchParams(search);
+    if (params.get("source") !== "health") return null;
 
     const latest = parseNumber(params.get("latest"));
     const min = parseNumber(params.get("min"));
     const max = parseNumber(params.get("max"));
     const violations = parseNumber(params.get("violations"));
-    if (latest === null || min === null || max === null || violations === null) return;
+    if (latest === null || min === null || max === null || violations === null) return null;
 
-    setIncomingContext({
+    return {
       asset: params.get("asset") ?? "label-application-station",
       relationship: params.get("relationship") ?? "Label feed command → Label at peel point",
       signal: params.get("signal") ?? "label_presentation_delay_ms",
@@ -91,8 +93,8 @@ export default function InvestigationHandoff() {
       sourceMode: params.get("sourceMode") ?? "unknown",
       observationId: params.get("observationId") ?? undefined,
       correlationId: params.get("correlationId") ?? undefined,
-    });
-  }, []);
+    };
+  }, [path, search]);
 
   useEffect(() => {
     if (path !== "/health") return;
