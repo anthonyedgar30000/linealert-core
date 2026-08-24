@@ -3,21 +3,10 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import OperatorActions, { type OperatorActionObservation } from "./operator-actions";
 import styles from "./operator-view.module.css";
 
-type RuntimeObservation = {
-  signal: string;
-  value: number;
-  unit: string;
-  min_value: number;
-  max_value: number;
-  asset_id: string;
-  relationship_id?: string;
-  observation_id?: string;
-  correlation_id?: string;
-  topology_from: string;
-  topology_to: string;
-  quality: string;
+type RuntimeObservation = OperatorActionObservation & {
   temporal_rule_status?: string;
 };
 
@@ -98,6 +87,7 @@ export default function OperatorView() {
       : latestConditions.length > 0
         ? "STABLE"
         : "NO ACTIVE CONDITION";
+  const sourceMode = runtime.payload?.source_mode ?? "unknown";
 
   return (
     <main className={styles.shell}>
@@ -123,7 +113,7 @@ export default function OperatorView() {
         </div>
         <div>
           <span>SOURCE MODE</span>
-          <b>{runtime.payload?.source_mode ?? "unknown"}</b>
+          <b>{sourceMode}</b>
         </div>
         <div>
           <span>ADMITTED MEASUREMENTS</span>
@@ -167,7 +157,10 @@ export default function OperatorView() {
             {latestConditions.map((observation) => {
               const outside = outsideEnvelope(observation);
               return (
-                <article className={`${styles.conditionCard} ${outside ? styles.attention : ""}`} key={observation.relationship_id ?? observation.signal}>
+                <article
+                  className={`${styles.conditionCard} ${outside ? styles.attention : ""}`}
+                  key={observation.relationship_id ?? observation.signal}
+                >
                   <div className={styles.cardHeader}>
                     <span>{outside ? "OUTSIDE ENVELOPE" : "IN ENVELOPE"}</span>
                     <b>{observation.value.toFixed(0)} {observation.unit}</b>
@@ -184,7 +177,14 @@ export default function OperatorView() {
                       ? "The measured relationship requires investigation. This does not establish physical root cause."
                       : "The latest admitted measurement is inside its commissioned envelope."}
                   </p>
-                  <Link href="/health">Review retained condition history →</Link>
+
+                  {outside && (
+                    <OperatorActions observation={observation} sourceMode={sourceMode} />
+                  )}
+
+                  <Link className={styles.historyLink} href="/health">
+                    Review retained condition history →
+                  </Link>
                 </article>
               );
             })}
