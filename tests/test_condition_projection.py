@@ -13,6 +13,7 @@ from linealert_core.condition_projection import (
     project_replay_condition_signals,
     project_timing_finding,
 )
+from linealert_core.events import EventQuality
 from linealert_core.timing import TimingFinding, TimingStatus
 
 
@@ -22,6 +23,8 @@ class ConditionProjectionTests(unittest.TestCase):
         *,
         rule_id: str = "label-presentation-delay",
         delay_ms: float = 155.0,
+        start_quality: EventQuality = EventQuality.GOOD,
+        end_quality: EventQuality = EventQuality.GOOD,
     ) -> TimingFinding:
         start = datetime(2026, 8, 24, 7, 0, 0, tzinfo=UTC)
         end = start + timedelta(milliseconds=delay_ms)
@@ -37,6 +40,12 @@ class ConditionProjectionTests(unittest.TestCase):
             status=TimingStatus.WITHIN,
             topology_from="LabelFeedCommand",
             topology_to="LabelAtPeelPoint",
+            start_event_id="evt-feed-command",
+            end_event_id="evt-label-at-peel",
+            start_source_id="plc-labeler-01",
+            end_source_id="plc-labeler-01",
+            start_quality=start_quality,
+            end_quality=end_quality,
         )
 
     def binding(self) -> TimingConditionBinding:
@@ -56,9 +65,24 @@ class ConditionProjectionTests(unittest.TestCase):
         self.assertEqual(observation.unit, "ms")
         self.assertEqual(observation.relationship_id, "relationship:label-presentation-delay")
         self.assertEqual(observation.temporal_rule_status, "within")
+        self.assertEqual(observation.quality, "good")
+        self.assertEqual(observation.start_event_id, "evt-feed-command")
+        self.assertEqual(observation.end_event_id, "evt-label-at-peel")
         self.assertEqual(
             observation.source_timestamp,
             "2026-08-24T07:00:00.155000+00:00",
+        )
+
+    def test_non_good_input_quality_is_preserved_not_upgraded(self) -> None:
+        observation = project_timing_finding(
+            self.finding(end_quality=EventQuality.SUSPECT),
+            self.binding(),
+        )
+
+        self.assertEqual(observation.quality, "suspect")
+        self.assertEqual(
+            observation.reason_code,
+            "EVIDENCE.RELATIONSHIP_INPUT_SUSPECT",
         )
 
     def test_rule_mismatch_is_refused(self) -> None:
@@ -85,6 +109,10 @@ class ConditionProjectionTests(unittest.TestCase):
         self.assertEqual(
             rendered["observations"][0]["provenance"],
             "correlated_machine_event_source_timestamps",
+        )
+        self.assertEqual(
+            rendered["observations"][0]["start_source_id"],
+            "plc-labeler-01",
         )
         self.assertIn("does not establish physical root cause", rendered["claim_boundary"])
 
