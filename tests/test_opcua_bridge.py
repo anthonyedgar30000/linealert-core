@@ -8,6 +8,7 @@ from pathlib import Path
 from linealert_core.evidence_hierarchy import load_evidence_hierarchy_profile
 from linealert_core.opcua_bridge import (
     JsonlRecorder,
+    ObservationHistory,
     Snapshot,
     evaluate_proxy_claims,
     replay_jsonl,
@@ -87,6 +88,21 @@ class OpcuaBridgeTests(unittest.TestCase):
         self.assertEqual(unavailable["signals"]["rpm"]["value"], 120.0)
         self.assertGreaterEqual(unavailable["signals"]["rpm"]["age_ms"], 0)
 
+    def test_observation_history_is_bounded_ordered_and_limitable(self) -> None:
+        history = ObservationHistory(maxlen=3, persistence="jsonl_capture")
+        for value in (100.0, 110.0, 120.0, 130.0):
+            history.append(qualified_payload(value))
+
+        payload = history.get(limit=2)
+
+        self.assertEqual(payload["schema_version"], "linealert.observation.history.v1")
+        self.assertEqual(payload["persistence"], "jsonl_capture")
+        self.assertEqual(payload["count"], 2)
+        self.assertEqual(
+            [item["signals"]["rpm"]["value"] for item in payload["observations"]],
+            [120.0, 130.0],
+        )
+
     def test_jsonl_capture_and_replay_preserve_evidence_identity(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             capture = Path(temp_dir) / "capture.jsonl"
@@ -101,13 +117,20 @@ class OpcuaBridgeTests(unittest.TestCase):
             )
 
             replayed = Snapshot()
-            asyncio.run(replay_jsonl(capture, replayed, 0))
+            history = ObservationHistory(maxlen=10, persistence="deterministic_replay")
+            asyncio.run(replay_jsonl(capture, replayed, 0, history))
             payload = replayed.get()
             self.assertEqual(payload["transport"], "deterministic-replay")
             self.assertEqual(payload["signals"]["rpm"]["value"], 123.0)
             self.assertEqual(
                 payload["signals"]["rpm"]["observation_id"],
                 "microsoft-opc-plc-local:1:rpm",
+            )
+            history_payload = history.get()
+            self.assertEqual(history_payload["count"], 1)
+            self.assertEqual(
+                history_payload["observations"][0]["signals"]["rpm"]["value"],
+                123.0,
             )
 
 
