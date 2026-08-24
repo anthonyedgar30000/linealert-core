@@ -3,9 +3,9 @@
 from pathlib import Path
 
 from linealert_core import (
+    build_core_from_config,
     DeterministicStreamSimulator,
     LiveConditionConsumer,
-    build_core_from_config,
     live_condition_summary_to_dict,
     load_condition_signal_bindings,
     load_events,
