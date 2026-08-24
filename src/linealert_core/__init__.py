@@ -39,6 +39,7 @@ from .condition_projection import (
     project_replay_condition_signals,
     project_timing_finding,
 )
+from .condition_runtime import ConditionRuntimeSnapshot, replay_condition_events
 from .diagnostic_io import (
     collect_timing_findings,
     load_diagnostic_engine,
@@ -132,6 +133,7 @@ __all__ = [
     "ComponentDefinition",
     "ComponentDependency",
     "ConditionProjectionError",
+    "ConditionRuntimeSnapshot",
     "ConditionSignalObservation",
     "ConditionSignalProjection",
     "ConsumerOutput",
@@ -211,6 +213,7 @@ __all__ = [
     "project_replay_condition_signals",
     "project_timing_finding",
     "projection_to_dict",
+    "replay_condition_events",
     "replay_events",
     "signal_assessments_to_dict",
     "stream_summary_to_dict",
