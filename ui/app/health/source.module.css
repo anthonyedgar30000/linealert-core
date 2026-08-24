@@ -1,10 +1,21 @@
 .sourcePanel {
-  max-width: 1500px;
-  margin: 0 auto 18px;
+  order: 4;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto 20px;
   padding: 18px;
-  border: 1px solid rgba(148, 163, 184, 0.16);
+  border: 1px solid rgba(148, 163, 184, 0.12);
   border-radius: 18px;
-  background: rgba(15, 23, 42, 0.9);
+  background: rgba(15, 23, 42, 0.72);
+  opacity: 0.82;
+  transition: opacity 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.sourcePanel:hover,
+.sourcePanel:focus-within {
+  opacity: 1;
+  border-color: rgba(125, 211, 252, 0.2);
+  background: rgba(15, 23, 42, 0.88);
 }
 
 .sourceHeader {
@@ -17,11 +28,12 @@
 
 .sourceHeader h2 {
   margin: 4px 0 6px;
-  font-size: 1.25rem;
+  font-size: 1.2rem;
 }
 
 .sourceHeader p {
   margin: 0;
+  max-width: 1100px;
   color: #9fb0c6;
   line-height: 1.45;
 }
@@ -71,9 +83,9 @@
   gap: 10px;
   margin-bottom: 10px;
   padding: 12px;
-  border: 1px solid rgba(56, 189, 248, 0.28);
+  border: 1px solid rgba(56, 189, 248, 0.2);
   border-radius: 14px;
-  background: rgba(8, 47, 73, 0.24);
+  background: rgba(8, 47, 73, 0.18);
 }
 
 .coreEvidenceIdentity,
@@ -84,7 +96,7 @@
   min-width: 0;
   padding: 11px;
   border-radius: 10px;
-  background: rgba(2, 6, 23, 0.28);
+  background: rgba(2, 6, 23, 0.24);
 }
 
 .coreEvidenceIdentity span,
@@ -116,9 +128,9 @@
   margin: 0 0 12px;
   padding: 9px 12px;
   border-radius: 9px;
-  background: rgba(2, 6, 23, 0.34);
+  background: rgba(2, 6, 23, 0.28);
   color: #8fa4bd;
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
@@ -134,14 +146,14 @@
 }
 
 .sourceCard {
-  min-height: 98px;
+  min-height: 92px;
   display: flex;
   flex-direction: column;
   gap: 7px;
-  padding: 13px;
-  border: 1px solid rgba(148, 163, 184, 0.14);
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
   border-radius: 12px;
-  background: rgba(30, 41, 59, 0.58);
+  background: rgba(30, 41, 59, 0.48);
 }
 
 .sourceCard span,
@@ -154,7 +166,7 @@
 
 .sourceCard b {
   color: #e5edf8;
-  font-size: 0.94rem;
+  font-size: 0.92rem;
 }
 
 .sourceCard small,
@@ -164,11 +176,11 @@
 }
 
 .sourceGood {
-  border-color: rgba(74, 222, 128, 0.22);
+  border-color: rgba(74, 222, 128, 0.18);
 }
 
 .sourceWarn {
-  border-color: rgba(251, 191, 36, 0.26);
+  border-color: rgba(251, 191, 36, 0.22);
 }
 
 .signalGrid {
@@ -182,15 +194,15 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
-  padding: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.12);
+  padding: 11px;
+  border: 1px solid rgba(148, 163, 184, 0.1);
   border-radius: 12px;
-  background: rgba(2, 6, 23, 0.34);
+  background: rgba(2, 6, 23, 0.28);
 }
 
 .signalValue {
   color: #dbeafe;
-  font-size: 1.15rem;
+  font-size: 1.08rem;
   font-weight: 900;
 }
 
@@ -202,11 +214,12 @@
 .sourceBoundary {
   margin-top: 12px;
   padding: 11px 13px;
-  border-left: 3px solid rgba(125, 211, 252, 0.62);
+  border-left: 3px solid rgba(125, 211, 252, 0.5);
   border-radius: 8px;
-  background: rgba(14, 116, 144, 0.1);
+  background: rgba(14, 116, 144, 0.08);
   color: #b7c4d6;
   line-height: 1.45;
+  font-size: 0.88rem;
 }
 
 .sourceBoundary b {
@@ -250,10 +263,14 @@
 .historyNote {
   margin-top: 10px;
   color: #7f90a8;
-  font-size: 0.76rem;
+  font-size: 0.74rem;
 }
 
 @media (max-width: 1000px) {
+  .sourcePanel {
+    opacity: 1;
+  }
+
   .coreEvidenceCard,
   .sourceGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
