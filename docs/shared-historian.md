@@ -80,11 +80,12 @@ GET  http://127.0.0.1:8767/api/history/episodes/{episode_id}
 POST http://127.0.0.1:8767/api/outcomes
 ```
 
-The UI proxies the condition history and outcome write paths through:
+The UI proxies the shared-history paths through:
 
 ```text
 GET  /api/historian/conditions
 GET  /api/historian/status
+GET  /api/historian/episodes/{episode_id}
 POST /api/historian/outcomes
 ```
 
@@ -111,6 +112,21 @@ condition history
       -> verify original relationship
       -> operational outcome in shared history
 ```
+
+## Dashboard episode timeline
+
+The dashboard handoff now projects the durable episode into a compact evidence timeline instead of leaving the historian as invisible backend plumbing. The Machine Health handoff shows the retained measurement/outcome count, while the Operator View shows selected evidence milestones from the same episode:
+
+```text
+episode evidence begins
+      -> first commissioned-envelope exit
+      -> latest persisted condition
+      -> operator verification outcome
+```
+
+The timeline is intentionally selective rather than a second raw-data browser. It keeps the full episode in TimescaleDB while surfacing the moments most useful to the investigation. Operator-view verification records are preferred in the visible outcome milestones when present; the underlying episode still retains all outcome records.
+
+The timeline is also claim-bounded: chronological sequence and repeated association remain evidence, not automatic proof of causation, root cause, remaining useful life, or future failure.
 
 ## Boundary notes
 
