@@ -96,10 +96,9 @@ export default function OperatorView() {
           <span className={styles.kicker}>LINEALERT · OPERATOR VIEW</span>
           <h1>Current admitted machine conditions</h1>
           <p>
-            This view follows condition evidence produced by LineAlert. Training cases and
-            commissioning fault injections live on separate routes and never replace operator evidence.
             This view follows condition evidence produced by LineAlert. Active condition types are
             highlighted; inactive types stay visible but subdued and do not imply proven absence.
+            Training cases and commissioning fixtures live on separate routes and never replace operator evidence.
           </p>
         </div>
         <nav className={styles.nav} aria-label="Operator view navigation">
@@ -221,12 +220,6 @@ export default function OperatorView() {
 
       <section className={styles.commissioningCard}>
         <div>
-          <span>SEPARATE SYNTHETIC TEST PATH</span>
-          <h2>Commissioning fault injections</h2>
-          <p>
-            Arrival phase, pressure, slip, tension, and sensor fixtures are test inputs. They belong
-            upstream of LineAlert processing and must earn their own admitted condition evidence
-            before influencing this operator view. A synthetic fixture is not automatically a training case.
           <span>CONDITION REFERENCE</span>
           <h2>Known machine condition types</h2>
           <p>
