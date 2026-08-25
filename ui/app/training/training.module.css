@@ -1,0 +1,581 @@
+.shell {
+  min-height: 100%;
+  padding: 32px clamp(18px, 4vw, 58px) 72px;
+  background: #f2f4f2;
+  color: #18201d;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 32px;
+  align-items: flex-start;
+  max-width: 1440px;
+  margin: 0 auto 24px;
+}
+
+.header > div {
+  max-width: 850px;
+}
+
+.kicker,
+.ruleStrip span,
+.cardTopline,
+.boundaryCard > span,
+.simulatorHeader span,
+.sceneText > span,
+.sectionHeading span,
+.personaDetail span,
+.evidenceCard span,
+.moverEvidence span,
+.provenanceBoundary span {
+  display: block;
+  font-size: 0.72rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: #53615b;
+}
+
+.header h1 {
+  margin: 8px 0 10px;
+  max-width: 780px;
+  font-size: clamp(2rem, 4vw, 4.6rem);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+}
+
+.header p {
+  max-width: 760px;
+  margin: 0;
+  color: #56615d;
+  font-size: 1.02rem;
+  line-height: 1.65;
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.nav a,
+.sourceLinks a,
+.provenanceBoundary a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.nav a {
+  padding: 10px 12px;
+  border: 1px solid #c6ceca;
+  background: #fff;
+  border-radius: 9px;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.ruleStrip {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  max-width: 1440px;
+  margin: 0 auto 22px;
+  background: #17211d;
+  color: #f5f7f5;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.ruleStrip > div {
+  padding: 17px 20px;
+  border-right: 1px solid #36413d;
+}
+
+.ruleStrip > div:last-child {
+  border-right: 0;
+}
+
+.ruleStrip span {
+  color: #aab8b2;
+  margin-bottom: 6px;
+}
+
+.ruleStrip b {
+  font-size: 0.92rem;
+}
+
+.caseGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.75fr);
+  gap: 16px;
+  max-width: 1440px;
+  margin: 0 auto 20px;
+}
+
+.caseCard,
+.boundaryCard,
+.simulator,
+.personaSection,
+.evidenceSection,
+.provenanceBoundary {
+  background: #fff;
+  border: 1px solid #d4dad7;
+  border-radius: 16px;
+}
+
+.caseCard,
+.boundaryCard {
+  padding: clamp(20px, 3vw, 32px);
+}
+
+.cardTopline {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admitted {
+  color: #255a48;
+  background: #e2eee8;
+  border: 1px solid #bdd6cb;
+  padding: 5px 8px;
+  border-radius: 999px;
+}
+
+.caseCard h2,
+.boundaryCard h2,
+.simulator h2,
+.personaSection h2,
+.evidenceSection h2,
+.provenanceBoundary h2 {
+  margin: 8px 0 10px;
+  letter-spacing: -0.025em;
+}
+
+.caseCard > p,
+.boundaryCard > p,
+.provenanceBoundary > p {
+  color: #5a6661;
+  line-height: 1.55;
+}
+
+.caseFacts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 22px 0;
+}
+
+.caseFacts div {
+  padding: 12px;
+  background: #f5f7f5;
+  border-radius: 10px;
+}
+
+.caseFacts dt {
+  color: #65716b;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.caseFacts dd {
+  margin: 5px 0 0;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.sourceLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.sourceLinks a,
+.provenanceBoundary a {
+  border-bottom: 1px solid #819087;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.boundaryCard {
+  background: #e9ede9;
+}
+
+.driftNote {
+  margin-top: 24px;
+  padding: 16px;
+  background: #17211d;
+  color: #f2f5f3;
+  border-radius: 12px;
+}
+
+.driftNote b {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.driftNote p {
+  margin: 0;
+  color: #cdd7d2;
+  line-height: 1.45;
+}
+
+.simulator,
+.personaSection,
+.evidenceSection,
+.provenanceBoundary {
+  max-width: 1440px;
+  margin: 0 auto 20px;
+  padding: clamp(20px, 3vw, 32px);
+}
+
+.simulatorHeader,
+.sectionHeading,
+.provenanceBoundary {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 22px;
+}
+
+.simulatorHeader h2,
+.sectionHeading h2 {
+  margin-bottom: 0;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.actions button,
+.personaTabs button {
+  min-height: 42px;
+  border: 1px solid #17211d;
+  border-radius: 9px;
+  padding: 9px 13px;
+  background: #17211d;
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.actions .secondaryButton {
+  background: #fff;
+  color: #17211d;
+}
+
+.timeline {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin: 26px 0 18px;
+}
+
+.timelineStep {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #d7ddda;
+  color: #87908c;
+  border-radius: 10px;
+}
+
+.timelineStep span {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: 0.76rem;
+}
+
+.timelineActive {
+  background: #edf2ef;
+  color: #234c3e;
+  border-color: #9fb7ad;
+}
+
+.scene {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 24px;
+  padding: 24px;
+  background: #1d2723;
+  border-radius: 14px;
+  color: #f4f6f5;
+}
+
+.lineGraphic {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.machine {
+  display: grid;
+  min-height: 108px;
+  flex: 1;
+  place-items: center;
+  padding: 12px;
+  border: 1px solid #6e7b75;
+  background: #27332e;
+  border-radius: 10px;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+}
+
+.flow {
+  color: #a7b2ad;
+  font-size: 1.3rem;
+}
+
+.sceneText > span {
+  color: #a8b6b0;
+}
+
+.sceneText h3 {
+  margin: 7px 0 8px;
+  font-size: 1.35rem;
+}
+
+.sceneText > p,
+.observation p {
+  color: #cbd4d0;
+  line-height: 1.5;
+}
+
+.observation {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #445049;
+}
+
+.observation p {
+  margin-bottom: 0;
+}
+
+.sectionHeading small {
+  max-width: 380px;
+  color: #66716c;
+  text-align: right;
+  line-height: 1.45;
+}
+
+.personaTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 22px 0 16px;
+}
+
+.personaTabs button {
+  background: #fff;
+  color: #35413c;
+  border-color: #c8cfcc;
+}
+
+.personaTabs .personaSelected {
+  background: #17211d;
+  border-color: #17211d;
+  color: #fff;
+}
+
+.personaDetail {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.personaDetail > div {
+  padding: 16px;
+  background: #f5f7f5;
+  border-radius: 11px;
+}
+
+.personaDetail h3 {
+  margin: 6px 0 8px;
+  font-size: 1.5rem;
+}
+
+.personaDetail p,
+.personaDetail li {
+  color: #56625c;
+  line-height: 1.5;
+}
+
+.personaDetail ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+.authorityBoundary {
+  border-left: 4px solid #6b4039;
+}
+
+.evidenceGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.evidenceCard {
+  min-height: 142px;
+  padding: 16px;
+  border: 1px solid #cfd6d2;
+  border-radius: 11px;
+  background: #fff;
+  color: #28332e;
+  text-align: left;
+  cursor: pointer;
+}
+
+.evidenceCard b,
+.evidenceCard small {
+  display: block;
+}
+
+.evidenceCard b {
+  margin: 8px 0;
+  font-size: 1rem;
+}
+
+.evidenceCard small {
+  color: #66716c;
+  line-height: 1.4;
+}
+
+.evidenceCard:disabled {
+  background: #ecefed;
+  color: #777f7b;
+  cursor: not-allowed;
+  opacity: 0.78;
+}
+
+.evidenceSelected {
+  background: #e6efe9;
+  border-color: #6f9685;
+}
+
+.moverEvidence {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+  gap: 28px;
+  max-width: 1440px;
+  margin: 0 auto 20px;
+  padding: 22px 26px;
+  background: #e5ece7;
+  border: 1px solid #9dafA6;
+  border-radius: 14px;
+}
+
+.moverEvidence b {
+  display: block;
+  margin-top: 6px;
+  font-size: 1.08rem;
+}
+
+.moverEvidence p {
+  margin: 0;
+  color: #56625c;
+  line-height: 1.5;
+}
+
+.provenanceBoundary {
+  align-items: center;
+  background: #fff;
+}
+
+.provenanceBoundary > div {
+  min-width: 230px;
+}
+
+.provenanceBoundary > p {
+  max-width: 650px;
+  margin: 0;
+}
+
+.provenanceBoundary a {
+  max-width: 260px;
+}
+
+@media (max-width: 900px) {
+  .header,
+  .simulatorHeader,
+  .sectionHeading,
+  .provenanceBoundary {
+    flex-direction: column;
+  }
+
+  .nav {
+    justify-content: flex-start;
+  }
+
+  .ruleStrip,
+  .caseGrid,
+  .scene,
+  .personaDetail,
+  .moverEvidence {
+    grid-template-columns: 1fr;
+  }
+
+  .evidenceGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sectionHeading small {
+    text-align: left;
+  }
+}
+
+@media (max-width: 620px) {
+  .shell {
+    padding-inline: 14px;
+  }
+
+  .ruleStrip,
+  .caseFacts,
+  .evidenceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .ruleStrip > div {
+    border-right: 0;
+    border-bottom: 1px solid #36413d;
+  }
+
+  .ruleStrip > div:last-child {
+    border-bottom: 0;
+  }
+
+  .timeline {
+    grid-template-columns: 1fr;
+  }
+
+  .lineGraphic {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .machine {
+    min-height: 66px;
+  }
+
+  .flow {
+    transform: rotate(90deg);
+    text-align: center;
+  }
+}
