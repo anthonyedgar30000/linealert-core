@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import styles from "./training.module.css";
 
@@ -29,6 +29,9 @@ type EvidenceReadout = {
   status: string;
   detail: string;
 };
+
+const FIRST_EVENT_AT = 12;
+const RECURRENCE_AT = 28;
 
 const personas: Persona[] = [
   {
@@ -130,7 +133,7 @@ const phases = [
   {
     short: "Event 1",
     title: "A jam interrupts label feed",
-    body: "A label-feed jam occurs and the line holds. One event is a symptom, not a root cause. Record it before changing anything.",
+    body: "A label-feed jam occurs and the line holds. One event is a symptom, not a root cause. Record it before the training scenario continues.",
     observation: "One applicator jam has occurred. The mechanism remains hidden and unproven.",
   },
   {
@@ -155,6 +158,13 @@ const phases = [
 
 const personaLabel = (id: PersonaId) => personas.find((persona) => persona.id === id)?.name ?? id;
 
+const formatTrainingTime = (seconds: number) => {
+  const wholeSeconds = Math.max(0, Math.floor(seconds));
+  const minutes = Math.floor(wholeSeconds / 60);
+  const remainder = wholeSeconds % 60;
+  return `T+${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`;
+};
+
 export default function TrainingPage() {
   const [personaId, setPersonaId] = useState<PersonaId>("operator");
   const [unlockedPersonas, setUnlockedPersonas] = useState<PersonaId[]>(["operator"]);
@@ -162,6 +172,8 @@ export default function TrainingPage() {
   const [phase, setPhase] = useState(0);
   const [paused, setPaused] = useState(true);
   const [speed, setSpeed] = useState<PlaybackSpeed>(1);
+  const [simSeconds, setSimSeconds] = useState(0);
+  const [firstEventRecorded, setFirstEventRecorded] = useState(false);
   const [selectedEvidence, setSelectedEvidence] = useState<string[]>([]);
 
   const persona = useMemo(
@@ -171,14 +183,42 @@ export default function TrainingPage() {
 
   const currentPhase = phases[phase];
   const mechanismRevealed = started && phase === phases.length - 1;
-  const jamActive = started && (phase === 1 || phase === 2);
+  const firstJamHold = started && phase === 1 && !firstEventRecorded;
+  const recurrenceHold = started && phase === 2;
+  const jamActive = firstJamHold || recurrenceHold;
   const handoffHold = started && phase === 3;
-  const lineMoving = started && !paused && !jamActive && !handoffHold && !mechanismRevealed;
+  const lineMoving = started && !paused && !jamActive && phase < 3;
   const hasHistory = selectedEvidence.includes("jam-history");
   const hasRecurrence = selectedEvidence.includes("recurrence-watch");
   const hasWebPath = selectedEvidence.includes("web-path");
   const canHandoff = started && phase === 2 && personaId === "operator" && hasHistory && hasRecurrence;
   const canDebrief = started && phase === 3 && personaId === "maintenance" && hasWebPath;
+
+  useEffect(() => {
+    if (!started || paused || jamActive || phase >= 2) return undefined;
+
+    const timer = window.setInterval(() => {
+      setSimSeconds((current) => {
+        const next = current + speed;
+
+        if (phase === 0 && next >= FIRST_EVENT_AT) {
+          setPhase(1);
+          setPaused(true);
+          return FIRST_EVENT_AT;
+        }
+
+        if (phase === 1 && firstEventRecorded && next >= RECURRENCE_AT) {
+          setPhase(2);
+          setPaused(true);
+          return RECURRENCE_AT;
+        }
+
+        return next;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [started, paused, jamActive, phase, speed, firstEventRecorded]);
 
   const lineStatus = !started
     ? "READY"
@@ -192,28 +232,77 @@ export default function TrainingPage() {
             ? "PAUSED"
             : "RUNNING";
 
-  const advanceLabel = !started
+  const nextEventText = !started
     ? "Start case"
-    : phase < 2
-      ? "Next meaningful event"
-      : phase === 2
-        ? "Handoff required"
-        : phase === 3
-          ? canDebrief ? "Open debrief" : "Inspect web path first"
-          : "Case complete";
+    : phase === 0
+      ? `${Math.max(0, FIRST_EVENT_AT - simSeconds)}s to first event`
+      : phase === 1 && !firstEventRecorded
+        ? "Record current event"
+        : phase === 1
+          ? `${Math.max(0, RECURRENCE_AT - simSeconds)}s to recurrence`
+          : phase === 2
+            ? "Evidence handoff"
+            : phase === 3
+              ? "Maintenance inspection"
+              : "Complete";
 
-  const advanceDisabled = started && (phase === 2 || phase === phases.length - 1 || (phase === 3 && !canDebrief));
+  const primaryLabel = !started
+    ? "Start case"
+    : phase === 0
+      ? "Skip to first event"
+      : phase === 1 && !firstEventRecorded
+        ? "Record event & continue"
+        : phase === 1
+          ? "Skip to recurrence"
+          : phase === 2
+            ? "Handoff required"
+            : phase === 3
+              ? canDebrief ? "Open debrief" : "Inspect web path first"
+              : "Case complete";
 
-  const advance = () => {
+  const primaryDisabled = started && (
+    phase === 2
+    || phase === phases.length - 1
+    || (phase === 3 && !canDebrief)
+  );
+
+  const displayTitle = phase === 1 && firstEventRecorded
+    ? "First event recorded — watch for recurrence"
+    : currentPhase.title;
+
+  const displayBody = phase === 1 && firstEventRecorded
+    ? "The training line is moving again. Do not assume the first event was resolved; watch whether the same disturbance returns."
+    : currentPhase.body;
+
+  const displayObservation = phase === 1 && firstEventRecorded
+    ? "One jam is preserved in the timeline. Recurrence has not yet been established."
+    : currentPhase.observation;
+
+  const startOrAdvance = () => {
     if (!started) {
       setStarted(true);
       setPaused(false);
       setPhase(0);
+      setSimSeconds(0);
       return;
     }
 
-    if (phase < 2) {
-      setPhase((current) => current + 1);
+    if (phase === 0) {
+      setSimSeconds(FIRST_EVENT_AT);
+      setPhase(1);
+      setPaused(true);
+      return;
+    }
+
+    if (phase === 1 && !firstEventRecorded) {
+      setFirstEventRecorded(true);
+      setPaused(false);
+      return;
+    }
+
+    if (phase === 1 && firstEventRecorded) {
+      setSimSeconds(RECURRENCE_AT);
+      setPhase(2);
       setPaused(true);
       return;
     }
@@ -229,6 +318,8 @@ export default function TrainingPage() {
     setPhase(0);
     setPaused(true);
     setSpeed(1);
+    setSimSeconds(0);
+    setFirstEventRecorded(false);
     setPersonaId("operator");
     setUnlockedPersonas(["operator"]);
     setSelectedEvidence([]);
@@ -269,18 +360,18 @@ export default function TrainingPage() {
       if (phase === 0) {
         return {
           status: "No jam events recorded",
-          detail: "This training case is still at baseline. The history is useful because it gives later events context.",
+          detail: `Training clock ${formatTrainingTime(simSeconds)}. Baseline is still clean; event timing is pedagogical pacing, not machine-specific timing.`,
         };
       }
       if (phase === 1) {
         return {
-          status: "One jam event recorded",
+          status: `One jam recorded at ${formatTrainingTime(FIRST_EVENT_AT)}`,
           detail: "A single event is preserved, but there is not enough evidence yet to call it a recurring pattern.",
         };
       }
       return {
-        status: "Repeat event preserved",
-        detail: "The case history now shows the same symptom returning at the same cycle point.",
+        status: "Two related jam observations preserved",
+        detail: `Training events occurred at ${formatTrainingTime(FIRST_EVENT_AT)} and ${formatTrainingTime(RECURRENCE_AT)}. The timestamps pace this exercise; the recurrence relationship is the important evidence.`,
       };
     }
 
@@ -294,7 +385,9 @@ export default function TrainingPage() {
       if (phase === 1) {
         return {
           status: "Single event only",
-          detail: "Keep watching. One jam does not tell you whether the disturbance will repeat.",
+          detail: firstEventRecorded
+            ? "Keep watching. The first event is recorded and the line is running again, but recurrence is not yet established."
+            : "Record the first event before the scenario continues. One jam does not prove a repeating pattern.",
         };
       }
       return {
@@ -323,18 +416,20 @@ export default function TrainingPage() {
   const driftMessage = !started
     ? "Start with normal. If you do not know what healthy motion looks like, the first abnormal event has no context."
     : phase === 0
-      ? "Pin the event history or recurrence watch before the first disturbance. Good troubleshooting starts before the alarm."
-      : phase === 1
-        ? "One jam is a clue. Preserve it, then ask whether the same thing happens again before you name a cause."
-        : phase === 2 && !canHandoff
-          ? "You have a recurring symptom. Pin the event history and recurrence watch so the next role receives evidence, not a hunch."
-          : phase === 2
-            ? "That is enough for an operator handoff: repeatable symptom, preserved history, and no unauthorized adjustment."
-            : phase === 3 && !hasWebPath
-              ? "Do not throw away the operator work. Maintenance inherits the timeline; now inspect the physical path that the current evidence justifies."
-              : phase === 3
-                ? "You have added the maintenance observation. The debrief can now reveal what this documented training pattern was built to teach."
-                : "That mechanism explains this scripted case. On a real line, prove it again from current evidence.";
+      ? "The case will produce its first event on its own. No numeric pre-fault drift is shown because the admitted source does not establish one."
+      : phase === 1 && !firstEventRecorded
+        ? "One jam is a clue. Record the event before the scenario continues; do not turn a symptom into a diagnosis."
+        : phase === 1
+          ? "Now watch whether the same disturbance returns. Fast-forward changes training pace, not the underlying case mechanism."
+          : phase === 2 && !canHandoff
+            ? "You have a recurring symptom. Pin the event history and recurrence watch so the next role receives evidence, not a hunch."
+            : phase === 2
+              ? "That is enough for an operator handoff: repeatable symptom, preserved history, and no unauthorized adjustment."
+              : phase === 3 && !hasWebPath
+                ? "Do not throw away the operator work. Maintenance inherits the timeline; now inspect the physical path that the current evidence justifies."
+                : phase === 3
+                  ? "You have added the maintenance observation. The debrief can now reveal what this documented training pattern was built to teach."
+                  : "That mechanism explains this scripted case. On a real line, prove it again from current evidence.";
 
   return (
     <main className={styles.shell}>
@@ -343,8 +438,8 @@ export default function TrainingPage() {
           <span className={styles.kicker}>LINEALERT · PLANT TROUBLESHOOTING LAB</span>
           <h1>Watch the plant. Build the evidence. Earn the handoff.</h1>
           <p>
-            LA-T01 is a field-grounded training pattern. The game hides the scripted mechanism until
-            the evidence path earns a debrief; training success does not prove a future production diagnosis.
+            LA-T01 is a field-grounded training pattern. Events unfold on a deterministic training clock;
+            the scripted mechanism stays hidden until the evidence path earns a debrief.
           </p>
         </div>
         <nav className={styles.nav} aria-label="Training navigation">
@@ -373,16 +468,16 @@ export default function TrainingPage() {
         <div className={styles.simulatorHeader}>
           <div>
             <span>LIVE TRAINING CASE</span>
-            <h2>{started ? currentPhase.title : "Case ready — begin from normal operation"}</h2>
+            <h2>{started ? displayTitle : "Case ready — begin from normal operation"}</h2>
           </div>
           <div className={styles.actions}>
-            <button type="button" onClick={advance} disabled={advanceDisabled}>
-              {advanceLabel}
+            <button type="button" onClick={startOrAdvance} disabled={primaryDisabled}>
+              {primaryLabel}
             </button>
             <button
               className={styles.secondaryButton}
               type="button"
-              disabled={!started || jamActive || handoffHold || mechanismRevealed}
+              disabled={!started || jamActive || handoffHold || mechanismRevealed || phase >= 2}
               onClick={() => setPaused((current) => !current)}
             >
               {paused ? "Resume" : "Pause"}
@@ -390,7 +485,7 @@ export default function TrainingPage() {
             <button
               className={styles.secondaryButton}
               type="button"
-              disabled={!started || jamActive || handoffHold || mechanismRevealed}
+              disabled={!started || jamActive || handoffHold || mechanismRevealed || phase >= 2}
               onClick={() => setSpeed((current) => current === 1 ? 3 : 1)}
             >
               {speed === 1 ? "Fast-forward 3×" : "Normal speed"}
@@ -425,8 +520,8 @@ export default function TrainingPage() {
               <b>{persona.name}</b>
             </div>
             <div>
-              <span>PLAYBACK</span>
-              <b>{speed}×</b>
+              <span>TRAINING CLOCK</span>
+              <b>{formatTrainingTime(simSeconds)} · {nextEventText}</b>
             </div>
           </div>
 
@@ -463,12 +558,13 @@ export default function TrainingPage() {
           <div className={styles.sceneText}>
             <div>
               <span>{started ? currentPhase.short.toUpperCase() : "READY"}</span>
-              <h3>{started ? currentPhase.title : "Normal operation comes first"}</h3>
-              <p>{started ? currentPhase.body : "Start the case and watch the line establish a healthy baseline."}</p>
+              <h3>{started ? displayTitle : "Normal operation comes first"}</h3>
+              <p>{started ? displayBody : "Start the case and watch the line establish a healthy baseline."}</p>
             </div>
             <div className={styles.observation}>
               <b>Current observation</b>
-              <p>{started ? currentPhase.observation : "No event has been introduced."}</p>
+              <p>{started ? displayObservation : "No event has been introduced."}</p>
+              <p><small>Training clock = pedagogical pacing, not source-backed machine timing.</small></p>
             </div>
           </div>
         </div>
