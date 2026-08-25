@@ -96,12 +96,13 @@ export default function OperatorView() {
           <span className={styles.kicker}>LINEALERT · OPERATOR VIEW</span>
           <h1>Current admitted machine conditions</h1>
           <p>
-            This view follows condition evidence produced by LineAlert. Commissioning fault
-            injections live in a separate test route and never replace the operator evidence view.
+            This view follows condition evidence produced by LineAlert. Training cases and
+            commissioning fault injections live on separate routes and never replace operator evidence.
           </p>
         </div>
         <nav className={styles.nav} aria-label="Operator view navigation">
           <Link href="/health">Machine Health</Link>
+          <Link className={styles.secondary} href="/training">Training Lab</Link>
           <Link className={styles.secondary} href="/commissioning">Commissioning Lab</Link>
         </nav>
       </header>
@@ -140,15 +141,15 @@ export default function OperatorView() {
 
         {runtime.state === "unavailable" && (
           <div className={styles.emptyState}>
-            Condition evidence is unavailable. Do not substitute a commissioning scenario for live
-            or retained machine evidence.
+            Condition evidence is unavailable. Do not substitute a training case or commissioning
+            scenario for live or retained machine evidence.
           </div>
         )}
 
         {runtime.state === "active" && latestConditions.length === 0 && (
           <div className={styles.emptyState}>
             No admitted condition measurement is active. Machine Health remains available for
-            retained history; the commissioning lab is a separate synthetic test environment.
+            retained history; training and commissioning remain separate learning/test environments.
           </div>
         )}
 
@@ -195,7 +196,7 @@ export default function OperatorView() {
       <section className={styles.boundary}>
         <div>
           <span>EVIDENCE BOUNDARY</span>
-          <b>Operator conclusions follow admitted evidence—not canned scenario state.</b>
+          <b>Operator conclusions follow admitted evidence—not training or canned scenario state.</b>
         </div>
         <p>
           {runtime.payload?.claim_boundary
@@ -205,12 +206,25 @@ export default function OperatorView() {
 
       <section className={styles.commissioningCard}>
         <div>
+          <span>FIELD-GROUNDED LEARNING PATH</span>
+          <h2>Plant troubleshooting training</h2>
+          <p>
+            Training cases unlock only when their failure pattern has documented field provenance.
+            The player follows symptoms, evidence, persona boundaries, escalation, and verification
+            without treating a historical pattern as proof of a current root cause.
+          </p>
+        </div>
+        <Link href="/training">Open Training Lab →</Link>
+      </section>
+
+      <section className={styles.commissioningCard}>
+        <div>
           <span>SEPARATE SYNTHETIC TEST PATH</span>
           <h2>Commissioning fault injections</h2>
           <p>
             Arrival phase, pressure, slip, tension, and sensor fixtures are test inputs. They belong
             upstream of LineAlert processing and must earn their own admitted condition evidence
-            before influencing this operator view.
+            before influencing this operator view. A synthetic fixture is not automatically a training case.
           </p>
         </div>
         <Link href="/commissioning">Open Commissioning Lab →</Link>
