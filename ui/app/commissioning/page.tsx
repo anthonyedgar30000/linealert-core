@@ -46,7 +46,7 @@ export default function Home() {
   const [cycles, setCycles] = useState(0);
   const [signalTick, setSignalTick] = useState(0);
   const [bottleCount, setBottleCount] = useState(1842);
-  const [activeFault, setActiveFault] = useState<FaultKey>("alignment");
+  const [activeFault] = useState<FaultKey>("alignment");
   const [role, setRole] = useState<Role>("operator");
   const [routeTarget, setRouteTarget] = useState("");
   const [assignedTo, setAssignedTo] = useState("");
@@ -171,7 +171,6 @@ export default function Home() {
           : scenario.maintenanceMove;
   const troubleshootingRoute = resolveSyntheticTroubleshootingRoute(activeFault, role);
   const liveRouteBoundary = liveEvidenceRouteBoundary(semanticAdmission?.scope);
-  const selectFault = (fault: FaultKey) => { const result = automaticVisionResult(fault); setActiveFault(fault); setStage("detected"); setCycles(0); setShowWhy(false); setReasonDepth(0); setAcademyInterest(false); setInspectionNote(""); setTargetSetpointRecorded(false); setReviewedOemFields([]); setOpenOemField(null); setShowHistory(false); setShowParameterHistory(false); setVirtualInspected(result.points); setActiveInspectionPoint(null); setInspectionFindings(result.findings); setFastLaneAccepted(false); setVisionSorted(true); setRouteTarget(""); setAssignedTo(""); };
   const openMachineFlow = (focus: "process" | "aligner" = "process") => { setFlowFocus(focus); setShowMachineFlow(true); };
 
   const toggleReasoning = () => {
@@ -314,10 +313,13 @@ export default function Home() {
         </div>
       </header>
 
-      <section className="fault-lab" aria-label="Fault injection lab">
-        <div className="fault-label"><span className="eyebrow">COMMISSIONING LAB</span><b>Inject a bounded fault</b><small>Demo only · no equipment writes</small></div>
+      <section className="fault-lab" aria-label="Observed condition types">
+        <div className="fault-label"><span className="eyebrow">CONDITION WATCH</span><b>Observed condition type</b><small>Evidence display · no equipment writes</small></div>
         <div className="fault-buttons">
-          {(Object.keys(scenarios) as FaultKey[]).map((fault) => <button className={activeFault === fault ? "selected" : ""} onClick={() => selectFault(fault)} key={fault}><span>{scenarios[fault].short}</span><small>{scenarios[fault].injection}</small></button>)}
+          {(Object.keys(scenarios) as FaultKey[]).map((fault) => {
+            const active = activeFault === fault;
+            return <div className={active ? "selected" : "inactive"} aria-current={active ? "true" : undefined} key={fault}><span>{scenarios[fault].short}</span><small>{active ? "ACTIVE · admitted evidence" : "Not currently observed"}</small></div>;
+          })}
         </div>
       </section>
 
