@@ -198,28 +198,27 @@ export default function TrainingPage() {
     if (!started || paused || jamActive || phase >= 2) return undefined;
 
     const timer = window.setInterval(() => {
-      setSimSeconds((current) => current + speed);
+      setSimSeconds((current) => {
+        const next = current + speed;
+
+        if (phase === 0 && next >= FIRST_EVENT_AT) {
+          setPhase(1);
+          setPaused(true);
+          return FIRST_EVENT_AT;
+        }
+
+        if (phase === 1 && firstEventRecorded && next >= RECURRENCE_AT) {
+          setPhase(2);
+          setPaused(true);
+          return RECURRENCE_AT;
+        }
+
+        return next;
+      });
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [started, paused, jamActive, phase, speed]);
-
-  useEffect(() => {
-    if (!started) return;
-
-    if (phase === 0 && simSeconds >= FIRST_EVENT_AT) {
-      setSimSeconds(FIRST_EVENT_AT);
-      setPhase(1);
-      setPaused(true);
-      return;
-    }
-
-    if (phase === 1 && firstEventRecorded && simSeconds >= RECURRENCE_AT) {
-      setSimSeconds(RECURRENCE_AT);
-      setPhase(2);
-      setPaused(true);
-    }
-  }, [started, phase, simSeconds, firstEventRecorded]);
+  }, [started, paused, jamActive, phase, speed, firstEventRecorded]);
 
   const lineStatus = !started
     ? "READY"
