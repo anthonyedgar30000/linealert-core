@@ -45,6 +45,8 @@ If the simulator needs a gauge, sensor, controller tag, threshold, timing value,
 
 **Simulator boundary:** The training case may reproduce the documented relationship between recurring jams and web-tension instability. It must not invent a numeric web-tension sensor, OEM threshold, PLC tag, or authorized adjustment procedure unless a later source establishes it.
 
+**Training pacing boundary:** LA-T01 uses deterministic scenario times for the browser exercise so pause, normal speed, fast-forward, and skip-to-next-event controls have real behavior. Those timestamps are simulator-generated pedagogical pacing only. They are not manufacturer cycle times, commissioned timing limits, sampled telemetry, or evidence that a real machine would fail on the same schedule. The source-backed relationship is recurrence at the same cycle point, not the exercise's wall-clock spacing between events.
+
 **Learning objective:** Establish a baseline, notice recurrence, collect evidence without jumping directly from symptom to root cause, use only evidence available to the current persona, escalate when authority or instrumentation ends, and verify the same original condition after an authorized intervention.
 
 ## Verification and supersession
