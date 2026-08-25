@@ -46,7 +46,7 @@ export default function Home() {
   const [cycles, setCycles] = useState(0);
   const [signalTick, setSignalTick] = useState(0);
   const [bottleCount, setBottleCount] = useState(1842);
-  const [activeFault, setActiveFault] = useState<FaultKey>("alignment");
+  const [activeFault] = useState<FaultKey>("alignment");
   const [role, setRole] = useState<Role>("operator");
   const [routeTarget, setRouteTarget] = useState("");
   const [assignedTo, setAssignedTo] = useState("");
@@ -69,7 +69,7 @@ export default function Home() {
   const [visionSorted, setVisionSorted] = useState(true);
   const [telemetry, setTelemetry] = useState<TelemetrySnapshot | null>(null);
   const [telemetryReachable, setTelemetryReachable] = useState(false);
-  const [showEvidenceConsole, setShowEvidenceConsole] = useState(true);
+  const [showEvidenceConsole, setShowEvidenceConsole] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setClock(new Date().toLocaleTimeString("en-CA", { hour12: false })), 1000);
@@ -142,15 +142,9 @@ export default function Home() {
 
   const scenario = scenarios[activeFault];
   const rolePack = rolePacks[role];
-  const liveRpm = telemetry?.signals?.rpm?.value ?? 111.4 + Math.sin(signalTick / 7) * .7;
-  const livePressure = telemetry?.signals?.pressure_psi?.value ?? 32.2 + Math.sin(signalTick / 10) * .25;
-  const liveArrival = telemetry?.signals?.arrival_ms?.value ?? 2688 + Math.round(Math.sin(signalTick / 8) * 7);
-  const liveRawTiming = telemetry?.signals?.raw_timing_proxy?.value ?? 886 + Math.round(Math.sin(signalTick / 11) * 4);
   const evidenceConnected = telemetryReachable && Boolean(telemetry?.connected);
   const evidenceStale = telemetryReachable && !telemetry?.connected;
   const semanticAdmission = telemetry?.semantic_admission;
-  const simulatorSpeedClaim = telemetry?.claim_evidence?.assessments?.["simulator.motor_speed_proxy"];
-  const physicalSpeedClaim = telemetry?.claim_evidence?.assessments?.["physical.motor_speed"];
   const operatingMode = telemetry?.operating_mode;
   const admittedSignals = semanticAdmission?.admitted_count ?? 0;
   const totalSemanticSignals = semanticAdmission?.total_count ?? 4;
@@ -171,7 +165,6 @@ export default function Home() {
           : scenario.maintenanceMove;
   const troubleshootingRoute = resolveSyntheticTroubleshootingRoute(activeFault, role);
   const liveRouteBoundary = liveEvidenceRouteBoundary(semanticAdmission?.scope);
-  const selectFault = (fault: FaultKey) => { const result = automaticVisionResult(fault); setActiveFault(fault); setStage("detected"); setCycles(0); setShowWhy(false); setReasonDepth(0); setAcademyInterest(false); setInspectionNote(""); setTargetSetpointRecorded(false); setReviewedOemFields([]); setOpenOemField(null); setShowHistory(false); setShowParameterHistory(false); setVirtualInspected(result.points); setActiveInspectionPoint(null); setInspectionFindings(result.findings); setFastLaneAccepted(false); setVisionSorted(true); setRouteTarget(""); setAssignedTo(""); };
   const openMachineFlow = (focus: "process" | "aligner" = "process") => { setFlowFocus(focus); setShowMachineFlow(true); };
 
   const toggleReasoning = () => {
@@ -314,10 +307,13 @@ export default function Home() {
         </div>
       </header>
 
-      <section className="fault-lab" aria-label="Fault injection lab">
-        <div className="fault-label"><span className="eyebrow">COMMISSIONING LAB</span><b>Inject a bounded fault</b><small>Demo only · no equipment writes</small></div>
+      <section className="fault-lab" aria-label="Observed condition types">
+        <div className="fault-label"><span className="eyebrow">CONDITION WATCH</span><b>Observed condition type</b><small>Evidence display · no equipment writes</small></div>
         <div className="fault-buttons">
-          {(Object.keys(scenarios) as FaultKey[]).map((fault) => <button className={activeFault === fault ? "selected" : ""} onClick={() => selectFault(fault)} key={fault}><span>{scenarios[fault].short}</span><small>{scenarios[fault].injection}</small></button>)}
+          {(Object.keys(scenarios) as FaultKey[]).map((fault) => {
+            const active = activeFault === fault;
+            return <div className={active ? "selected" : "inactive"} aria-current={active ? "true" : undefined} key={fault}><span>{scenarios[fault].short}</span><small>{active ? "ACTIVE · admitted evidence" : "Not currently observed"}</small></div>;
+          })}
         </div>
       </section>
 
@@ -338,23 +334,18 @@ export default function Home() {
       <section className={`evidence-console ${evidenceStale ? "evidence-stale" : ""}`} aria-label="Shared machine evidence console">
         <header>
           <div><span className="eyebrow">SHARED EVIDENCE CORE · READ ONLY</span><b>{evidenceConnected ? "Microsoft OPC PLC proxy connected" : evidenceStale ? "Live source unavailable—last samples retained as stale" : "Demonstration evidence stream"}</b><small>{evidenceConnected ? `${telemetry?.asset_id} · ${telemetry?.source_id}` : evidenceStale ? telemetry?.reason_code : "Run this interface locally beside the LineAlert bridge to bind live OPC UA evidence."}</small></div>
-          <button onClick={() => setShowEvidenceConsole((open) => !open)}>{showEvidenceConsole ? "Collapse evidence" : "Open evidence"}</button>
+          <button onClick={() => setShowEvidenceConsole((open) => !open)}>{showEvidenceConsole ? "Hide details" : "View evidence"}</button>
           <strong className={evidenceConnected && operatingMode?.source_admitted ? "source-live" : evidenceStale || (evidenceConnected && operatingMode && !operatingMode.source_admitted) ? "source-stale" : "source-demo"}><i/>{evidenceConnected ? `${operatingMode?.configured_mode ?? "MODE UNKNOWN"} · ${operatingMode?.source_admitted ? "SOURCE ADMITTED" : "FAIL CLOSED"}` : evidenceStale ? "STALE · FAIL CLOSED" : "SIMULATED"}</strong>
         </header>
         {showEvidenceConsole && <div className="evidence-console-body">
-          <div className="evidence-gauges">
-            <EvidenceGauge label="Motor speed proxy" value={liveRpm} unit="rpm" quality={telemetry?.signals?.rpm?.quality ?? "demo"}/>
-            <EvidenceGauge label="Derived arrival proxy" value={liveArrival} unit="ms" quality={telemetry?.signals?.arrival_ms?.quality ?? "demo"}/>
-            <EvidenceGauge label="Contact pressure proxy" value={livePressure} unit="psi" quality={telemetry?.signals?.pressure_psi?.quality ?? "demo"}/>
-            <EvidenceGauge label="Unmapped timing proxy" value={liveRawTiming} unit="unit" quality={telemetry?.signals?.raw_timing_proxy?.quality ?? "demo"}/>
-          </div>
           <div className="evidence-chain">
             <span><small>SOURCE</small><b>{evidenceConnected ? "Allow-listed OPC UA nodes" : "Scenario generator"}</b></span><i>→</i>
             <span><small>QUALIFICATION</small><b>{evidenceStale ? "Current use refused" : "Status · timestamp · identity"}</b></span><i>→</i>
             <span><small>SEMANTIC ADMISSION</small><b>{evidenceConnected ? `${admittedSignals} / ${totalSemanticSignals} signals admitted · ${semanticAdmission?.scope ?? "profile required"}` : "No live signals admitted"}</b></span><i>→</i>
             <span><small>ROLE LENS</small><b>{rolePack.label} receives decision-relevant evidence</b></span>
           </div>
-          {evidenceConnected && <div className="semantic-boundary"><div><small>PROXY BOUNDARY</small><b>{telemetry?.proxy_warning ?? "Simulator evidence is not verified physical machine state."}</b></div><div className="binding-row"><span><b>rpm</b><small>{semanticAdmission?.signals?.rpm?.admitted ? "Admitted · simulated motor-speed proxy only" : "Display only · binding absent or refused"}</small></span><span><b>pressure_psi</b><small>Display only · applicator sensor mapping absent</small></span><span><b>arrival_ms</b><small>Context only · derived proxy ≠ arrival phase</small></span><span><b>raw_timing_proxy</b><small>Unmapped · diagnostically inadmissible</small></span></div><div className="binding-row"><span><b>Operating mode</b><small>{operatingMode ? `${operatingMode.configured_mode} · ${operatingMode.source_admitted ? "source admitted" : "source refused"}` : "Explicit mode assessment required"}</small></span><span><b>Source isolation</b><small>{operatingMode ? `${operatingMode.source_kinds.join(" + ") || "none"} · ${operatingMode.reason_code}` : "Unknown mode fails closed"}</small></span><span><b>Mode transition</b><small>Authorized configuration only · never inferred from connection</small></span><span><b>Mixed evidence</b><small>Simulator + physical sources are refused</small></span></div><div className="binding-row"><span><b>Simulator motor-speed proxy</b><small>{simulatorSpeedClaim ? `L${simulatorSpeedClaim.evidence_level} · ${simulatorSpeedClaim.status}` : "Claim assessment unavailable"}</small></span><span><b>Physical motor speed</b><small>{physicalSpeedClaim ? `L${physicalSpeedClaim.evidence_level} · ${physicalSpeedClaim.status} · simulator scope refused` : "Independent physical evidence required"}</small></span><span><b>Hierarchy boundary</b><small>Levels classify support for a named claim—not universal truth.</small></span><span><b>Action authority</b><small>{telemetry?.claim_evidence?.authorized_action ? "Separate authorization present" : "Not granted by evidence level"}</small></span></div><strong>{semanticAdmission?.reason_code ?? "EVIDENCE.SEMANTIC_BINDING_REQUIRED"} · {admittedSignals ? "bounded simulator admission active; physical-machine claims still refused" : "transport qualified, diagnostic use refused"}</strong></div>}<div className="evidence-provenance"><span><b>{telemetry?.reason_code ?? "LINEALERT.DEMO.EVIDENCE_STREAM"}</b><small>{telemetry?.observation_sequence ? `Observation ${telemetry.observation_sequence}` : "No claim of physical machine state"}</small></span><span><b>{telemetry?.read_only === false ? "WRITE CAPABILITY PRESENT" : "No writes · no browse expansion"}</b><small>{telemetry?.bridge_timestamp ? new Date(telemetry.bridge_timestamp).toLocaleTimeString() : "Demonstration clock only"}</small></span><span><b>Evidence ≠ root cause</b><small>Corroboration and a fresh outcome still control the next gate.</small></span></div>
+          {evidenceConnected && <div className="semantic-boundary"><div><small>CLAIM BOUNDARY</small><b>{telemetry?.proxy_warning ?? "Simulator evidence is not verified physical machine state."}</b></div><strong>{semanticAdmission?.reason_code ?? "EVIDENCE.SEMANTIC_BINDING_REQUIRED"} · {admittedSignals}/{totalSemanticSignals} signals admitted · no equipment-action authority</strong></div>}
+          <div className="evidence-provenance"><span><b>{telemetry?.reason_code ?? "LINEALERT.DEMO.EVIDENCE_STREAM"}</b><small>{telemetry?.observation_sequence ? `Observation ${telemetry.observation_sequence}` : "No claim of physical machine state"}</small></span><span><b>{telemetry?.read_only === false ? "WRITE CAPABILITY PRESENT" : "Read only"}</b><small>{telemetry?.bridge_timestamp ? new Date(telemetry.bridge_timestamp).toLocaleTimeString() : "Demonstration clock only"}</small></span><span><b>Evidence ≠ root cause</b><small>Fresh outcomes still control the next gate.</small></span></div>
         </div>}
       </section>
 
@@ -615,8 +606,4 @@ function Setting({ name, value, highlight = false, required = false, reviewed = 
 }
 function HistoryCase({ score, id, date, action, result, overlap, difference }: { score:string; id:string; date:string; action:string; result:string; overlap:string; difference:string }) {
   return <article className="history-case"><div className="match-score"><b>{score}</b><small>case similarity</small></div><div className="case-main"><span>{id} · {date}</span><b>{action}</b><small>Historical outcome: <strong className={result === "HELPED" ? "helped" : "inconclusive"}>{result}</strong></small></div><div className="case-comparison"><span><i>✓</i><b>Overlap</b>{overlap}</span><span><i>△</i><b>Differences</b>{difference}</span></div></article>;
-}
-function EvidenceGauge({label,value,unit,quality}:{label:string;value:number;unit:string;quality:string}) {
-  const display = Number.isFinite(value) ? (Math.abs(value) >= 1000 ? Math.round(value).toString() : value.toFixed(1)) : "—";
-  return <div className="evidence-gauge"><div className="gauge-arc"><i style={{transform:`rotate(${Math.max(-115,Math.min(115,(Math.abs(value)%100)/100*230-115))}deg)`}}/></div><span><small>{label}</small><b>{display} <em>{unit}</em></b><i className={`quality-${quality}`}>{quality}</i></span></div>;
 }

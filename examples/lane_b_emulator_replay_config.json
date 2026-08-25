@@ -1,0 +1,47 @@
+{
+  "topology": {
+    "dependencies": [
+      {
+        "from": "ActuatorCommand",
+        "to": "ActuatorMotionObserved"
+      },
+      {
+        "from": "ActuatorMotionObserved",
+        "to": "BottleArrival"
+      },
+      {
+        "from": "BottleArrival",
+        "to": "LabelOffset"
+      }
+    ]
+  },
+  "temporal_rules": [
+    {
+      "rule_id": "lane-b-command-to-motion",
+      "start_event": "ActuatorCommand",
+      "end_event": "ActuatorMotionObserved",
+      "min_delay_seconds": 0.012,
+      "max_delay_seconds": 0.030,
+      "topology_from": "ActuatorCommand",
+      "topology_to": "ActuatorMotionObserved"
+    },
+    {
+      "rule_id": "lane-b-motion-to-arrival",
+      "start_event": "ActuatorMotionObserved",
+      "end_event": "BottleArrival",
+      "min_delay_seconds": 0.145,
+      "max_delay_seconds": 0.180,
+      "topology_from": "ActuatorMotionObserved",
+      "topology_to": "BottleArrival"
+    },
+    {
+      "rule_id": "merge-to-inspection",
+      "start_event": "BottleArrival",
+      "end_event": "LabelOffset",
+      "min_delay_seconds": 0.080,
+      "max_delay_seconds": 0.090,
+      "topology_from": "BottleArrival",
+      "topology_to": "LabelOffset"
+    }
+  ]
+}
