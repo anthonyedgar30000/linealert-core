@@ -81,6 +81,60 @@ http://localhost:8766/health
 
 LineAlert Core is the deterministic machine-event reasoning layer for LineAlert.
 
+## Causal packaging-machine emulator
+
+The repository includes a seeded virtual experiment for gradual Lane B actuator degradation. It
+models developing pneumatic leakage and stiction, then emits only observations that a PLC, camera,
+photoeye, or product-inspection source could legitimately expose. Simulator-private causal truth is
+written separately so LineAlert can be scored without leaking the answer into its evidence.
+
+```bash
+linealert-emulate \
+  --cycles 160 \
+  --seed 20260825 \
+  --drift-onset 20 \
+  --intervention-cycle 120 \
+  --visible-output lane-b-evidence.json \
+  --events-output lane-b-events.jsonl \
+  --analysis-output lane-b-drift-assessment.json \
+  --ground-truth-output lane-b-ground-truth.json
+```
+
+The visible record includes OPC-UA-shaped nodes for PLC command cadence, camera-observed actuator
+latency, S1 arrival, wrapper ratio, label offset, product acceptance, and camera confidence. It does
+not expose the hidden leak, stiction, or degradation variables. Every run produces a SHA-256
+fingerprint over the exact emitted `MachineEvent` evidence for deterministic replay.
+The optional JSONL output can be passed directly to the existing `linealert-replay` adapter once a
+matching machine profile and timing-rule configuration are selected.
+
+The optional analysis report establishes a healthy opening baseline, waits for sustained agreement
+across at least two observable anchors, checks that feed/wrapper coordination stayed stable, and
+emits at most one bounded operator action. If an intervention cycle is configured, it validates
+recovery from post-intervention evidence rather than from simulator-private ground truth.
+
+To expose the same observable evidence as read-only OPC UA variables:
+
+```bash
+python -m pip install -e '.[opcua]'
+linealert-emulator-opcua \
+  --cycles 160 \
+  --drift-onset 20 \
+  --intervention-cycle 120 \
+  --publish-seconds 0.25
+```
+
+The server uses namespace `urn:linealert:emulator:lane-b` and stable string node IDs matching the
+visible `Line04.*` node names. Cycle snapshots form a SHA-256 predecessor chain so missing,
+reordered, or modified replay evidence is detectable. This provides integrity and replay ordering;
+production transport encryption and identity still require OPC UA security policy and certificates.
+
+```bash
+linealert-replay \
+  --config examples/lane_b_emulator_replay_config.json \
+  --input lane-b-events.jsonl \
+  --output lane-b-replay-report.json
+```
+
 The first vertical slice implements:
 
 ```text

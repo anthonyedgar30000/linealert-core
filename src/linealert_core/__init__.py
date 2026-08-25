@@ -29,6 +29,14 @@ from .baseline_replay import (
     load_timing_baseline_contexts,
     timing_baseline_assessment_to_dict,
 )
+from .causal_emulator import (
+    CycleEvidence,
+    CycleGroundTruth,
+    CycleRecord,
+    EmulatorConfig,
+    EmulatorRun,
+    LaneBDegradationEmulator,
+)
 from .condition_projection import (
     ConditionProjectionError,
     ConditionSignalObservation,
@@ -58,6 +66,7 @@ from .diagnostic_projection import (
     SymptomDefinition,
 )
 from .diagnostics import DiagnosticEngine, DiagnosticRecommendation
+from .drift_analysis import GradualDriftAnalyzer, RunDriftAssessment, SignalBaseline
 from .events import EventQuality, MachineEvent
 from .live_condition import (
     LiveClockEvidence,
@@ -137,6 +146,9 @@ __all__ = [
     "ConditionSignalObservation",
     "ConditionSignalProjection",
     "ConsumerOutput",
+    "CycleEvidence",
+    "CycleGroundTruth",
+    "CycleRecord",
     "DependencyEdge",
     "DeterministicStreamSimulator",
     "DiagnosticCheck",
@@ -150,12 +162,15 @@ __all__ = [
     "DriftAssessment",
     "DriftStatus",
     "EnvelopeStatus",
+    "EmulatorConfig",
+    "EmulatorRun",
     "EventBinding",
     "EventIdentityCollision",
     "EventQuality",
     "EventReceipt",
     "FusionMosaic",
     "LineAlertCore",
+    "LaneBDegradationEmulator",
     "LiveClockEvidence",
     "LiveConditionConsumer",
     "LiveConditionMeasurement",
@@ -168,11 +183,13 @@ __all__ = [
     "OperatorReport",
     "PipelineResult",
     "ReplayBaselineAssessment",
+    "RunDriftAssessment",
     "ReplayInputError",
     "ReplaySummary",
     "SignalAnalysisError",
     "SignalAnalysisPolicy",
     "SignalPattern",
+    "SignalBaseline",
     "StreamConsumer",
     "StreamDisposition",
     "StreamEnvelope",
@@ -194,6 +211,7 @@ __all__ = [
     "TimingStatus",
     "TopologyContext",
     "TopologyGraph",
+    "GradualDriftAnalyzer",
     "assess_replay_timing_baselines",
     "baseline_evaluation_to_dict",
     "build_core_from_config",
