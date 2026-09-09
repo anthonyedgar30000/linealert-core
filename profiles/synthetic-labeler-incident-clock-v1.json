@@ -1,0 +1,33 @@
+{
+  "schema_version": "linealert.synthetic-incident-clock.v1",
+  "classification": "synthetic_demo_only",
+  "asset": "Labeler 2",
+  "simulation": {
+    "start_time": "14:00:00",
+    "normal_rate_simulated_minutes_per_real_second": 2,
+    "fast_forward_rate_simulated_minutes_per_real_second": 20,
+    "fast_forward_stop": "14:54:00",
+    "incident_threshold_time": "15:00:00"
+  },
+  "schedule": {
+    "production_window": ["06:00", "17:45"],
+    "changeover_start": "17:45",
+    "maintenance_window": ["18:20", "19:50"],
+    "sanitation_window": ["21:00", "23:00"]
+  },
+  "incident": {
+    "signal": "presentation_interval_stddev_ms",
+    "healthy_median_ms": 7.9,
+    "pre_incident_behavior": "deterministic_rising_variability",
+    "post_threshold_behavior": "deterministic_watch_variability",
+    "initial_recommendation": "restore-guide-spacing"
+  },
+  "boundaries": [
+    "simulation_time_not_plant_time",
+    "telemetry_not_diagnosis",
+    "historical_pattern_not_current_root_cause",
+    "schedule_slack_not_authorization",
+    "recommendation_not_authorized_action",
+    "demo_time_control_not_equipment_command"
+  ]
+}
