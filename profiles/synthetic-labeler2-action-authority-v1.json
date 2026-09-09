@@ -1,0 +1,64 @@
+{
+  "schema_version": "linealert.action-authority-profile.v1",
+  "profile_id": "synthetic-labeler2-action-authority-v1",
+  "classification": "synthetic_demo_only",
+  "plant_context": "Packaging Line 1",
+  "asset": "Labeler 2",
+  "design_rule": "Authority belongs to the commissioned action in the current plant context, not to a universal LineAlert job-title assumption.",
+  "current_demo_actor": "operator",
+  "actions": {
+    "inspect-presentation-stability": {
+      "eligible_roles": ["operator", "maintenance"],
+      "authorization": "standing_operator_authority",
+      "change_class": "observation_only",
+      "operator_scope": "Observe bottle presentation stability from the approved operating position and record the result.",
+      "machine_state_requirement": "normal approved observation state",
+      "verification_requirement": "record observation; no material-change verification run required unless a later intervention occurs",
+      "rollback": "not_applicable_observation_only"
+    },
+    "verify-guide-spacing": {
+      "eligible_roles": ["operator", "maintenance"],
+      "authorization": "standing_operator_authority",
+      "change_class": "verification_only",
+      "operator_scope": "Compare the visible guide / spacing relationship with the commissioned marked or visual reference. Do not adjust during this action.",
+      "machine_state_requirement": "approved observation state",
+      "verification_requirement": "if an out-of-reference condition is observed, rerank before any correction",
+      "rollback": "not_applicable_verification_only"
+    },
+    "repeat-like-for-like": {
+      "eligible_roles": ["operator", "shift-supervisor"],
+      "authorization": "shift_supervisor_run_release_required",
+      "change_class": "controlled_run_no_material_change",
+      "operator_scope": "Operator may execute the same-condition bounded run after the shift supervisor authorizes the run conditions.",
+      "machine_state_requirement": "same commissioned trial conditions",
+      "verification_requirement": "auto-assemble fresh run evidence",
+      "rollback": "stop the trial and return to the prior approved state if the authorized trial conditions cannot be maintained"
+    },
+    "request-reduced-speed-trial": {
+      "eligible_roles": ["operator", "shift-supervisor"],
+      "authorization": "shift_supervisor_approval_required",
+      "change_class": "bounded_material_change",
+      "operator_scope": "Operator may apply only the commissioned temporary diagnostic speed value after supervisor approval. The demo does not define a real speed value.",
+      "machine_state_requirement": "approved diagnostic trial state",
+      "verification_requirement": "fresh bounded verification run required before any other material change",
+      "rollback": "return to the previously approved operating value according to commissioned procedure"
+    },
+    "review-label-timing-geometry": {
+      "eligible_roles": ["maintenance"],
+      "authorization": "maintenance_scope_only",
+      "change_class": "specialist_investigation",
+      "operator_scope": "not_operator_authorized_in_this_synthetic_plant",
+      "machine_state_requirement": "maintenance-defined safe state",
+      "verification_requirement": "maintenance records evidence; any later adjustment requires its own authority and verification",
+      "rollback": "defined by commissioned maintenance procedure"
+    }
+  },
+  "boundaries": [
+    "recommendation != authorized_action",
+    "role_eligibility != current_authorization",
+    "standing_authority != unrestricted_discretion",
+    "operator_authorized != universally_operator_authorized",
+    "successful_test != safe_production_change"
+  ],
+  "parameters_notice": "This authority profile is synthetic demo policy, not Speedway/OEM guidance or commissioned plant procedure. A real deployment must commission plant-specific permissions by asset, action, operating state, prerequisites, limits, authorization path, verification, and rollback."
+}
