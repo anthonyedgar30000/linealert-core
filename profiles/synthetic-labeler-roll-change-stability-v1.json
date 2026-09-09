@@ -86,5 +86,66 @@
     "bounded_finding": "Alignment inconsistency persists while presentation-interval variability remains elevated relative to the synthetic baseline.",
     "causality_boundary": "The coordinated synthetic signals support continued attention to presentation stability, but they do not establish root cause or prove that presentation variability caused the visual skew events."
   },
-  "parameters_notice": "All numeric values are synthetic scenario parameters chosen for internal consistency and demo readability. They are not OEM thresholds, commissioned limits, safe operating limits, or production recommendations."
+  "ranked_next_options": {
+    "ranking_semantics": "Evidence alignment and information value only. Rank is not root-cause probability, proof, authorization, or a safety determination.",
+    "basis": [
+      "operator reports visible misalignment",
+      "camera still shows an apparent skew event",
+      "presentation-interval variability remains elevated versus the synthetic baseline",
+      "line speed is unchanged across baseline, concern, and verification windows"
+    ],
+    "options": [
+      {
+        "rank": 1,
+        "option_id": "inspect-presentation-stability",
+        "title": "Inspect bottle presentation stability",
+        "classification": "maintenance_localization",
+        "owner": "Maintenance",
+        "evidence_alignment": "highest",
+        "rationale": "The current evidence converges on presentation instability as the most relevant relationship to localize next.",
+        "boundary": "Inspect and localize only. Any correction must come from commissioned procedure or qualified authority, then receive its own fresh bounded verification run."
+      },
+      {
+        "rank": 2,
+        "option_id": "repeat-like-for-like",
+        "title": "Repeat the same-condition verification run",
+        "classification": "control_observation",
+        "owner": "Shift supervisor",
+        "evidence_alignment": "high_information_value",
+        "rationale": "A repeat without a material change tests whether the slight improvement is repeatable before introducing another variable.",
+        "boundary": "No material intervention is introduced. Run still requires site authorization and the same controlled test conditions."
+      },
+      {
+        "rank": 3,
+        "option_id": "verify-guide-spacing",
+        "title": "Verify guide / spacing relationship",
+        "classification": "maintenance_localization",
+        "owner": "Maintenance",
+        "evidence_alignment": "moderate",
+        "rationale": "Guide or spacing relationships could contribute to presentation instability, but the current evidence does not isolate them.",
+        "boundary": "Verification is not permission to adjust. Any change requires commissioned procedure or qualified authority and a fresh trial."
+      },
+      {
+        "rank": 4,
+        "option_id": "request-reduced-speed-trial",
+        "title": "Request an authorized reduced-speed diagnostic trial",
+        "classification": "rate_sensitivity_test",
+        "owner": "Shift supervisor",
+        "evidence_alignment": "lower",
+        "rationale": "A rate-sensitivity test may add information, but speed did not change when the synthetic concern appeared, so it ranks below presentation-focused options.",
+        "boundary": "This is a request for an authorized diagnostic trial, not an instruction to change speed."
+      },
+      {
+        "rank": 5,
+        "option_id": "review-label-timing-geometry",
+        "title": "Review label timing / peel geometry evidence",
+        "classification": "deprioritized_investigation",
+        "owner": "Maintenance",
+        "evidence_alignment": "deprioritized",
+        "rationale": "Current evidence points more strongly toward presentation stability; no admitted evidence currently elevates timing or peel geometry.",
+        "boundary": "Review does not establish that timing or geometry is healthy, nor authorize adjustment."
+      }
+    ]
+  },
+  "parameters_notice": "All numeric values and ranked options are synthetic scenario parameters chosen for internal consistency and demo readability. They are not OEM thresholds, commissioned limits, safe operating limits, production recommendations, or proof of root cause."
 }

@@ -11,6 +11,7 @@ type AssetId = "filler" | "labeler" | "packer" | "palletizer";
 type OperatorResult = "appears_clear" | "issue_observed" | "cannot_verify";
 type ReviewState = "PENDING" | "ACCEPTED" | "CORRECTION NEEDED" | "ESCALATED";
 type TrialState = "AWAITING RUN EVIDENCE" | "READY FOR HUMAN REVIEW";
+type InterventionId = "inspect-presentation-stability" | "repeat-like-for-like" | "verify-guide-spacing" | "request-reduced-speed-trial" | "review-label-timing-geometry";
 
 type Asset = {
   id: AssetId;
@@ -44,6 +45,17 @@ type TrialRecord = {
   review: ReviewState;
 };
 
+type RankedIntervention = {
+  id: InterventionId;
+  rank: number;
+  title: string;
+  alignment: string;
+  owner: Owner;
+  rationale: string;
+  boundary: string;
+  factors: string[];
+};
+
 const scenario = {
   id: "labeler-roll-change-stability-v1",
   baseline: {
@@ -73,6 +85,59 @@ const scenario = {
   },
 } as const;
 
+const rankedInterventions: RankedIntervention[] = [
+  {
+    id: "inspect-presentation-stability",
+    rank: 1,
+    title: "Inspect bottle presentation stability",
+    alignment: "Highest evidence alignment",
+    owner: "Maintenance",
+    rationale: "The operator observation, elevated presentation variability, and remaining camera skew all point to the presentation relationship as the most useful place to localize next.",
+    boundary: "Inspect and localize only. Any correction must come from commissioned procedure or qualified authority, then receive its own fresh bounded verification run.",
+    factors: ["+ Operator observation supports", "+ Telemetry supports", "+ Camera supports", "0 Quality confirms persistence, not mechanism"],
+  },
+  {
+    id: "repeat-like-for-like",
+    rank: 2,
+    title: "Repeat the same-condition verification run",
+    alignment: "High information value · no material change",
+    owner: "Shift supervisor",
+    rationale: "The verification run improved slightly but still missed the synthetic baseline. Repeating the same conditions tests whether that improvement is repeatable before introducing another variable.",
+    boundary: "No material intervention is introduced. The run still requires site authorization and the same controlled test conditions.",
+    factors: ["+ Preserves one-variable discipline", "+ Tests repeatability", "+ Avoids premature adjustment", "0 Does not localize mechanism by itself"],
+  },
+  {
+    id: "verify-guide-spacing",
+    rank: 3,
+    title: "Verify guide / spacing relationship",
+    alignment: "Moderate evidence alignment",
+    owner: "Maintenance",
+    rationale: "Guide or spacing relationships could contribute to presentation instability, but the current evidence does not isolate either relationship.",
+    boundary: "Verification is not permission to adjust. Any change requires commissioned procedure or qualified authority and a fresh trial.",
+    factors: ["+ Compatible with presentation instability", "0 Not directly isolated", "0 No admitted guide-position evidence", "− Less supported than presentation-level inspection"],
+  },
+  {
+    id: "request-reduced-speed-trial",
+    rank: 4,
+    title: "Request an authorized reduced-speed diagnostic trial",
+    alignment: "Lower-ranked diagnostic intervention",
+    owner: "Shift supervisor",
+    rationale: "A rate-sensitivity test may add information, but line speed did not change when the synthetic concern appeared, so it ranks below presentation-focused options.",
+    boundary: "This is a request for an authorized diagnostic trial, not an instruction to change speed.",
+    factors: ["+ Could test rate sensitivity", "0 Requires a material change", "− Speed was unchanged across observed windows", "− Current evidence points elsewhere first"],
+  },
+  {
+    id: "review-label-timing-geometry",
+    rank: 5,
+    title: "Review label timing / peel geometry evidence",
+    alignment: "Currently deprioritized",
+    owner: "Maintenance",
+    rationale: "Current admitted evidence points more strongly toward presentation stability; nothing in this scenario currently elevates timing or peel geometry.",
+    boundary: "Deprioritized does not mean healthy. Review does not authorize adjustment or establish root cause.",
+    factors: ["0 No current timing evidence", "0 No current peel-geometry evidence", "− Presentation evidence is stronger", "− Do not infer healthy from lack of evidence"],
+  },
+];
+
 const seedAssets: Asset[] = [
   { id: "filler", name: "Filler 1", role: "Upstream process", plan: "HOLDS", owner: "Shift supervisor", next: "No action requested." },
   { id: "labeler", name: "Labeler 2", role: "Application process", plan: "WATCH", owner: "Shift supervisor", next: "Assign one bounded visible check if it is within operator authority.", concern: "Operator reports label alignment is off after a roll change.", runway: "~70 min", responseEta: "32 min" },
@@ -86,10 +151,13 @@ export default function PlantCanvas() {
   const [operatorOpen, setOperatorOpen] = useState(false);
   const [view, setView] = useState<"canvas" | "board">("canvas");
   const [trial, setTrial] = useState<TrialRecord | null>(null);
+  const [showInterventions, setShowInterventions] = useState(false);
+  const [selectedInterventionId, setSelectedInterventionId] = useState<InterventionId | null>(null);
 
   const selected = assets.find((asset) => asset.id === selectedId) ?? assets[0];
   const activeCount = assets.filter((asset) => asset.concern).length;
   const posture = assets.some((asset) => asset.plan === "ADAPT") ? "ADAPTATION REQUIRED" : assets.some((asset) => asset.plan === "WATCH") ? "PLAN HOLDS · WATCHING" : "PLAN HOLDS";
+  const selectedIntervention = rankedInterventions.find((item) => item.id === selectedInterventionId) ?? null;
 
   const boardGroups = useMemo(() => ({
     TRIAGE: assets.filter((asset) => asset.concern && asset.owner === "Shift supervisor"),
@@ -140,6 +208,8 @@ export default function PlantCanvas() {
       state: "AWAITING RUN EVIDENCE",
       review: "PENDING",
     });
+    setShowInterventions(false);
+    setSelectedInterventionId(null);
     setOperatorOpen(false);
   };
 
@@ -169,11 +239,29 @@ export default function PlantCanvas() {
   const reviewTrial = (review: ReviewState) => {
     setTrial((current) => current ? { ...current, review } : current);
     if (review === "ACCEPTED") {
-      setAssets((current) => current.map((asset) => asset.id === "labeler" ? { ...asset, owner: "Shift supervisor", next: "Review the confirmed bounded finding and decide whether another single bounded action is justified." } : asset));
+      setShowInterventions(true);
+      setSelectedInterventionId(null);
+      setAssets((current) => current.map((asset) => asset.id === "labeler" ? { ...asset, owner: "Shift supervisor", next: "Choose one evidence-ranked next option. Rank expresses evidence alignment and information value, not root-cause probability." } : asset));
+    }
+    if (review === "CORRECTION NEEDED") {
+      setShowInterventions(false);
+      setAssets((current) => current.map((asset) => asset.id === "labeler" ? { ...asset, next: "Correct the disputed field while preserving the original source value and provenance before selecting an intervention." } : asset));
     }
     if (review === "ESCALATED") {
+      setShowInterventions(false);
       setAssets((current) => current.map((asset) => asset.id === "labeler" ? { ...asset, owner: "Maintenance", next: "Review the auto-assembled evidence package before any further intervention." } : asset));
     }
+  };
+
+  const chooseIntervention = (id: InterventionId) => {
+    const option = rankedInterventions.find((item) => item.id === id);
+    if (!option) return;
+    setSelectedInterventionId(id);
+    setAssets((current) => current.map((asset) => asset.id === "labeler" ? {
+      ...asset,
+      owner: option.owner,
+      next: `${option.title} selected. Obtain required authorization, perform only that bounded option, then complete a fresh verification run before any other material change.`,
+    } : asset));
   };
 
   return (
@@ -182,7 +270,7 @@ export default function PlantCanvas() {
         <div>
           <span className={styles.kicker}>LINEALERT · PLANT CANVAS · SYNTHETIC DEMO</span>
           <h1>{posture}</h1>
-          <p>Model the plant, locate the concern, assign one bounded action, run, let LineAlert assemble coordinated evidence, then ask a human only for judgment, correction, or authorization.</p>
+          <p>Model the plant, locate the concern, assign one bounded action, run, let LineAlert assemble coordinated evidence, then rank the allowed next options for human selection.</p>
         </div>
         <nav className={styles.nav}>
           <button className={view === "canvas" ? styles.activeView : ""} onClick={() => setView("canvas")}>Plant canvas</button>
@@ -255,7 +343,7 @@ export default function PlantCanvas() {
         <section className={styles.trialCard} aria-label="Bounded verification trial">
           <div className={styles.trialHeading}>
             <div><span>BOUNDED TRIAL · AUTO-ASSEMBLED RECORD</span><h2>{trial.id}</h2><small>Scenario {trial.scenarioId}</small></div>
-            <b>{trial.state}</b>
+            <b>{trial.review === "PENDING" ? trial.state : trial.review}</b>
           </div>
           <div className={styles.trialGrid}>
             <div><span>Asset</span><strong>{trial.asset}</strong><small>auto-populated · canvas context</small></div>
@@ -275,18 +363,49 @@ export default function PlantCanvas() {
           <div className={styles.provenance}><span>PROVENANCE</span>{trial.provenance.map((item) => <small key={item}>{item}</small>)}</div>
           {trial.state === "AWAITING RUN EVIDENCE" ? (
             <button className={styles.primaryAction} onClick={receiveSyntheticRunEvent}>Demo only · receive coordinated source events</button>
-          ) : (
+          ) : trial.review === "PENDING" ? (
             <div className={styles.reviewActions}>
               <button onClick={() => reviewTrial("ACCEPTED")}>Confirm record</button>
               <button onClick={() => reviewTrial("CORRECTION NEEDED")}>Correct something</button>
               <button onClick={() => reviewTrial("ESCALATED")}>Escalate</button>
             </div>
-          )}
+          ) : null}
           <small className={styles.operatorBoundary}>Synthetic MES, telemetry, camera, and quality outputs are coordinated by a deterministic demo fixture so the evidence behaves coherently. They are not measurements from a real machine, commissioned limits, root-cause proof, or authorization to run or change equipment.</small>
         </section>
       )}
 
-      <section className={styles.boundary}><div><span>V1 BOUNDARY</span><b>Deterministic scenario → coordinated synthetic sources → auto-assembled evidence → human judgment.</b></div><p>No live telemetry, camera, PLC/controller, MES, quality system, CMMS, dispatch, safety-control or equipment-control connection is added here. Successful or improved synthetic evidence does not establish root cause or a safe production change.</p></section>
+      {showInterventions && trial?.review === "ACCEPTED" && (
+        <section className={styles.interventionPanel} aria-label="Evidence-ranked next options">
+          <div className={styles.interventionHeading}>
+            <div><span>NEXT DECISION · HUMAN SELECTION</span><h2>Choose one bounded next option</h2></div>
+            <b>RANKED BY EVIDENCE ALIGNMENT</b>
+          </div>
+          <p className={styles.rankBoundary}>Rank is deterministic evidence alignment and information value for this synthetic scenario. It is not root-cause probability, proof, authorization, or a safety determination.</p>
+          <div className={styles.interventionList}>
+            {rankedInterventions.map((option) => (
+              <button key={option.id} className={`${styles.interventionOption} ${selectedInterventionId === option.id ? styles.interventionSelected : ""}`} onClick={() => chooseIntervention(option.id)}>
+                <div className={styles.rankBadge}>{option.rank}</div>
+                <div className={styles.interventionBody}>
+                  <div className={styles.interventionTitle}><strong>{option.title}</strong><span>{option.alignment}</span></div>
+                  <p>{option.rationale}</p>
+                  <div className={styles.factorRow}>{option.factors.map((factor) => <small key={factor}>{factor}</small>)}</div>
+                  <div className={styles.interventionMeta}><span>Owner: {option.owner}</span><span>Fresh bounded run required after any material change</span></div>
+                </div>
+              </button>
+            ))}
+          </div>
+          {selectedIntervention && (
+            <div className={styles.selectedDecision}>
+              <span>SELECTED NEXT OPTION</span>
+              <h3>#{selectedIntervention.rank} · {selectedIntervention.title}</h3>
+              <p>{selectedIntervention.boundary}</p>
+              <b>Selection records workflow intent only. It does not authorize the intervention or execute a machine change.</b>
+            </div>
+          )}
+        </section>
+      )}
+
+      <section className={styles.boundary}><div><span>V1 BOUNDARY</span><b>Evidence → ranked allowed options → human selects → authorize elsewhere → one bounded action → fresh run.</b></div><p>No live telemetry, camera, PLC/controller, MES, quality system, CMMS, dispatch, safety-control or equipment-control connection is added here. Rank ≠ diagnosis. Selection ≠ authorization. Successful or improved synthetic evidence ≠ root-cause proof or a safe production change.</p></section>
     </main>
   );
 }
