@@ -18,7 +18,7 @@
     .posture { display: grid; grid-template-columns: 140px 140px 140px minmax(240px,1fr); border: 1px solid #d5dad6; background: white; border-radius: 18px; overflow: hidden; margin-bottom: 24px; }
     .posture div { padding: 16px; border-right: 1px solid #e3e7e4; }
     .posture div:last-child { border-right: 0; }
-    .posture span,.cardTopline span,.nextStep span { display:block; font-size:.7rem; font-weight:800; letter-spacing:.12em; color:#6b7771; }
+    .posture span,.cardTopline span,.nextStep span,.observationNote span { display:block; font-size:.7rem; font-weight:800; letter-spacing:.12em; color:#6b7771; }
     .posture b { display:block; margin-top:5px; font-size:1.05rem; }
     .intake { display:grid; grid-template-columns:minmax(240px,.8fr) minmax(320px,1.2fr); gap:24px; padding:22px; background:#18211d; color:white; border-radius:20px; margin-bottom:26px; }
     .intake h2 { margin:5px 0 8px; font-size:1.6rem; }
@@ -27,6 +27,17 @@
     .intakeForm textarea { flex:1; border:1px solid #53615b; border-radius:14px; padding:13px; resize:vertical; font:inherit; background:#f8faf8; color:#17201c; }
     .intakeForm button { border:0; border-radius:14px; padding:0 18px; font-weight:800; cursor:pointer; }
     .receipt { grid-column:2; display:none; gap:8px; flex-direction:column; padding:12px 14px; border:1px solid #43534b; border-radius:12px; color:#dbe3df; }
+    .operatorTask { display:none; max-width:880px; margin:0 auto 26px; padding:24px; border:1px solid #c7cec8; border-radius:20px; background:white; box-shadow:0 18px 40px rgba(23,32,28,.08); }
+    .operatorTaskHeading { display:flex; justify-content:space-between; gap:18px; align-items:flex-start; }
+    .operatorTaskHeading span { display:block; margin-bottom:5px; font-size:.72rem; font-weight:900; letter-spacing:.14em; color:#607069; }
+    .operatorTaskHeading small { color:#7b8781; }
+    .operatorTaskHeading button { border:1px solid #d4d9d5; border-radius:999px; background:#f7f8f6; padding:8px 12px; color:#37433d; font:inherit; font-size:.8rem; cursor:pointer; }
+    .operatorTask h2 { margin:22px 0 10px; max-width:760px; font-size:clamp(1.5rem,3vw,2.25rem); line-height:1.12; }
+    .operatorTask p { max-width:760px; margin:0; color:#59665f; line-height:1.55; }
+    .operatorAnswers { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-top:22px; }
+    .operatorAnswers button,.taskButton { border:1px solid #bcc6bf; border-radius:12px; background:#f7f8f6; padding:12px 14px; color:#17201c; font:inherit; font-weight:800; cursor:pointer; }
+    .operatorAnswers button:hover,.taskButton:hover { border-color:#87968d; background:#eef1ee; }
+    .operatorBoundary { display:block; margin-top:16px; padding-top:14px; border-top:1px solid #e4e8e5; color:#6f7c75; line-height:1.45; }
     .board { display:grid; grid-template-columns:repeat(5,minmax(220px,1fr)); gap:12px; overflow-x:auto; padding-bottom:8px; }
     .column { min-width:220px; background:#e9ece9; border-radius:16px; padding:10px; }
     .column>header { display:flex; justify-content:space-between; align-items:center; padding:4px 4px 10px; }
@@ -46,14 +57,18 @@
     .card dt,.card dd { margin:0; font-size:.78rem; }
     .card dt { color:#6b7771; }
     .card dd { text-align:right; font-weight:700; }
-    .nextStep { background:#f4f6f4; border-radius:10px; padding:10px; margin-bottom:10px; }
-    .nextStep p { margin:4px 0 0; font-size:.8rem; line-height:1.4; }
+    .observationNote,.nextStep { background:#f4f6f4; border-radius:10px; padding:10px; margin-bottom:10px; }
+    .observationNote { border-left:3px solid #9eaaa3; }
+    .observationNote p,.nextStep p { margin:4px 0 0; font-size:.8rem; line-height:1.4; }
+    .taskButton { width:100%; margin:0 0 10px; font-size:.8rem; }
+    .source { display:block; }
     .empty { color:#7c8882; font-size:.82rem; text-align:center; border-style:dashed; }
     .boundary { display:grid; grid-template-columns:minmax(250px,.8fr) minmax(320px,1.2fr); gap:24px; margin-top:24px; padding:20px; border:1px solid #d5dad6; border-radius:16px; background:white; }
     .boundary span { display:block; margin-bottom:5px; font-size:.7rem; font-weight:900; letter-spacing:.13em; color:#69766f; }
     .boundary p { margin:0; color:#59665f; }
     .staticNote { margin-top:12px; font-size:.78rem; color:#78857f; }
-    @media(max-width:900px){ .shell{padding:18px}.header,.intake,.boundary{grid-template-columns:1fr;display:grid}.posture{grid-template-columns:repeat(2,1fr)}.posture div:nth-child(2){border-right:0}.receipt{grid-column:1}.intakeForm{flex-direction:column}.intakeForm button{padding:12px 18px} }
+    @media(max-width:900px){ .shell{padding:18px}.header,.intake,.boundary{grid-template-columns:1fr;display:grid}.posture{grid-template-columns:repeat(2,1fr)}.posture div:nth-child(2){border-right:0}.receipt{grid-column:1}.intakeForm{flex-direction:column}.intakeForm button{padding:12px 18px}.operatorAnswers{grid-template-columns:1fr} }
+    @media(max-width:620px){ .operatorTaskHeading{flex-direction:column} }
   </style>
 </head>
 <body>
@@ -71,44 +86,157 @@
       <span>Evidence/history · runtime only</span>
     </nav>
   </header>
+
   <section class="posture" aria-label="Plant triage posture">
     <div><span>ACTIVE ITEMS</span><b id="activeCount">3</b></div>
     <div><span>WATCHING</span><b>1</b></div>
     <div><span>ADAPT</span><b>1</b></div>
     <div><span>BOARD RULE</span><b>Only interrupt when the plan may need attention.</b></div>
   </section>
+
   <section class="intake">
     <div><span class="sectionLabel">QUICK UPDATE</span><h2>Say it before you forget it.</h2><p>Capture the observation now. LineAlert preserves the original wording and routes it into triage; this demo does not claim the observation is verified machine evidence.</p></div>
     <form id="quickUpdateForm" class="intakeForm"><textarea id="quickUpdate" aria-label="Quick update observation" placeholder="It started sounding rough after the roll change…" rows="3"></textarea><button type="submit">Record update</button></form>
     <div id="receipt" class="receipt"><b>Update received.</b><span>Added to Intake as an unverified operator observation. No equipment action was authorized.</span></div>
   </section>
+
+  <section id="operatorTask" class="operatorTask" aria-label="Bounded operator check">
+    <div class="operatorTaskHeading">
+      <div><span>OPERATOR · ONE BOUNDED CHECK</span><small>Labeler 2 · LA-DEMO-104</small></div>
+      <button id="returnBoard" type="button">Return to board</button>
+    </div>
+    <h2>From the approved operating position, does the visible label application relationship appear aligned?</h2>
+    <p><b>Why this check:</b> A visible alignment check can tell triage whether a qualified mechanical inspection is needed. It does not establish root cause.</p>
+    <div class="operatorAnswers">
+      <button type="button" data-result="appears_clear">Appears aligned</button>
+      <button type="button" data-result="issue_observed">Appears out of alignment</button>
+      <button type="button" data-result="cannot_verify">Can’t verify safely</button>
+    </div>
+    <small class="operatorBoundary">Answer only from the approved operating position. This records an operator observation; it does not verify physical state, establish root cause, or authorize an adjustment.</small>
+  </section>
+
   <section class="board" aria-label="Triage workflow board">
     <section class="column"><header><span>INTAKE</span><b id="count-intake">0</b></header><div class="cardStack" id="stack-intake"><div class="empty">Nothing waiting here.</div></div></section>
-    <section class="column"><header><span>TRIAGE</span><b>1</b></header><div class="cardStack"><article class="card watch"><div class="cardTopline"><span>CNC Cell A</span><small>LA-DEMO-105</small></div><h3>Two updated controllers stopped reporting to the historian after a firmware change.</h3><dl><div><dt>Owner</dt><dd>Shift supervisor</dd></div><div><dt>Runway</dt><dd>~95 min</dd></div><div><dt>Response ETA</dt><dd>44 min</dd></div><div><dt>Plan</dt><dd>WATCH</dd></div></dl><div class="nextStep"><span>NEXT</span><p>Confirm shared gateway path and maintenance availability before escalating.</p></div><small class="source">Synthetic dependency-risk demo</small></article></div></section>
-    <section class="column"><header><span>ASSIGNED</span><b>1</b></header><div class="cardStack"><article class="card holds"><div class="cardTopline"><span>Labeler 2</span><small>LA-DEMO-104</small></div><h3>Operator reports intermittent hesitation after roll change.</h3><dl><div><dt>Owner</dt><dd>Maintenance</dd></div><div><dt>Runway</dt><dd>~70 min</dd></div><div><dt>Response ETA</dt><dd>32 min</dd></div><div><dt>Plan</dt><dd>HOLDS</dd></div></dl><div class="nextStep"><span>NEXT</span><p>Observe until maintenance arrives; no additional operator action requested.</p></div><small class="source">Synthetic demo observation</small></article></div></section>
+    <section class="column"><header><span>TRIAGE</span><b id="count-triage">2</b></header><div class="cardStack" id="stack-triage">
+      <article id="labeler-card" class="card holds">
+        <div class="cardTopline"><span>Labeler 2</span><small>LA-DEMO-104</small></div>
+        <h3>Operator reports label alignment is off after a roll change.</h3>
+        <dl><div><dt>Owner</dt><dd id="labeler-owner">Shift supervisor</dd></div><div><dt>Runway</dt><dd>~70 min</dd></div><div><dt>Response ETA</dt><dd>32 min</dd></div><div><dt>Plan</dt><dd>HOLDS</dd></div></dl>
+        <div id="labeler-observation"></div>
+        <div class="nextStep"><span>NEXT</span><p id="labeler-next">Assign one bounded visible check if it is within operator authority.</p></div>
+        <button id="assignOperator" class="taskButton" type="button">Assign one operator check</button>
+        <small id="labeler-source" class="source">Synthetic demo observation</small>
+      </article>
+      <article class="card watch"><div class="cardTopline"><span>CNC Cell A</span><small>LA-DEMO-105</small></div><h3>Two updated controllers stopped reporting to the historian after a firmware change.</h3><dl><div><dt>Owner</dt><dd>Shift supervisor</dd></div><div><dt>Runway</dt><dd>~95 min</dd></div><div><dt>Response ETA</dt><dd>44 min</dd></div><div><dt>Plan</dt><dd>WATCH</dd></div></dl><div class="nextStep"><span>NEXT</span><p>Confirm shared gateway path and maintenance availability before escalating.</p></div><small class="source">Synthetic dependency-risk demo</small></article>
+    </div></section>
+    <section class="column"><header><span>ASSIGNED</span><b id="count-assigned">0</b></header><div class="cardStack" id="stack-assigned"><div class="empty">Nothing waiting here.</div></div></section>
     <section class="column"><header><span>RESPONDING</span><b>1</b></header><div class="cardStack"><article class="card adapt"><div class="cardTopline"><span>Packaging Line 1</span><small>LA-DEMO-106</small></div><h3>Downstream buffer is shrinking faster than the expected response window.</h3><dl><div><dt>Owner</dt><dd>Plant manager</dd></div><div><dt>Runway</dt><dd>26 min</dd></div><div><dt>Response ETA</dt><dd>47 min</dd></div><div><dt>Plan</dt><dd>ADAPT</dd></div></dl><div class="nextStep"><span>NEXT</span><p>Choose an approved adaptation that preserves flow until qualified response arrives.</p></div><small class="source">Synthetic operational-context demo</small></article></div></section>
     <section class="column"><header><span>VERIFY</span><b>0</b></header><div class="cardStack"><div class="empty">Nothing waiting here.</div></div></section>
   </section>
+
   <section class="boundary"><div><span>V1 BOUNDARY</span><b>Make abnormal situations feel organized before they feel solved.</b></div><p>This surface performs demo intake and workflow orientation only. Triage is not diagnosis, recommendation is not authorized action, and historical evidence does not prove current root cause.</p></section>
 </main>
 <script>
   let active = 3;
   let intake = 0;
+  let triage = 2;
+  let assigned = 0;
   const form = document.getElementById('quickUpdateForm');
   const input = document.getElementById('quickUpdate');
-  const stack = document.getElementById('stack-intake');
+  const intakeStack = document.getElementById('stack-intake');
   const receipt = document.getElementById('receipt');
+  const operatorTask = document.getElementById('operatorTask');
+  const labelerCard = document.getElementById('labeler-card');
+  const triageStack = document.getElementById('stack-triage');
+  const assignedStack = document.getElementById('stack-assigned');
+  const assignOperator = document.getElementById('assignOperator');
+  const labelerOwner = document.getElementById('labeler-owner');
+  const labelerNext = document.getElementById('labeler-next');
+  const labelerSource = document.getElementById('labeler-source');
+  const labelerObservation = document.getElementById('labeler-observation');
+
+  function refreshCounts() {
+    document.getElementById('count-intake').textContent = String(intake);
+    document.getElementById('count-triage').textContent = String(triage);
+    document.getElementById('count-assigned').textContent = String(assigned);
+    document.getElementById('activeCount').textContent = String(active);
+  }
+
+  function ensureEmpty(stack, empty) {
+    const existing = stack.querySelector('.empty');
+    if (empty && !existing) {
+      const node = document.createElement('div'); node.className = 'empty'; node.textContent = 'Nothing waiting here.'; stack.appendChild(node);
+    }
+    if (!empty && existing) existing.remove();
+  }
+
+  function moveLabeler(destination) {
+    if (destination === 'assigned') {
+      ensureEmpty(assignedStack, false);
+      assignedStack.prepend(labelerCard);
+    } else {
+      triageStack.prepend(labelerCard);
+    }
+    ensureEmpty(assignedStack, assigned === 0);
+  }
+
+  function showObservation(text) {
+    labelerObservation.className = 'observationNote';
+    labelerObservation.innerHTML = '<span>LATEST OBSERVATION</span><p></p>';
+    labelerObservation.querySelector('p').textContent = text;
+  }
+
   form.addEventListener('submit', (event) => {
     event.preventDefault();
     const observation = input.value.trim();
     if (!observation) return;
     intake += 1; active += 1;
-    const empty = stack.querySelector('.empty'); if (empty) empty.remove();
+    ensureEmpty(intakeStack, false);
     const card = document.createElement('article'); card.className = 'card holds';
     card.innerHTML = '<div class="cardTopline"><span>Unassigned asset</span><small>LA-DEMO-' + (109 + intake) + '</small></div><h3></h3><dl><div><dt>Owner</dt><dd>Triage queue</dd></div><div><dt>Plan</dt><dd>HOLDS</dd></div></dl><div class="nextStep"><span>NEXT</span><p>Attach asset/run context and decide whether management attention is justified.</p></div><small class="source">Operator observation — unverified · browser-session demo only</small>';
-    card.querySelector('h3').textContent = observation; stack.prepend(card);
-    document.getElementById('count-intake').textContent = String(intake); document.getElementById('activeCount').textContent = String(active);
-    input.value = ''; receipt.style.display = 'flex';
+    card.querySelector('h3').textContent = observation; intakeStack.prepend(card);
+    input.value = ''; receipt.style.display = 'flex'; refreshCounts();
+  });
+
+  assignOperator.addEventListener('click', () => {
+    triage -= 1; assigned += 1;
+    labelerOwner.textContent = 'Operator';
+    labelerNext.textContent = 'Answer the single visible-condition check from the approved operating position.';
+    assignOperator.textContent = 'Open operator check';
+    assignOperator.onclick = () => { operatorTask.style.display = 'block'; operatorTask.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+    moveLabeler('assigned');
+    operatorTask.style.display = 'block';
+    operatorTask.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    refreshCounts();
+  }, { once: true });
+
+  document.getElementById('returnBoard').addEventListener('click', () => { operatorTask.style.display = 'none'; });
+
+  document.querySelectorAll('[data-result]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const result = button.dataset.result;
+      operatorTask.style.display = 'none';
+      assignOperator.remove();
+      labelerSource.textContent = 'Operator observation — unverified · browser-session demo only';
+
+      if (result === 'appears_clear') {
+        assigned -= 1; triage += 1;
+        labelerOwner.textContent = 'Shift supervisor';
+        labelerNext.textContent = 'Review the recorded visible check and decide whether another qualified check is justified.';
+        showObservation('Operator reports the visible application relationship appears aligned.');
+        moveLabeler('triage');
+      } else if (result === 'issue_observed') {
+        labelerOwner.textContent = 'Maintenance';
+        labelerNext.textContent = 'Inspect the reported application relationship; the operator stopped at the observation boundary.';
+        showObservation('Operator reports the visible application relationship appears out of alignment.');
+      } else {
+        labelerOwner.textContent = 'Maintenance';
+        labelerNext.textContent = 'Perform the check from an authorized safe position; the operator could not verify it.';
+        showObservation('Operator could not verify the visible application relationship safely.');
+      }
+      ensureEmpty(assignedStack, assigned === 0);
+      refreshCounts();
+    });
   });
 </script>
 </body></html>
