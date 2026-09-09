@@ -53,6 +53,37 @@ Every auto-populated field should retain source class and verification state. At
 
 AI-camera output is classified visual evidence. It is not verified physical state, root-cause proof, or authorization to change equipment.
 
+## Ranked next-option selection
+
+Confirming the assembled evidence record does not close the response loop. It means the human accepts the evidence package as the basis for the next bounded decision.
+
+After confirmation, LineAlert may rank only the **allowed next options** that are already admitted for the scenario, procedure, role, or commissioning context. The ranking should be deterministic and inspectable wherever practical.
+
+The ranking semantics are:
+
+**evidence alignment and information value != root-cause probability**
+
+A higher rank means the current admitted evidence makes that option more relevant or more informative to try next. It does not mean LineAlert has proven the cause, that the option is safe, or that the user is authorized to perform it.
+
+The UI should expose the factors that moved an option up or down, for example:
+
+- operator observation supports;
+- telemetry relationship supports;
+- camera evidence supports;
+- no direct evidence available;
+- unchanged operating variable weakens a rate-change explanation;
+- option preserves like-for-like comparison and one-variable discipline.
+
+The human selects one option. Selection records workflow intent only. It does not authorize the intervention, execute a machine change, bypass a safety control, or replace a commissioned procedure.
+
+For any material intervention, the next required state is a fresh bounded run before another material change is introduced.
+
+The resulting loop is:
+
+**Evidence → ranked allowed options → human selects → authorization / execution outside LineAlert authority → fresh bounded run → new evidence → rerank.**
+
+An option may move down as new evidence arrives. A successful trial after an intervention may increase the information value of that intervention family, but improvement after a change still does not establish root cause.
+
 ## Trial isolation
 
 The intended experiment discipline is **one material change per trial**. Purely observational checks may be grouped only when the commissioned procedure explicitly permits it and grouping does not obscure which intervention could have affected the result.
@@ -61,8 +92,8 @@ Any setting, mechanical, timing, speed, guide, control, firmware, or other mater
 
 ## Current demo boundary
 
-The current Plant Canvas implementation is browser-session synthetic feedback content. Its five-container trial size and camera classification are demo parameters, not OEM requirements or commissioned plant truth.
+The current Plant Canvas implementation is browser-session synthetic feedback content. Its five-container trial size, camera classification, numeric source values, and evidence-ranked next options are demo parameters, not OEM requirements or commissioned plant truth.
 
 No live camera, PLC/controller, historian, MES, quality system, CMMS, dispatch, safety-control, or equipment-control connection is created by this increment.
 
-A displayed trial request is a workflow recommendation, not production authorization. Trial execution remains subject to site procedure, qualified human authority, safety controls, and OEM requirements.
+A displayed trial request or ranked option is a workflow recommendation, not production authorization. Trial execution and any intervention remain subject to site procedure, qualified human authority, safety controls, OEM requirements, and commissioned plant knowledge.
