@@ -11,7 +11,7 @@ type AssetId = "filler" | "labeler" | "packer" | "palletizer";
 type OperatorResult = "appears_clear" | "issue_observed" | "cannot_verify";
 type ReviewState = "PENDING" | "ACCEPTED" | "CORRECTION NEEDED" | "ESCALATED";
 type TrialState = "AWAITING RUN EVIDENCE" | "READY FOR HUMAN REVIEW";
-type InterventionId = "inspect-presentation-stability" | "repeat-like-for-like" | "verify-guide-spacing" | "request-reduced-speed-trial" | "review-label-timing-geometry";
+type InterventionId = "inspect-presentation-stability" | "verify-guide-spacing" | "repeat-like-for-like" | "request-reduced-speed-trial" | "review-label-timing-geometry";
 
 type Asset = {
   id: AssetId;
@@ -52,37 +52,31 @@ type RankedIntervention = {
   alignment: string;
   owner: Owner;
   rationale: string;
+  historicalSupport: string;
   boundary: string;
   factors: string[];
 };
 
 const scenario = {
   id: "labeler-roll-change-stability-v1",
-  baseline: {
-    speed: 78,
-    presentationStdDevMs: 7.8,
-    aligned: 5,
-    skew: 0,
-    maxOffsetMm: 0.7,
-    confidence: 0.97,
-  },
-  concern: {
-    speed: 78,
-    presentationStdDevMs: 21.6,
-    aligned: 3,
-    skew: 2,
-    maxOffsetMm: 2.9,
-    confidence: 0.95,
-  },
-  verification: {
-    runId: "SYN-L2-VERIFY-001",
-    speed: 78,
-    presentationStdDevMs: 18.9,
-    aligned: 4,
-    skew: 1,
-    maxOffsetMm: 2.4,
-    confidence: 0.96,
-  },
+  baseline: { speed: 78, presentationStdDevMs: 7.8 },
+  concern: { speed: 78, presentationStdDevMs: 21.6 },
+  verification: { runId: "SYN-L2-VERIFY-001", speed: 78, presentationStdDevMs: 18.9, maxOffsetMm: 2.4, confidence: 0.96 },
+} as const;
+
+const cmmsHistory = {
+  source: "synthetic-cmms/labeler2",
+  historyId: "labeler2-maintenance-history-v1",
+  similarClosedCases: 4,
+  presentationLocalizations: 4,
+  guidePresentationCorrections: 3,
+  timingChanges: 0,
+  cases: [
+    "WO-SYN-1842 · intermittent skew after format change → verified presentation instability → approved guide correction → bounded verification",
+    "WO-SYN-2197 · alignment drift → guide relationship out of approved setup → approved setup restored → documented no recurrence window",
+    "WO-SYN-2644 · skew at normal speed → degraded presentation stability → worn presentation component corrected → returned to synthetic baseline pattern",
+    "WO-SYN-2811 · alignment complaint after roll change → no timing fault established → approved presentation setup restored → two clean verification runs",
+  ],
 } as const;
 
 const rankedInterventions: RankedIntervention[] = [
@@ -90,51 +84,56 @@ const rankedInterventions: RankedIntervention[] = [
     id: "inspect-presentation-stability",
     rank: 1,
     title: "Inspect bottle presentation stability",
-    alignment: "Highest evidence alignment",
+    alignment: "Highest current + historical support",
     owner: "Maintenance",
-    rationale: "The operator observation, elevated presentation variability, and remaining camera skew all point to the presentation relationship as the most useful place to localize next.",
-    boundary: "Inspect and localize only. Any correction must come from commissioned procedure or qualified authority, then receive its own fresh bounded verification run.",
-    factors: ["+ Operator observation supports", "+ Telemetry supports", "+ Camera supports", "0 Quality confirms persistence, not mechanism"],
-  },
-  {
-    id: "repeat-like-for-like",
-    rank: 2,
-    title: "Repeat the same-condition verification run",
-    alignment: "High information value · no material change",
-    owner: "Shift supervisor",
-    rationale: "The verification run improved slightly but still missed the synthetic baseline. Repeating the same conditions tests whether that improvement is repeatable before introducing another variable.",
-    boundary: "No material intervention is introduced. The run still requires site authorization and the same controlled test conditions.",
-    factors: ["+ Preserves one-variable discipline", "+ Tests repeatability", "+ Avoids premature adjustment", "0 Does not localize mechanism by itself"],
+    rationale: "Current operator, telemetry, camera, and quality evidence converges on the presentation relationship, and four similar well-documented CMMS cases on this synthetic asset localized there.",
+    historicalSupport: "Strong · 4/4 similar synthetic CMMS cases localized to presentation relationships.",
+    boundary: "Inspect and localize only. Historical recurrence is not proof of the current cause. Any correction must come from commissioned procedure or qualified authority, then receive a fresh bounded verification run.",
+    factors: ["+ Current operator evidence", "+ Current telemetry", "+ Current camera", "+ CMMS 4/4 similar cases"],
   },
   {
     id: "verify-guide-spacing",
-    rank: 3,
+    rank: 2,
     title: "Verify guide / spacing relationship",
-    alignment: "Moderate evidence alignment",
+    alignment: "High historical support",
     owner: "Maintenance",
-    rationale: "Guide or spacing relationships could contribute to presentation instability, but the current evidence does not isolate either relationship.",
-    boundary: "Verification is not permission to adjust. Any change requires commissioned procedure or qualified authority and a fresh trial.",
-    factors: ["+ Compatible with presentation instability", "0 Not directly isolated", "0 No admitted guide-position evidence", "− Less supported than presentation-level inspection"],
+    rationale: "Current evidence does not directly isolate guide position, but three similar CMMS cases document approved guide/presentation correction after comparable symptoms.",
+    historicalSupport: "Strong · 3 similar synthetic cases involved guide/presentation correction.",
+    boundary: "Verification is not permission to adjust. Historical success does not prove the same condition exists now. Any change requires commissioned procedure or qualified authority and a fresh trial.",
+    factors: ["+ CMMS 3 similar corrections", "+ Compatible with current presentation evidence", "0 Guide position not currently measured"],
+  },
+  {
+    id: "repeat-like-for-like",
+    rank: 3,
+    title: "Repeat the same-condition verification run",
+    alignment: "High information value",
+    owner: "Shift supervisor",
+    rationale: "A repeat without material change still adds useful repeatability evidence, but the strong maintained CMMS history now makes presentation-focused localization more informative first.",
+    historicalSupport: "Neutral · history favors localization but does not remove the value of repeatability evidence.",
+    boundary: "No material intervention is introduced. Run still requires site authorization and the same controlled test conditions.",
+    factors: ["+ Preserves one-variable discipline", "+ Tests repeatability", "0 History favors localization first"],
   },
   {
     id: "request-reduced-speed-trial",
     rank: 4,
     title: "Request an authorized reduced-speed diagnostic trial",
-    alignment: "Lower-ranked diagnostic intervention",
+    alignment: "Lower-ranked diagnostic test",
     owner: "Shift supervisor",
-    rationale: "A rate-sensitivity test may add information, but line speed did not change when the synthetic concern appeared, so it ranks below presentation-focused options.",
+    rationale: "A rate-sensitivity test may add information, but speed did not change when the concern appeared and three similar historical cases occurred at normal line speed.",
+    historicalSupport: "Weakens rank · 3 similar synthetic cases occurred at normal line speed.",
     boundary: "This is a request for an authorized diagnostic trial, not an instruction to change speed.",
-    factors: ["+ Could test rate sensitivity", "0 Requires a material change", "− Speed was unchanged across observed windows", "− Current evidence points elsewhere first"],
+    factors: ["+ Could test rate sensitivity", "− Current speed unchanged", "− CMMS 3 similar cases at normal speed"],
   },
   {
     id: "review-label-timing-geometry",
     rank: 5,
     title: "Review label timing / peel geometry evidence",
-    alignment: "Currently deprioritized",
+    alignment: "Deprioritized by current + historical evidence",
     owner: "Maintenance",
-    rationale: "Current admitted evidence points more strongly toward presentation stability; nothing in this scenario currently elevates timing or peel geometry.",
-    boundary: "Deprioritized does not mean healthy. Review does not authorize adjustment or establish root cause.",
-    factors: ["0 No current timing evidence", "0 No current peel-geometry evidence", "− Presentation evidence is stronger", "− Do not infer healthy from lack of evidence"],
+    rationale: "Current evidence points more strongly toward presentation stability, and none of the four similar synthetic CMMS cases required a timing change.",
+    historicalSupport: "Deprioritizing · 0/4 similar synthetic cases required timing change.",
+    boundary: "Deprioritized does not mean healthy. Historical absence is not proof and review does not authorize adjustment.",
+    factors: ["0 No current timing evidence", "− CMMS 0/4 timing changes", "− Presentation evidence stronger"],
   },
 ];
 
@@ -177,7 +176,6 @@ export default function PlantCanvas() {
       : result === "issue_observed"
         ? "Operator reports the visible application relationship appears out of alignment."
         : "Operator could not verify the visible application relationship safely.";
-
     const owner: Owner = result === "appears_clear" ? "Shift supervisor" : "Maintenance";
     const next = result === "cannot_verify"
       ? "Maintenance performs the check from an authorized safe position; any later intervention must be followed by a fresh bounded run."
@@ -221,19 +219,20 @@ export default function PlantCanvas() {
       visualEvidence: `Synthetic camera · 4/5 within demo alignment envelope · 1 apparent skew · max |offset| ${v.maxOffsetMm.toFixed(1)} mm · classifier confidence ${(v.confidence * 100).toFixed(0)}%`,
       telemetryEvidence: `Synthetic telemetry · presentation-interval variability ${v.presentationStdDevMs.toFixed(1)} ms SD (baseline ${scenario.baseline.presentationStdDevMs.toFixed(1)} ms; concern window ${scenario.concern.presentationStdDevMs.toFixed(1)} ms)`,
       qualityEvidence: "Synthetic quality counter · 4 accepted · 1 apparent reject candidate",
-      comparison: "Verification run is worse than the synthetic baseline, but slightly better than the immediately preceding concern window. Line speed is unchanged in all three windows.",
-      boundedFinding: "Alignment inconsistency persists while presentation-interval variability remains elevated relative to the synthetic baseline. This supports continued attention to presentation stability; it does not establish root cause.",
+      comparison: "Verification remains worse than the synthetic baseline but slightly better than the preceding concern window. Line speed is unchanged.",
+      boundedFinding: "Alignment inconsistency persists while presentation variability remains elevated. Strong similar CMMS history supports prioritizing presentation-focused localization; current root cause remains unestablished.",
       provenance: [
         ...current.provenance,
         "Run context · synthetic-mes/packaging-line-1",
         "Visual evidence · synthetic-camera/labeler2 · AI classification",
         "Telemetry evidence · synthetic-telemetry/labeler2 · deterministic fixture",
         "Quality evidence · synthetic-quality/labeler2",
-        "Comparison · Deterministic rule over scenario windows",
+        `Historical evidence · ${cmmsHistory.source} · excellent maintained synthetic fixture`,
+        "Comparison and ranking inputs · Deterministic rules over current + historical evidence",
       ],
       state: "READY FOR HUMAN REVIEW",
     } : current);
-    setAssets((current) => current.map((asset) => asset.id === "labeler" ? { ...asset, next: "Review the auto-assembled synthetic evidence. Confirm, correct, or escalate; no causal conclusion has been established." } : asset));
+    setAssets((current) => current.map((asset) => asset.id === "labeler" ? { ...asset, next: "Review the auto-assembled current evidence and strong synthetic CMMS history. Confirm, correct, or escalate." } : asset));
   };
 
   const reviewTrial = (review: ReviewState) => {
@@ -241,7 +240,7 @@ export default function PlantCanvas() {
     if (review === "ACCEPTED") {
       setShowInterventions(true);
       setSelectedInterventionId(null);
-      setAssets((current) => current.map((asset) => asset.id === "labeler" ? { ...asset, owner: "Shift supervisor", next: "Choose one evidence-ranked next option. Rank expresses evidence alignment and information value, not root-cause probability." } : asset));
+      setAssets((current) => current.map((asset) => asset.id === "labeler" ? { ...asset, owner: "Shift supervisor", next: "Choose one ranked next option. Ranking uses current evidence, strong maintained CMMS history, and information value; it is not root-cause probability." } : asset));
     }
     if (review === "CORRECTION NEEDED") {
       setShowInterventions(false);
@@ -249,7 +248,7 @@ export default function PlantCanvas() {
     }
     if (review === "ESCALATED") {
       setShowInterventions(false);
-      setAssets((current) => current.map((asset) => asset.id === "labeler" ? { ...asset, owner: "Maintenance", next: "Review the auto-assembled evidence package before any further intervention." } : asset));
+      setAssets((current) => current.map((asset) => asset.id === "labeler" ? { ...asset, owner: "Maintenance", next: "Review the current and historical evidence package before any further intervention." } : asset));
     }
   };
 
@@ -270,7 +269,8 @@ export default function PlantCanvas() {
         <div>
           <span className={styles.kicker}>LINEALERT · PLANT CANVAS · SYNTHETIC DEMO</span>
           <h1>{posture}</h1>
-          <p>Model the plant, locate the concern, assign one bounded action, run, let LineAlert assemble coordinated evidence, then rank the allowed next options for human selection.</p>
+          <p>Current run evidence and strong maintenance history are assembled automatically, then allowed next options are ranked for human selection.</p>
+          <p><small>Design assumption: this synthetic CMMS is excellent, well maintained, correctly asset-linked, and increasingly valuable as history grows. Historical pattern ≠ current root cause.</small></p>
         </div>
         <nav className={styles.nav}>
           <button className={view === "canvas" ? styles.activeView : ""} onClick={() => setView("canvas")}>Plant canvas</button>
@@ -283,16 +283,13 @@ export default function PlantCanvas() {
         <div><span>ACTIVE CONCERNS</span><b>{activeCount}</b></div>
         <div><span>SELECTED ASSET</span><b>{selected.name}</b></div>
         <div><span>PLAN</span><b>{selected.plan}</b></div>
-        <div><span>SCENARIO</span><b>{scenario.id} · deterministic synthetic fixture</b></div>
+        <div><span>HISTORY</span><b>Excellent synthetic CMMS · {cmmsHistory.similarClosedCases} similar cases</b></div>
       </section>
 
       {view === "canvas" ? (
         <section className={styles.canvasLayout}>
           <section className={styles.canvas} aria-label="Synthetic packaging line topology">
-            <div className={styles.canvasHeader}>
-              <div><span>PACKAGING LINE 1</span><h2>Plant model</h2></div>
-              <small>Synthetic topology · browser-session workflow state</small>
-            </div>
+            <div className={styles.canvasHeader}><div><span>PACKAGING LINE 1</span><h2>Plant model</h2></div><small>Synthetic topology · browser-session workflow state</small></div>
             <div className={styles.flow}>
               {assets.map((asset, index) => (
                 <div className={styles.flowItem} key={asset.id}>
@@ -303,19 +300,12 @@ export default function PlantCanvas() {
                 </div>
               ))}
             </div>
-            <div className={styles.dependencyNote}>Process flow and numeric values are synthetic demo parameters, not commissioned plant truth or OEM operating limits. Relationship display does not prove causation.</div>
+            <div className={styles.dependencyNote}>Process flow and numeric values are synthetic demo parameters. Relationship display does not prove causation.</div>
           </section>
 
           <aside className={styles.assetPanel}>
-            <span className={styles.sectionLabel}>ASSET</span>
-            <h2>{selected.name}</h2>
-            <p className={styles.assetRole}>{selected.role}</p>
-            <dl>
-              <div><dt>Posture</dt><dd>{selected.plan}</dd></div>
-              <div><dt>Owner</dt><dd>{selected.owner}</dd></div>
-              {selected.runway && <div><dt>Runway</dt><dd>{selected.runway}</dd></div>}
-              {selected.responseEta && <div><dt>Response ETA</dt><dd>{selected.responseEta}</dd></div>}
-            </dl>
+            <span className={styles.sectionLabel}>ASSET</span><h2>{selected.name}</h2><p className={styles.assetRole}>{selected.role}</p>
+            <dl><div><dt>Posture</dt><dd>{selected.plan}</dd></div><div><dt>Owner</dt><dd>{selected.owner}</dd></div>{selected.runway && <div><dt>Runway</dt><dd>{selected.runway}</dd></div>}{selected.responseEta && <div><dt>Response ETA</dt><dd>{selected.responseEta}</dd></div>}</dl>
             {selected.concern ? <div className={styles.concern}><span>CURRENT CONCERN</span><p>{selected.concern}</p></div> : <div className={styles.quiet}>No active concern on this synthetic asset.</div>}
             {selected.latestObservation && <div className={styles.observationNote}><span>LATEST OBSERVATION</span><p>{selected.latestObservation}</p></div>}
             <div className={styles.nextStep}><span>NEXT</span><p>{selected.next}</p></div>
@@ -324,88 +314,19 @@ export default function PlantCanvas() {
           </aside>
         </section>
       ) : (
-        <section className={styles.boardView}>
-          {Object.entries(boardGroups).map(([stage, items]) => <section className={styles.boardColumn} key={stage}><header><span>{stage}</span><b>{items.length}</b></header>{items.length ? items.map((asset) => <button key={asset.id} onClick={() => { setSelectedId(asset.id); setView("canvas"); }}><strong>{asset.name}</strong><span>{asset.owner}</span><small>{asset.next}</small></button>) : <div className={styles.empty}>Nothing waiting here.</div>}</section>)}
-        </section>
+        <section className={styles.boardView}>{Object.entries(boardGroups).map(([stage, items]) => <section className={styles.boardColumn} key={stage}><header><span>{stage}</span><b>{items.length}</b></header>{items.length ? items.map((asset) => <button key={asset.id} onClick={() => { setSelectedId(asset.id); setView("canvas"); }}><strong>{asset.name}</strong><span>{asset.owner}</span><small>{asset.next}</small></button>) : <div className={styles.empty}>Nothing waiting here.</div>}</section>)}</section>
       )}
 
-      {operatorOpen && (
-        <section className={styles.operatorTask}>
-          <div className={styles.operatorTaskHeading}><div><span>OPERATOR · ONE BOUNDED CHECK</span><small>Labeler 2</small></div><button onClick={() => setOperatorOpen(false)}>Close</button></div>
-          <h2>From the approved operating position, does the visible label application relationship appear aligned?</h2>
-          <p><b>Why this check:</b> It tells triage whether a qualified mechanical inspection is needed. It does not establish root cause.</p>
-          <div className={styles.operatorAnswers}><button onClick={() => recordResult("appears_clear")}>Appears aligned</button><button onClick={() => recordResult("issue_observed")}>Appears out of alignment</button><button onClick={() => recordResult("cannot_verify")}>Can’t verify safely</button></div>
-          <small className={styles.operatorBoundary}>The operator records only the observation. After an authorized run, connected evidence should populate automatically. Operator observation ≠ verified physical state. No adjustment is authorized by this demo.</small>
-        </section>
-      )}
+      {operatorOpen && <section className={styles.operatorTask}><div className={styles.operatorTaskHeading}><div><span>OPERATOR · ONE BOUNDED CHECK</span><small>Labeler 2</small></div><button onClick={() => setOperatorOpen(false)}>Close</button></div><h2>From the approved operating position, does the visible label application relationship appear aligned?</h2><p><b>Why this check:</b> It tells triage whether qualified maintenance localization is justified. It does not establish root cause.</p><div className={styles.operatorAnswers}><button onClick={() => recordResult("appears_clear")}>Appears aligned</button><button onClick={() => recordResult("issue_observed")}>Appears out of alignment</button><button onClick={() => recordResult("cannot_verify")}>Can’t verify safely</button></div><small className={styles.operatorBoundary}>The operator records only the observation. Connected evidence and maintenance context should populate automatically after an authorized run.</small></section>}
 
-      {trial && (
-        <section className={styles.trialCard} aria-label="Bounded verification trial">
-          <div className={styles.trialHeading}>
-            <div><span>BOUNDED TRIAL · AUTO-ASSEMBLED RECORD</span><h2>{trial.id}</h2><small>Scenario {trial.scenarioId}</small></div>
-            <b>{trial.review === "PENDING" ? trial.state : trial.review}</b>
-          </div>
-          <div className={styles.trialGrid}>
-            <div><span>Asset</span><strong>{trial.asset}</strong><small>auto-populated · canvas context</small></div>
-            <div><span>Requested by</span><strong>{trial.requestedBy}</strong><small>auto-populated · workflow owner</small></div>
-            <div><span>Run</span><strong>{trial.requestedRun}</strong><small>workflow rule · not production authorization</small></div>
-            <div><span>Timestamp</span><strong>{trial.timestamp}</strong><small>auto-populated · browser session</small></div>
-          </div>
-          <div className={styles.trialEvidence}>
-            <div><span>Trigger observation</span><p>{trial.triggerObservation}</p></div>
-            <div><span>Run / MES context</span><p>{trial.runContext}</p></div>
-            <div><span>Visual evidence</span><p>{trial.visualEvidence}</p></div>
-            <div><span>Quality evidence</span><p>{trial.qualityEvidence}</p></div>
-            <div><span>Telemetry</span><p>{trial.telemetryEvidence}</p></div>
-            <div><span>Like-for-like comparison</span><p>{trial.comparison}</p></div>
-            <div><span>Bounded finding</span><p>{trial.boundedFinding}</p></div>
-          </div>
-          <div className={styles.provenance}><span>PROVENANCE</span>{trial.provenance.map((item) => <small key={item}>{item}</small>)}</div>
-          {trial.state === "AWAITING RUN EVIDENCE" ? (
-            <button className={styles.primaryAction} onClick={receiveSyntheticRunEvent}>Demo only · receive coordinated source events</button>
-          ) : trial.review === "PENDING" ? (
-            <div className={styles.reviewActions}>
-              <button onClick={() => reviewTrial("ACCEPTED")}>Confirm record</button>
-              <button onClick={() => reviewTrial("CORRECTION NEEDED")}>Correct something</button>
-              <button onClick={() => reviewTrial("ESCALATED")}>Escalate</button>
-            </div>
-          ) : null}
-          <small className={styles.operatorBoundary}>Synthetic MES, telemetry, camera, and quality outputs are coordinated by a deterministic demo fixture so the evidence behaves coherently. They are not measurements from a real machine, commissioned limits, root-cause proof, or authorization to run or change equipment.</small>
-        </section>
-      )}
+      {trial && <section className={styles.trialCard} aria-label="Bounded verification trial"><div className={styles.trialHeading}><div><span>BOUNDED TRIAL · AUTO-ASSEMBLED RECORD</span><h2>{trial.id}</h2><small>Scenario {trial.scenarioId}</small></div><b>{trial.review === "PENDING" ? trial.state : trial.review}</b></div><div className={styles.trialGrid}><div><span>Asset</span><strong>{trial.asset}</strong><small>canvas context</small></div><div><span>Requested by</span><strong>{trial.requestedBy}</strong><small>workflow owner</small></div><div><span>Run</span><strong>{trial.requestedRun}</strong><small>not production authorization</small></div><div><span>Timestamp</span><strong>{trial.timestamp}</strong><small>browser session</small></div></div><div className={styles.trialEvidence}><div><span>Trigger observation</span><p>{trial.triggerObservation}</p></div><div><span>Run / MES context</span><p>{trial.runContext}</p></div><div><span>Visual evidence</span><p>{trial.visualEvidence}</p></div><div><span>Quality evidence</span><p>{trial.qualityEvidence}</p></div><div><span>Telemetry</span><p>{trial.telemetryEvidence}</p></div><div><span>Like-for-like comparison</span><p>{trial.comparison}</p></div><div><span>Bounded finding</span><p>{trial.boundedFinding}</p></div></div><div className={styles.provenance}><span>PROVENANCE</span>{trial.provenance.map((item) => <small key={item}>{item}</small>)}</div>{trial.state === "AWAITING RUN EVIDENCE" ? <button className={styles.primaryAction} onClick={receiveSyntheticRunEvent}>Demo only · receive coordinated source events</button> : trial.review === "PENDING" ? <div className={styles.reviewActions}><button onClick={() => reviewTrial("ACCEPTED")}>Confirm record</button><button onClick={() => reviewTrial("CORRECTION NEEDED")}>Correct something</button><button onClick={() => reviewTrial("ESCALATED")}>Escalate</button></div> : null}<small className={styles.operatorBoundary}>Current evidence and historical maintenance evidence are ranking inputs. Neither is current root-cause proof or authorization.</small></section>}
 
-      {showInterventions && trial?.review === "ACCEPTED" && (
-        <section className={styles.interventionPanel} aria-label="Evidence-ranked next options">
-          <div className={styles.interventionHeading}>
-            <div><span>NEXT DECISION · HUMAN SELECTION</span><h2>Choose one bounded next option</h2></div>
-            <b>RANKED BY EVIDENCE ALIGNMENT</b>
-          </div>
-          <p className={styles.rankBoundary}>Rank is deterministic evidence alignment and information value for this synthetic scenario. It is not root-cause probability, proof, authorization, or a safety determination.</p>
-          <div className={styles.interventionList}>
-            {rankedInterventions.map((option) => (
-              <button key={option.id} className={`${styles.interventionOption} ${selectedInterventionId === option.id ? styles.interventionSelected : ""}`} onClick={() => chooseIntervention(option.id)}>
-                <div className={styles.rankBadge}>{option.rank}</div>
-                <div className={styles.interventionBody}>
-                  <div className={styles.interventionTitle}><strong>{option.title}</strong><span>{option.alignment}</span></div>
-                  <p>{option.rationale}</p>
-                  <div className={styles.factorRow}>{option.factors.map((factor) => <small key={factor}>{factor}</small>)}</div>
-                  <div className={styles.interventionMeta}><span>Owner: {option.owner}</span><span>Fresh bounded run required after any material change</span></div>
-                </div>
-              </button>
-            ))}
-          </div>
-          {selectedIntervention && (
-            <div className={styles.selectedDecision}>
-              <span>SELECTED NEXT OPTION</span>
-              <h3>#{selectedIntervention.rank} · {selectedIntervention.title}</h3>
-              <p>{selectedIntervention.boundary}</p>
-              <b>Selection records workflow intent only. It does not authorize the intervention or execute a machine change.</b>
-            </div>
-          )}
-        </section>
-      )}
+      {showInterventions && trial?.review === "ACCEPTED" && <>
+        <section className={styles.trialCard} aria-label="Synthetic CMMS history"><div className={styles.trialHeading}><div><span>MAINTENANCE HISTORY · SYNTHETIC CMMS</span><h2>Strong similar-case history</h2><small>{cmmsHistory.historyId}</small></div><b>EXCELLENT DATA ASSUMPTION</b></div><div className={styles.trialGrid}><div><span>Similar closed cases</span><strong>{cmmsHistory.similarClosedCases}</strong><small>well documented and correctly asset-linked</small></div><div><span>Presentation related</span><strong>{cmmsHistory.presentationLocalizations} / {cmmsHistory.similarClosedCases}</strong><small>verified historical localization</small></div><div><span>Guide / presentation corrections</span><strong>{cmmsHistory.guidePresentationCorrections}</strong><small>approved historical interventions</small></div><div><span>Timing changes</span><strong>{cmmsHistory.timingChanges}</strong><small>historical absence lowers rank; it does not prove timing healthy</small></div></div><div className={styles.trialEvidence}>{cmmsHistory.cases.map((historyCase) => <div key={historyCase}><span>HISTORICAL CASE</span><p>{historyCase}</p></div>)}</div><small className={styles.operatorBoundary}>Historical pattern ≠ current root cause. The history changes what is sensible to inspect next; it does not silently become a diagnosis.</small></section>
+        <section className={styles.interventionPanel} aria-label="Evidence-ranked next options"><div className={styles.interventionHeading}><div><span>NEXT DECISION · HUMAN SELECTION</span><h2>Choose one bounded next option</h2></div><b>RANKED BY CURRENT + HISTORICAL EVIDENCE</b></div><p className={styles.rankBoundary}>Rank is deterministic current-evidence alignment, strong maintained CMMS historical support, and information value. It is not root-cause probability, proof, authorization, or a safety determination.</p><div className={styles.interventionList}>{rankedInterventions.map((option) => <button key={option.id} className={`${styles.interventionOption} ${selectedInterventionId === option.id ? styles.interventionSelected : ""}`} onClick={() => chooseIntervention(option.id)}><div className={styles.rankBadge}>{option.rank}</div><div className={styles.interventionBody}><div className={styles.interventionTitle}><strong>{option.title}</strong><span>{option.alignment}</span></div><p>{option.rationale}</p><p><b>Historical support:</b> {option.historicalSupport}</p><div className={styles.factorRow}>{option.factors.map((factor) => <small key={factor}>{factor}</small>)}</div><div className={styles.interventionMeta}><span>Owner: {option.owner}</span><span>Fresh bounded run required after any material change</span></div></div></button>)}</div>{selectedIntervention && <div className={styles.selectedDecision}><span>SELECTED NEXT OPTION</span><h3>#{selectedIntervention.rank} · {selectedIntervention.title}</h3><p>{selectedIntervention.boundary}</p><b>Selection records workflow intent only. It does not authorize the intervention or execute a machine change.</b></div>}</section>
+      </>}
 
-      <section className={styles.boundary}><div><span>V1 BOUNDARY</span><b>Evidence → ranked allowed options → human selects → authorize elsewhere → one bounded action → fresh run.</b></div><p>No live telemetry, camera, PLC/controller, MES, quality system, CMMS, dispatch, safety-control or equipment-control connection is added here. Rank ≠ diagnosis. Selection ≠ authorization. Successful or improved synthetic evidence ≠ root-cause proof or a safe production change.</p></section>
+      <section className={styles.boundary}><div><span>V1 BOUNDARY</span><b>Current evidence + excellent CMMS history → ranked allowed options → human selects → authorize elsewhere → one bounded action → fresh run.</b></div><p>No live telemetry, camera, PLC/controller, MES, quality system, CMMS, dispatch, safety-control or equipment-control connection is added here. Historical pattern ≠ current root cause. Rank ≠ diagnosis. Selection ≠ authorization.</p></section>
     </main>
   );
 }
