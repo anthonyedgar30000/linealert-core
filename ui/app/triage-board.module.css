@@ -1,0 +1,336 @@
+.shell {
+  min-height: 100vh;
+  padding: 32px;
+  background: #f4f5f2;
+  color: #17201c;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 32px;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.header h1 {
+  margin: 6px 0 8px;
+  font-size: clamp(2rem, 5vw, 4.5rem);
+  line-height: 0.95;
+  letter-spacing: -0.05em;
+}
+
+.header p {
+  max-width: 780px;
+  margin: 0;
+  color: #52605a;
+  font-size: 1.05rem;
+}
+
+.kicker,
+.sectionLabel {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: #607069;
+}
+
+.nav {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.nav a {
+  border: 1px solid #cfd5d0;
+  background: white;
+  border-radius: 999px;
+  padding: 9px 13px;
+  text-decoration: none;
+  color: inherit;
+  font-size: 0.86rem;
+}
+
+.posture {
+  display: grid;
+  grid-template-columns: 140px 140px 140px minmax(240px, 1fr);
+  border: 1px solid #d5dad6;
+  background: white;
+  border-radius: 18px;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.posture div {
+  padding: 16px;
+  border-right: 1px solid #e3e7e4;
+}
+
+.posture div:last-child {
+  border-right: 0;
+}
+
+.posture span,
+.cardTopline span,
+.nextStep span {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #6b7771;
+}
+
+.posture b {
+  display: block;
+  margin-top: 5px;
+  font-size: 1.05rem;
+}
+
+.intake {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.8fr) minmax(320px, 1.2fr);
+  gap: 24px;
+  padding: 22px;
+  background: #18211d;
+  color: white;
+  border-radius: 20px;
+  margin-bottom: 26px;
+}
+
+.intake h2 {
+  margin: 5px 0 8px;
+  font-size: 1.6rem;
+}
+
+.intake p {
+  margin: 0;
+  color: #c8d0cc;
+}
+
+.intakeForm {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.intakeForm textarea {
+  flex: 1;
+  border: 1px solid #53615b;
+  border-radius: 14px;
+  padding: 13px;
+  resize: vertical;
+  font: inherit;
+  background: #f8faf8;
+  color: #17201c;
+}
+
+.intakeForm button {
+  border: 0;
+  border-radius: 14px;
+  padding: 0 18px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.receipt {
+  grid-column: 2;
+  display: flex;
+  gap: 8px;
+  flex-direction: column;
+  padding: 12px 14px;
+  border: 1px solid #43534b;
+  border-radius: 12px;
+  color: #dbe3df;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(220px, 1fr));
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.column {
+  min-width: 220px;
+  background: #e9ece9;
+  border-radius: 16px;
+  padding: 10px;
+}
+
+.column > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 4px 10px;
+}
+
+.column > header span {
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.column > header b {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: white;
+  font-size: 0.8rem;
+}
+
+.cardStack {
+  display: grid;
+  gap: 10px;
+}
+
+.card,
+.empty {
+  background: white;
+  border: 1px solid #d9dfda;
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.card {
+  border-top-width: 4px;
+}
+
+.holds {
+  border-top-color: #92a19a;
+}
+
+.watch {
+  border-top-color: #c3a14d;
+}
+
+.adapt {
+  border-top-color: #a85b4d;
+}
+
+.cardTopline {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cardTopline small,
+.source {
+  color: #7b8781;
+  font-size: 0.68rem;
+}
+
+.card h3 {
+  margin: 10px 0 14px;
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.card dl {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 12px;
+}
+
+.card dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #edf0ed;
+  padding-bottom: 5px;
+}
+
+.card dt,
+.card dd {
+  margin: 0;
+  font-size: 0.78rem;
+}
+
+.card dt {
+  color: #6b7771;
+}
+
+.card dd {
+  text-align: right;
+  font-weight: 700;
+}
+
+.nextStep {
+  background: #f4f6f4;
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.nextStep p {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.empty {
+  color: #7c8882;
+  font-size: 0.82rem;
+  text-align: center;
+  border-style: dashed;
+}
+
+.boundary {
+  display: grid;
+  grid-template-columns: minmax(250px, 0.8fr) minmax(320px, 1.2fr);
+  gap: 24px;
+  margin-top: 24px;
+  padding: 20px;
+  border: 1px solid #d5dad6;
+  border-radius: 16px;
+  background: white;
+}
+
+.boundary span {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+  color: #69766f;
+}
+
+.boundary p {
+  margin: 0;
+  color: #59665f;
+}
+
+@media (max-width: 900px) {
+  .shell {
+    padding: 18px;
+  }
+
+  .header,
+  .intake,
+  .boundary {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .posture {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .posture div:nth-child(2) {
+    border-right: 0;
+  }
+
+  .receipt {
+    grid-column: 1;
+  }
+
+  .intakeForm {
+    flex-direction: column;
+  }
+
+  .intakeForm button {
+    padding: 12px 18px;
+  }
+}
