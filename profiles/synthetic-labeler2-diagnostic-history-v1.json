@@ -1,0 +1,57 @@
+{
+  "schema_version": "linealert.synthetic-diagnostic-history.v1",
+  "history_id": "labeler2-diagnostic-history-v1",
+  "classification": "synthetic_demo_only",
+  "asset": "Labeler 2",
+  "source": "synthetic-historian/labeler2",
+  "design_intent": "Represent the older LineAlert deterministic diagnostic/historian capability as a first-class evidence input to the operator-friendly bounded-action loop.",
+  "matched_healthy_windows": {
+    "presentation_interval_stddev_ms_typical": 7.8,
+    "label_feed_timing_status": "inside historical healthy band",
+    "alignment_pattern": "stable"
+  },
+  "prior_similar_machine_episodes": [
+    {
+      "episode_id": "SYN-HIST-031",
+      "pattern": "presentation variability rose before visible alignment complaint",
+      "label_feed_timing": "healthy",
+      "outcome": "guide/presentation setup restored; subsequent bounded evidence returned toward healthy window"
+    },
+    {
+      "episode_id": "SYN-HIST-044",
+      "pattern": "presentation variability elevated at unchanged production speed",
+      "label_feed_timing": "healthy",
+      "outcome": "guide/presentation relationship localized and corrected; verification improved"
+    },
+    {
+      "episode_id": "SYN-HIST-052",
+      "pattern": "camera skew coincided with elevated presentation variability",
+      "label_feed_timing": "healthy",
+      "outcome": "presentation-focused correction followed by recovery association"
+    }
+  ],
+  "current_projection": {
+    "presentation_relationship": "evidence_aligned",
+    "guide_spacing_standard_change": "evidence_aligned",
+    "label_feed_timing": "deprioritized_by_healthy_evidence",
+    "rate_sensitivity": "guide_only_lower_information_value"
+  },
+  "ranking_effect": {
+    "promote": ["restore-guide-spacing-standard", "inspect-presentation-stability"],
+    "deprioritize": ["review-label-timing-geometry", "reduced-speed-diagnostic"],
+    "reason": "Current presentation variability resembles prior machine episodes while label-feed timing remains inside the supplied historical healthy band."
+  },
+  "post_change_five_bottle_window": {
+    "presentation_interval_stddev_ms": 9.1,
+    "alignment": "5/5 within synthetic demo envelope",
+    "label_feed_timing": "inside historical healthy band",
+    "interpretation": "The one-change diagnostic run moves presentation behavior toward matched healthy windows. This supports the bounded change under test conditions and changes the next ranking; it does not prove root cause or production recovery."
+  },
+  "boundaries": [
+    "historical machine pattern != current root cause",
+    "healthy historical timing evidence can deprioritize a path without proving that subsystem healthy in every physical sense",
+    "intervention followed by improvement != causal proof",
+    "five-bottle diagnostic success != safe production change",
+    "synthetic historian evidence != physical machine evidence"
+  ]
+}
