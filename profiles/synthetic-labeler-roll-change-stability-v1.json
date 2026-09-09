@@ -1,0 +1,90 @@
+{
+  "schema_version": "linealert.synthetic-scenario.v1",
+  "scenario_id": "labeler-roll-change-stability-v1",
+  "classification": "synthetic_demo_only",
+  "asset": "Labeler 2",
+  "plant_context": "Packaging Line 1",
+  "story": "Label alignment becomes intermittently inconsistent after a roll change while bottle presentation variability is elevated.",
+  "truth_boundary": "Scenario truth exists only to coordinate synthetic source outputs. It is not commissioned machine truth, OEM guidance, a diagnosis, or evidence about a physical machine.",
+  "timeline": [
+    {
+      "offset_seconds": -180,
+      "event": "baseline_reference",
+      "sources": {
+        "synthetic-mes/packaging-line-1": {
+          "line_speed_containers_per_min": 78,
+          "run_state": "running"
+        },
+        "synthetic-telemetry/labeler2": {
+          "presentation_interval_stddev_ms": 7.8
+        },
+        "synthetic-camera/labeler2": {
+          "observed_containers": 5,
+          "within_demo_alignment_envelope": 5,
+          "apparent_skew_events": 0,
+          "max_abs_alignment_offset_mm": 0.7,
+          "classifier_confidence": 0.97
+        },
+        "synthetic-quality/labeler2": {
+          "accepted": 5,
+          "apparent_reject_candidates": 0
+        }
+      }
+    },
+    {
+      "offset_seconds": -45,
+      "event": "concern_window",
+      "sources": {
+        "synthetic-mes/packaging-line-1": {
+          "line_speed_containers_per_min": 78,
+          "run_state": "running"
+        },
+        "synthetic-telemetry/labeler2": {
+          "presentation_interval_stddev_ms": 21.6
+        },
+        "synthetic-camera/labeler2": {
+          "observed_containers": 5,
+          "within_demo_alignment_envelope": 3,
+          "apparent_skew_events": 2,
+          "max_abs_alignment_offset_mm": 2.9,
+          "classifier_confidence": 0.95
+        },
+        "synthetic-quality/labeler2": {
+          "accepted": 3,
+          "apparent_reject_candidates": 2
+        }
+      }
+    },
+    {
+      "offset_seconds": 0,
+      "event": "bounded_verification_run",
+      "sources": {
+        "synthetic-mes/packaging-line-1": {
+          "line_speed_containers_per_min": 78,
+          "run_state": "running",
+          "run_id": "SYN-L2-VERIFY-001"
+        },
+        "synthetic-telemetry/labeler2": {
+          "presentation_interval_stddev_ms": 18.9
+        },
+        "synthetic-camera/labeler2": {
+          "observed_containers": 5,
+          "within_demo_alignment_envelope": 4,
+          "apparent_skew_events": 1,
+          "max_abs_alignment_offset_mm": 2.4,
+          "classifier_confidence": 0.96
+        },
+        "synthetic-quality/labeler2": {
+          "accepted": 4,
+          "apparent_reject_candidates": 1
+        }
+      }
+    }
+  ],
+  "deterministic_interpretation": {
+    "summary": "The verification run remains worse than the synthetic baseline and slightly better than the immediately preceding concern window.",
+    "bounded_finding": "Alignment inconsistency persists while presentation-interval variability remains elevated relative to the synthetic baseline.",
+    "causality_boundary": "The coordinated synthetic signals support continued attention to presentation stability, but they do not establish root cause or prove that presentation variability caused the visual skew events."
+  },
+  "parameters_notice": "All numeric values are synthetic scenario parameters chosen for internal consistency and demo readability. They are not OEM thresholds, commissioned limits, safe operating limits, or production recommendations."
+}
