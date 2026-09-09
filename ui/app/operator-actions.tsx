@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import styles from "./operator-view.module.css";
 
@@ -19,37 +19,89 @@ export type OperatorActionObservation = {
   quality: string;
 };
 
-type ConditionPayload = {
-  source_mode?: string;
-  condition?: {
-    condition_signals?: {
-      observations?: OperatorActionObservation[];
-    };
-  } | null;
-};
-
 type ActionState = {
   state: "idle" | "saving" | "saved" | "unavailable" | "error";
   message?: string;
 };
 
-type VerificationState = {
-  state: "idle" | "checking" | "recovered" | "persists" | "unavailable";
-  latest?: number;
-  unit?: string;
-  history?: "persisted" | "unavailable";
+type CheckDisposition = "continue" | "handoff";
+
+type CheckAnswer = {
+  code: string;
+  label: string;
+  disposition: CheckDisposition;
+  handoffReason?: string;
 };
 
-const observationOptions = [
-  { code: "no_visible_obstruction", label: "No visible obstruction or drag" },
-  { code: "web_drag_or_snag", label: "Label web / stock drag or snag observed" },
-  { code: "peel_or_sensor_obstruction", label: "Peel-point or sensor obstruction observed" },
-  { code: "setup_mismatch", label: "Recipe, job, or label-stock mismatch observed" },
-] as const;
+type OperatorCheck = {
+  id: string;
+  question: string;
+  reason: string;
+  answers: CheckAnswer[];
+};
 
-const outsideEnvelope = (observation: OperatorActionObservation) => (
-  observation.value < observation.min_value || observation.value > observation.max_value
-);
+const operatorChecks: OperatorCheck[] = [
+  {
+    id: "visible_label_path",
+    question: "Does the visible label web appear clear of an obvious snag or obstruction?",
+    reason: "A visible drag or obstruction can help explain why this admitted label-feed relationship needs investigation.",
+    answers: [
+      { code: "label_path_clear", label: "Yes — it appears clear", disposition: "continue" },
+      {
+        code: "label_path_obstruction_observed",
+        label: "No — I can see a snag or obstruction",
+        disposition: "handoff",
+        handoffReason: "A visible label-path issue was observed. No additional operator action is requested from this evidence alone.",
+      },
+      {
+        code: "label_path_not_safely_verified",
+        label: "Not sure — I cannot verify this safely",
+        disposition: "handoff",
+        handoffReason: "The check could not be completed safely from the approved operating position.",
+      },
+    ],
+  },
+  {
+    id: "peel_point_clear",
+    question: "Does the visible peel-point area appear clear?",
+    reason: "An obvious obstruction or contamination at the visible peel-point or label-present area can interrupt label presentation.",
+    answers: [
+      { code: "peel_point_clear", label: "Yes — it appears clear", disposition: "continue" },
+      {
+        code: "peel_point_obstruction_observed",
+        label: "No — I can see an obstruction or contamination",
+        disposition: "handoff",
+        handoffReason: "A visible peel-point issue was observed. Clearing or adjustment requires the applicable site/OEM procedure and authority.",
+      },
+      {
+        code: "peel_point_not_safely_verified",
+        label: "Not sure — I cannot verify this safely",
+        disposition: "handoff",
+        handoffReason: "The peel-point check could not be completed safely from the approved operating position.",
+      },
+    ],
+  },
+  {
+    id: "job_stock_confirmed",
+    question: "Can you confirm the intended recipe/job and label stock are loaded?",
+    reason: "A setup mismatch can make the current physical response inconsistent with the job LineAlert is evaluating.",
+    answers: [
+      { code: "job_stock_confirmed", label: "Yes — confirmed", disposition: "continue" },
+      {
+        code: "job_stock_mismatch_observed",
+        label: "No — I found a mismatch",
+        disposition: "handoff",
+        handoffReason: "A setup mismatch was observed. The next move depends on site authority and the approved job/change procedure.",
+      },
+      {
+        code: "job_stock_not_verified",
+        label: "Not sure — I cannot verify it",
+        disposition: "handoff",
+        handoffReason: "The intended job or label stock could not be verified.",
+      },
+    ],
+  },
+];
 
 const episodeIdFor = (observation: OperatorActionObservation, sourceMode: string) => (
   sourceMode === "deterministic_event_replay"
@@ -61,18 +113,6 @@ const relationshipIdFor = (observation: OperatorActionObservation) => (
   observation.relationship_id ?? `relationship:${observation.signal}`
 );
 
-const sameRelationship = (
-  candidate: OperatorActionObservation,
-  original: OperatorActionObservation,
-) => {
-  if (candidate.signal !== original.signal) return false;
-  if (original.relationship_id && candidate.relationship_id) {
-    return candidate.relationship_id === original.relationship_id;
-  }
-  return candidate.topology_from === original.topology_from
-    && candidate.topology_to === original.topology_to;
-};
-
 export default function OperatorActions({
   observation,
   sourceMode,
@@ -80,15 +120,12 @@ export default function OperatorActions({
   observation: OperatorActionObservation;
   sourceMode: string;
 }) {
-  const [inspectionOpen, setInspectionOpen] = useState(false);
-  const [selectedObservation, setSelectedObservation] = useState<string>("");
-  const [note, setNote] = useState("");
+  const [checkIndex, setCheckIndex] = useState(0);
+  const [lastAnswer, setLastAnswer] = useState<CheckAnswer | null>(null);
+  const [handoffReason, setHandoffReason] = useState<string | null>(null);
   const [actionState, setActionState] = useState<ActionState>({ state: "idle" });
-  const [verification, setVerification] = useState<VerificationState>({ state: "idle" });
 
-  const selectedLabel = useMemo(() => (
-    observationOptions.find((option) => option.code === selectedObservation)?.label ?? ""
-  ), [selectedObservation]);
+  const currentCheck = operatorChecks[checkIndex];
 
   const persistOutcome = async (payload: Record<string, unknown>) => {
     try {
@@ -103,43 +140,58 @@ export default function OperatorActions({
     }
   };
 
-  const recordObservation = async () => {
-    if (!selectedObservation && !note.trim()) {
-      setActionState({
-        state: "error",
-        message: "Choose an observation or add a note before recording it.",
-      });
-      return;
-    }
+  const answerCheck = async (answer: CheckAnswer) => {
+    setActionState({ state: "saving", message: "Recording observation…" });
 
-    setActionState({ state: "saving", message: "Recording operator observation…" });
     const persisted = await persistOutcome({
       episode_id: episodeIdFor(observation, sourceMode),
       asset_id: observation.asset_id,
       relationship_id: relationshipIdFor(observation),
       outcome_type: "operator_observation",
-      status: selectedObservation || "note_recorded",
+      status: answer.code,
       actor_role: "operator_view",
-      note: note.trim() || selectedLabel || undefined,
+      note: answer.label,
       related_observation_id: observation.observation_id,
       details: {
         source_mode: sourceMode,
         signal: observation.signal,
         correlation_id: observation.correlation_id,
-        observation_code: selectedObservation || undefined,
+        check_id: currentCheck.id,
+        interaction_contract: "one_question_one_reason_one_safe_response",
       },
     });
 
+    setLastAnswer(answer);
     setActionState(persisted
-      ? { state: "saved", message: "Observation appended to the shared historian episode." }
+      ? { state: "saved", message: "Observation recorded." }
       : {
           state: "unavailable",
-          message: "Historian unavailable; the observation was not durably recorded.",
+          message: "Historian unavailable; this response is not durably recorded.",
         });
+
+    if (answer.disposition === "handoff") {
+      setHandoffReason(answer.handoffReason ?? "The bounded operator check requires a qualified handoff.");
+      return;
+    }
+
+    if (checkIndex === operatorChecks.length - 1) {
+      setHandoffReason(
+        "All bounded operator checks were clear. The admitted condition still requires investigation; do not invent another operator action.",
+      );
+    }
   };
 
-  const escalate = async () => {
-    setActionState({ state: "saving", message: "Recording maintenance escalation…" });
+  const continueToNextCheck = () => {
+    if (!lastAnswer || lastAnswer.disposition !== "continue") return;
+    if (checkIndex >= operatorChecks.length - 1) return;
+
+    setCheckIndex((index) => index + 1);
+    setLastAnswer(null);
+    setActionState({ state: "idle" });
+  };
+
+  const recordHandoff = async () => {
+    setActionState({ state: "saving", message: "Recording maintenance handoff…" });
     const persisted = await persistOutcome({
       episode_id: episodeIdFor(observation, sourceMode),
       asset_id: observation.asset_id,
@@ -147,166 +199,106 @@ export default function OperatorActions({
       outcome_type: "operator_escalation",
       status: "escalated",
       actor_role: "operator_view",
-      note: note.trim() || selectedLabel || "Condition exceeded operator recovery boundary.",
+      note: handoffReason ?? "Bounded operator inspection completed; qualified follow-up required.",
       related_observation_id: observation.observation_id,
       details: {
         source_mode: sourceMode,
         signal: observation.signal,
         correlation_id: observation.correlation_id,
         dispatch_delivery_claimed: false,
+        interaction_contract: "one_question_one_reason_one_safe_response",
       },
     });
 
     setActionState(persisted
       ? {
           state: "saved",
-          message: "Escalation recorded. No dispatch connector delivery is claimed yet.",
+          message: "Maintenance handoff recorded. No dispatch delivery is claimed.",
         }
       : {
           state: "unavailable",
-          message: "Historian unavailable; no durable escalation record was created.",
+          message: "Historian unavailable; no durable handoff record was created.",
         });
   };
 
-  const verifyOriginalCondition = async () => {
-    setVerification({ state: "checking" });
-    try {
-      const response = await fetch("/api/condition", { cache: "no-store" });
-      if (!response.ok) throw new Error("condition runtime unavailable");
-      const payload = (await response.json()) as ConditionPayload;
-      const candidates = payload.condition?.condition_signals?.observations?.filter(
-        (candidate) => candidate.quality === "good" && sameRelationship(candidate, observation),
-      ) ?? [];
-      const latest = candidates.at(-1);
-      if (!latest) {
-        setVerification({ state: "unavailable" });
-        return;
-      }
-
-      const persists = outsideEnvelope(latest);
-      const persisted = await persistOutcome({
-        episode_id: episodeIdFor(observation, payload.source_mode ?? sourceMode),
-        asset_id: latest.asset_id,
-        relationship_id: relationshipIdFor(latest),
-        outcome_type: "condition_verification",
-        status: persists ? "persists" : "recovered",
-        actor_role: "operator_view",
-        related_observation_id: latest.observation_id,
-        verification_value: latest.value,
-        verification_unit: latest.unit,
-        verification_status: persists
-          ? "outside_commissioned_envelope"
-          : "inside_commissioned_envelope",
-        details: {
-          source_mode: payload.source_mode ?? sourceMode,
-          handoff_observation_id: observation.observation_id,
-          handoff_correlation_id: observation.correlation_id,
-          verification_correlation_id: latest.correlation_id,
-        },
-      });
-
-      setVerification({
-        state: persists ? "persists" : "recovered",
-        latest: latest.value,
-        unit: latest.unit,
-        history: persisted ? "persisted" : "unavailable",
-      });
-    } catch {
-      setVerification({ state: "unavailable" });
-    }
-  };
-
   return (
-    <section className={styles.actionPanel} aria-label="Bounded operator actions">
+    <section className={styles.actionPanel} aria-label="Single-step operator check">
       <div className={styles.actionHeading}>
         <div>
-          <span>OPERATOR ACTIONS</span>
-          <h4>Inspect → record → escalate or recover → verify</h4>
+          <span>OPERATOR CHECK · {checkIndex + 1} OF {operatorChecks.length}</span>
+          <h4>One question. One reason. One safe response.</h4>
         </div>
-        <small>Evidence guides the next safe check; it does not grant extra machine authority.</small>
+        <small>Answer only from the approved operating position. Do not open guards or infer a hidden machine state.</small>
       </div>
 
-      <div className={styles.actionButtons}>
-        <button type="button" onClick={() => setInspectionOpen((open) => !open)}>
-          {inspectionOpen ? "Hide inspection checks" : "Inspect label path"}
-        </button>
-        <button type="button" onClick={recordObservation} disabled={actionState.state === "saving"}>
-          Record observation
-        </button>
-        <button className={styles.escalateButton} type="button" onClick={escalate} disabled={actionState.state === "saving"}>
-          Escalate to maintenance
-        </button>
-        <button className={styles.verifyButton} type="button" onClick={verifyOriginalCondition} disabled={verification.state === "checking"}>
-          {verification.state === "checking" ? "Verifying…" : "Verify original condition"}
-        </button>
+      <div className={styles.inspectionBox}>
+        <div>
+          <b>{currentCheck.question}</b>
+          <p>{currentCheck.reason}</p>
+        </div>
       </div>
 
-      {inspectionOpen && (
-        <div className={styles.inspectionBox}>
-          <div>
-            <b>Allowed first checks</b>
-            <ul>
-              <li>Look for visible label-web drag, snagging, misrouting, wrinkling, or obstruction.</li>
-              <li>Inspect the peel point and visible label-present sensor area for obvious blockage or contamination.</li>
-              <li>Confirm the intended recipe/job and label stock are loaded.</li>
-              <li>If site/OEM procedure explicitly authorizes clearing a simple obstruction, do so and then verify this same relationship.</li>
-            </ul>
-          </div>
-          <p>
-            Do not change servo tuning, PLC logic, timing values, hidden parameters, or bypasses from
-            this condition evidence alone. If the required action exceeds operator scope, escalate.
-          </p>
+      {!lastAnswer && !handoffReason && (
+        <div className={styles.actionButtons}>
+          {currentCheck.answers.map((answer) => (
+            <button
+              key={answer.code}
+              type="button"
+              onClick={() => answerCheck(answer)}
+              disabled={actionState.state === "saving"}
+            >
+              {answer.label}
+            </button>
+          ))}
         </div>
       )}
 
-      <div className={styles.observationRecorder}>
-        <div className={styles.observationChoices}>
-          {observationOptions.map((option) => (
-            <label key={option.code}>
-              <input
-                type="radio"
-                name={`operator-observation-${relationshipIdFor(observation)}`}
-                value={option.code}
-                checked={selectedObservation === option.code}
-                onChange={(event) => setSelectedObservation(event.target.value)}
-              />
-              <span>{option.label}</span>
-            </label>
-          ))}
+      {lastAnswer && (
+        <div className={styles.inspectionBox}>
+          <div>
+            <b>Recorded: {lastAnswer.label}</b>
+            <p>
+              {lastAnswer.disposition === "continue"
+                ? "This observation does not prove the mechanism is healthy. It only supports moving to the next bounded check."
+                : "No additional operator action is requested from this evidence alone."}
+            </p>
+          </div>
         </div>
-        <label className={styles.noteField}>
-          <span>Optional operator note</span>
-          <textarea
-            value={note}
-            onChange={(event) => setNote(event.target.value)}
-            placeholder="What did you actually observe?"
-            rows={2}
-          />
-        </label>
-      </div>
+      )}
+
+      {lastAnswer?.disposition === "continue" && !handoffReason && checkIndex < operatorChecks.length - 1 && (
+        <div className={styles.actionButtons}>
+          <button type="button" onClick={continueToNextCheck}>
+            Continue to next check
+          </button>
+        </div>
+      )}
+
+      {handoffReason && (
+        <>
+          <div className={styles.inspectionBox}>
+            <div>
+              <b>Next: qualified handoff</b>
+              <p>{handoffReason}</p>
+            </div>
+          </div>
+          <div className={styles.actionButtons}>
+            <button
+              className={styles.escalateButton}
+              type="button"
+              onClick={recordHandoff}
+              disabled={actionState.state === "saving"}
+            >
+              Record maintenance handoff
+            </button>
+          </div>
+        </>
+      )}
 
       {actionState.message && (
         <p className={`${styles.actionMessage} ${styles[`action_${actionState.state}`]}`}>
           {actionState.message}
         </p>
-      )}
-
-      {verification.state !== "idle" && verification.state !== "checking" && (
-        <div className={`${styles.verificationResult} ${styles[`verification_${verification.state}`]}`}>
-          {verification.state === "unavailable" ? (
-            <b>Original relationship could not be re-read.</b>
-          ) : (
-            <>
-              <b>{verification.state === "recovered" ? "RECOVERED" : "DEGRADATION PERSISTS"}</b>
-              <span>{verification.latest?.toFixed(0)} {verification.unit}</span>
-              <small>
-                {verification.history === "persisted"
-                  ? "Verification appended to the shared historian episode."
-                  : "Historian unavailable; this verification is live-only."}
-              </small>
-            </>
-          )}
-        </div>
       )}
     </section>
   );
