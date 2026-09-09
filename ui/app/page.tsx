@@ -6,6 +6,12 @@ import { FormEvent, useMemo, useState } from "react";
 import styles from "./triage-board.module.css";
 
 type TriageStage = "INTAKE" | "TRIAGE" | "ASSIGNED" | "RESPONDING" | "VERIFY";
+type OperatorResult = "appears_clear" | "issue_observed" | "cannot_verify";
+
+type OperatorCheck = {
+  question: string;
+  reason: string;
+};
 
 type TriageItem = {
   id: string;
@@ -18,20 +24,26 @@ type TriageItem = {
   runway?: string;
   responseEta?: string;
   source: string;
+  operatorCheck?: OperatorCheck;
+  latestObservation?: string;
 };
 
 const seededItems: TriageItem[] = [
   {
     id: "LA-DEMO-104",
     asset: "Labeler 2",
-    summary: "Operator reports intermittent hesitation after roll change.",
-    stage: "ASSIGNED",
-    owner: "Maintenance",
-    next: "Observe until maintenance arrives; no additional operator action requested.",
+    summary: "Operator reports label alignment is off after a roll change.",
+    stage: "TRIAGE",
+    owner: "Shift supervisor",
+    next: "Assign one bounded visible check if it is within operator authority.",
     plan: "HOLDS",
     runway: "~70 min",
     responseEta: "32 min",
     source: "Synthetic demo observation",
+    operatorCheck: {
+      question: "From the approved operating position, does the visible label application relationship appear aligned?",
+      reason: "A visible alignment check can tell triage whether a qualified mechanical inspection is needed. It does not establish root cause.",
+    },
   },
   {
     id: "LA-DEMO-105",
@@ -65,6 +77,7 @@ export default function TriageBoard() {
   const [items, setItems] = useState<TriageItem[]>(seededItems);
   const [quickUpdate, setQuickUpdate] = useState("");
   const [lastCaptured, setLastCaptured] = useState<string | null>(null);
+  const [activeOperatorItemId, setActiveOperatorItemId] = useState<string | null>(null);
 
   const adaptCount = items.filter((item) => item.plan === "ADAPT").length;
   const watchCount = items.filter((item) => item.plan === "WATCH").length;
@@ -76,6 +89,8 @@ export default function TriageBoard() {
     items.forEach((item) => result.get(item.stage)?.push(item));
     return result;
   }, [items]);
+
+  const activeOperatorItem = items.find((item) => item.id === activeOperatorItemId && item.operatorCheck) ?? null;
 
   const captureUpdate = (event: FormEvent) => {
     event.preventDefault();
@@ -96,6 +111,59 @@ export default function TriageBoard() {
     setItems((current) => [item, ...current]);
     setLastCaptured(observation);
     setQuickUpdate("");
+  };
+
+  const assignOperatorCheck = (itemId: string) => {
+    setItems((current) => current.map((item) => (
+      item.id === itemId && item.operatorCheck
+        ? {
+            ...item,
+            stage: "ASSIGNED",
+            owner: "Operator",
+            next: "Answer the single visible-condition check from the approved operating position.",
+          }
+        : item
+    )));
+    setActiveOperatorItemId(itemId);
+  };
+
+  const recordOperatorResult = (result: OperatorResult) => {
+    if (!activeOperatorItemId) return;
+
+    const resultText: Record<OperatorResult, string> = {
+      appears_clear: "Operator reports the visible application relationship appears aligned.",
+      issue_observed: "Operator reports the visible application relationship appears out of alignment.",
+      cannot_verify: "Operator could not verify the visible application relationship safely.",
+    };
+
+    setItems((current) => current.map((item) => {
+      if (item.id !== activeOperatorItemId) return item;
+      const { operatorCheck: _operatorCheck, ...rest } = item;
+
+      if (result === "appears_clear") {
+        return {
+          ...rest,
+          stage: "TRIAGE",
+          owner: "Shift supervisor",
+          next: "Review the recorded visible check and decide whether another qualified check is justified.",
+          latestObservation: resultText[result],
+          source: "Operator observation — unverified · browser-session demo only",
+        };
+      }
+
+      return {
+        ...rest,
+        stage: "ASSIGNED",
+        owner: "Maintenance",
+        next: result === "issue_observed"
+          ? "Inspect the reported application relationship; the operator stopped at the observation boundary."
+          : "Perform the check from an authorized safe position; the operator could not verify it.",
+        latestObservation: resultText[result],
+        source: "Operator observation — unverified · browser-session demo only",
+      };
+    }));
+
+    setActiveOperatorItemId(null);
   };
 
   return (
@@ -150,6 +218,28 @@ export default function TriageBoard() {
         )}
       </section>
 
+      {activeOperatorItem?.operatorCheck && (
+        <section className={styles.operatorTask} aria-label="Bounded operator check">
+          <div className={styles.operatorTaskHeading}>
+            <div>
+              <span>OPERATOR · ONE BOUNDED CHECK</span>
+              <small>{activeOperatorItem.asset} · {activeOperatorItem.id}</small>
+            </div>
+            <button type="button" onClick={() => setActiveOperatorItemId(null)}>Return to board</button>
+          </div>
+          <h2>{activeOperatorItem.operatorCheck.question}</h2>
+          <p><b>Why this check:</b> {activeOperatorItem.operatorCheck.reason}</p>
+          <div className={styles.operatorAnswers}>
+            <button type="button" onClick={() => recordOperatorResult("appears_clear")}>Appears aligned</button>
+            <button type="button" onClick={() => recordOperatorResult("issue_observed")}>Appears out of alignment</button>
+            <button type="button" onClick={() => recordOperatorResult("cannot_verify")}>Can’t verify safely</button>
+          </div>
+          <small className={styles.operatorBoundary}>
+            Answer only from the approved operating position. This records an operator observation; it does not verify physical state, establish root cause, or authorize an adjustment.
+          </small>
+        </section>
+      )}
+
       <section className={styles.board} aria-label="Triage workflow board">
         {stageOrder.map((stage) => (
           <section className={styles.column} key={stage}>
@@ -171,10 +261,26 @@ export default function TriageBoard() {
                     {item.responseEta && <div><dt>Response ETA</dt><dd>{item.responseEta}</dd></div>}
                     <div><dt>Plan</dt><dd>{item.plan}</dd></div>
                   </dl>
+                  {item.latestObservation && (
+                    <div className={styles.observationNote}>
+                      <span>LATEST OBSERVATION</span>
+                      <p>{item.latestObservation}</p>
+                    </div>
+                  )}
                   <div className={styles.nextStep}>
                     <span>NEXT</span>
                     <p>{item.next}</p>
                   </div>
+                  {item.operatorCheck && item.owner === "Shift supervisor" && (
+                    <button className={styles.taskButton} type="button" onClick={() => assignOperatorCheck(item.id)}>
+                      Assign one operator check
+                    </button>
+                  )}
+                  {item.operatorCheck && item.owner === "Operator" && (
+                    <button className={styles.taskButton} type="button" onClick={() => setActiveOperatorItemId(item.id)}>
+                      Open operator check
+                    </button>
+                  )}
                   <small className={styles.source}>{item.source}</small>
                 </article>
               ))}
