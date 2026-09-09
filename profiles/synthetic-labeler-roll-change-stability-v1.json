@@ -4,20 +4,40 @@
   "classification": "synthetic_demo_only",
   "asset": "Labeler 2",
   "plant_context": "Packaging Line 1",
-  "story": "Label alignment becomes intermittently inconsistent after a roll change while bottle presentation variability is elevated.",
+  "story": "Label alignment becomes intermittently inconsistent after a roll change while bottle presentation variability is elevated. The operator stops production, enters careful diagnostic mode, applies one standard guide/spacing change, arms a five-bottle LineAlert trial, executes the machine run from the HMI, and then returns to production for separate recovery verification.",
   "truth_boundary": "Scenario truth exists only to coordinate synthetic source outputs. It is not commissioned machine truth, OEM guidance, a diagnosis, or evidence about a physical machine.",
   "design_assumptions": {
     "cmms_history": "excellent_and_well_maintained",
     "cmms_fixture": "labeler2-maintenance-history-v1",
     "operator_authority": "routine_guide_actions_operator_friendly_by_default",
-    "intent": "Historical maintenance evidence is a first-class ranking input. In this demo, routine troubleshooting-guide interventions are commissioned to the operator by default unless explicitly marked otherwise."
+    "run_mode_detection": "machine_or_mes_context_preferred_with_operator_declared_fallback",
+    "linealert_trial_control": "workflow_arm_only_no_machine_execute",
+    "intent": "Historical maintenance evidence is a first-class ranking input. Routine troubleshooting-guide interventions are commissioned to the operator by default in this demo. LineAlert distinguishes production, stopped/idle, and bounded diagnostic modes and never treats arming a trial as equipment execution."
+  },
+  "run_modes": {
+    "production_running": {
+      "meaning": "Normal production context. Continuous output and production consequences apply.",
+      "detection_inputs": ["synthetic-mes/packaging-line-1 run_state", "synthetic controller/HMI run context"]
+    },
+    "stopped_idle": {
+      "meaning": "Production is stopped and no bounded diagnostic trial is active."
+    },
+    "bounded_diagnostic": {
+      "meaning": "Production is intentionally stopped for a controlled diagnostic sequence of five consecutive bottles.",
+      "trial_size_containers": 5,
+      "one_material_change_per_trial": true,
+      "linealert_action": "arm_and_record_trial_intent",
+      "machine_execution": "operator_executes_from_hmi",
+      "boundary": "LineAlert initiation does not command the machine."
+    }
   },
   "timeline": [
     {
       "offset_seconds": -180,
       "event": "baseline_reference",
+      "run_mode": "production_running",
       "sources": {
-        "synthetic-mes/packaging-line-1": {"line_speed_containers_per_min": 78, "run_state": "running"},
+        "synthetic-mes/packaging-line-1": {"line_speed_containers_per_min": 78, "run_state": "running", "run_mode": "production"},
         "synthetic-telemetry/labeler2": {"presentation_interval_stddev_ms": 7.8},
         "synthetic-camera/labeler2": {"observed_containers": 5, "within_demo_alignment_envelope": 5, "apparent_skew_events": 0, "max_abs_alignment_offset_mm": 0.7, "classifier_confidence": 0.97},
         "synthetic-quality/labeler2": {"accepted": 5, "apparent_reject_candidates": 0}
@@ -26,8 +46,9 @@
     {
       "offset_seconds": -45,
       "event": "concern_window",
+      "run_mode": "production_running",
       "sources": {
-        "synthetic-mes/packaging-line-1": {"line_speed_containers_per_min": 78, "run_state": "running"},
+        "synthetic-mes/packaging-line-1": {"line_speed_containers_per_min": 78, "run_state": "running", "run_mode": "production"},
         "synthetic-telemetry/labeler2": {"presentation_interval_stddev_ms": 21.6},
         "synthetic-camera/labeler2": {"observed_containers": 5, "within_demo_alignment_envelope": 3, "apparent_skew_events": 2, "max_abs_alignment_offset_mm": 2.9, "classifier_confidence": 0.95},
         "synthetic-quality/labeler2": {"accepted": 3, "apparent_reject_candidates": 2}
@@ -35,13 +56,50 @@
     },
     {
       "offset_seconds": 0,
-      "event": "bounded_verification_run",
+      "event": "production_stopped_for_diagnostic",
+      "run_mode": "bounded_diagnostic",
       "sources": {
-        "synthetic-mes/packaging-line-1": {"line_speed_containers_per_min": 78, "run_state": "running", "run_id": "SYN-L2-VERIFY-001"},
-        "synthetic-telemetry/labeler2": {"presentation_interval_stddev_ms": 18.9},
-        "synthetic-camera/labeler2": {"observed_containers": 5, "within_demo_alignment_envelope": 4, "apparent_skew_events": 1, "max_abs_alignment_offset_mm": 2.4, "classifier_confidence": 0.96},
-        "synthetic-quality/labeler2": {"accepted": 4, "apparent_reject_candidates": 1}
+        "synthetic-mes/packaging-line-1": {"line_speed_containers_per_min": 0, "run_state": "stopped", "run_mode": "diagnostic"}
+      },
+      "operator_context": "Operator has intentionally stopped normal production to run controlled five-bottle diagnostic batches."
+    },
+    {
+      "offset_seconds": 15,
+      "event": "standard_change_applied",
+      "run_mode": "bounded_diagnostic",
+      "change": "Restore guide / spacing to the approved marked setup reference",
+      "change_count": 1,
+      "change_boundary": "Synthetic routine operator-friendly standard change. No second material change is permitted before fresh evidence."
+    },
+    {
+      "offset_seconds": 20,
+      "event": "linealert_trial_armed",
+      "run_mode": "bounded_diagnostic",
+      "trial_id": "SYN-L2-DIAG-001",
+      "planned_containers": 5,
+      "linealert_effect": "Trial intent, selected change, timestamp, and expected evidence window are recorded.",
+      "equipment_effect": "none",
+      "next_required_action": "Operator executes the five-bottle run from the HMI."
+    },
+    {
+      "offset_seconds": 30,
+      "event": "hmi_five_bottle_run_detected",
+      "run_mode": "bounded_diagnostic",
+      "sources": {
+        "synthetic-mes/packaging-line-1": {"run_state": "running", "run_mode": "diagnostic", "run_id": "SYN-L2-DIAG-001", "containers_observed": 5},
+        "synthetic-telemetry/labeler2": {"presentation_interval_stddev_ms": 9.1},
+        "synthetic-camera/labeler2": {"observed_containers": 5, "within_demo_alignment_envelope": 5, "apparent_skew_events": 0, "max_abs_alignment_offset_mm": 0.9, "classifier_confidence": 0.97},
+        "synthetic-quality/labeler2": {"accepted": 5, "apparent_reject_candidates": 0}
       }
+    },
+    {
+      "offset_seconds": 90,
+      "event": "production_resumed",
+      "run_mode": "production_running",
+      "sources": {
+        "synthetic-mes/packaging-line-1": {"line_speed_containers_per_min": 78, "run_state": "running", "run_mode": "production", "run_id": "SYN-L2-PROD-RECOVERY-001"}
+      },
+      "verification_boundary": "The diagnostic run may support the standard change under test conditions, but production recovery remains a separate observation."
     }
   ],
   "historical_evidence": {
@@ -57,23 +115,22 @@
     "boundary": "Historical pattern strongly informs ranking but does not prove the current root cause or current physical state."
   },
   "deterministic_interpretation": {
-    "summary": "The verification run remains worse than the synthetic baseline and slightly better than the immediately preceding concern window.",
-    "bounded_finding": "Alignment inconsistency persists while presentation-interval variability remains elevated relative to the synthetic baseline.",
+    "summary": "The production concern strongly aligns with the standard guide/spacing restoration. The five-bottle diagnostic run improves toward the synthetic baseline after that one change.",
+    "bounded_finding": "Five-bottle diagnostic evidence improves after restoring guide / spacing to the approved marked setup reference.",
     "standard_change_alignment": "strong",
     "standard_change": "Restore guide / spacing to the approved marked setup reference",
-    "standard_change_basis": "Current visible alignment evidence, elevated presentation variability, unchanged line speed, and 3/4 highly similar CMMS cases with successful standard guide/presentation correction heavily align with this routine operator-friendly change.",
-    "causality_boundary": "Strong alignment with a known standard change supports trying that bounded intervention first in this synthetic demo. It still does not prove the present root cause."
+    "standard_change_basis": "Current visible alignment evidence, elevated presentation variability, unchanged production speed, and 3/4 highly similar CMMS cases with the same standard guide/presentation correction heavily align with this routine operator-friendly change.",
+    "causality_boundary": "Strong alignment and an improved diagnostic run support the bounded intervention under the test conditions. They do not prove root cause, production recovery, or safe production change."
   },
   "ranked_next_options": {
     "ranking_semantics": "Current evidence alignment, historical CMMS support, and information value only. Rank is not root-cause probability or proof. In this synthetic plant, routine guide interventions are commissioned operator actions by default.",
     "basis": [
       "operator reports visible misalignment after a roll change",
-      "camera still shows an apparent skew event",
-      "presentation-interval variability remains elevated versus the synthetic baseline",
-      "line speed is unchanged across baseline, concern, and verification windows",
+      "camera shows apparent skew during production",
+      "presentation-interval variability is elevated versus baseline",
+      "line speed is unchanged when the concern appears",
       "four similar well-maintained CMMS cases localized to bottle-presentation relationships",
-      "three similar CMMS cases were resolved by the same standard guide/presentation setup restoration",
-      "no similar historical case required a timing change"
+      "three similar CMMS cases were resolved by the same standard guide/presentation setup restoration"
     ],
     "options": [
       {
@@ -83,55 +140,22 @@
         "classification": "standard_operator_change",
         "owner": "Operator",
         "evidence_alignment": "strong_standard_change_match",
-        "rationale": "The detected pattern heavily aligns with the standard guide/presentation correction documented in 3/4 highly similar synthetic CMMS cases, while the current camera and presentation-variability evidence remains compatible with that pattern.",
+        "rationale": "The detected pattern heavily aligns with the standard guide/presentation correction documented in 3/4 highly similar synthetic CMMS cases, while current camera and presentation-variability evidence remains compatible with that pattern.",
         "historical_support": "strong: 3/4 highly similar cases used the same standard approved guide/presentation correction",
-        "boundary": "Perform one bounded standard change only, then run the 5-container verification trial before any other material change. Strong match is not proof of root cause."
+        "boundary": "Perform one bounded standard change only, then arm and execute a five-bottle diagnostic run before any other material change."
       },
       {
         "rank": 2,
-        "option_id": "inspect-presentation-stability",
-        "title": "Inspect bottle presentation stability",
-        "classification": "operator_check",
+        "option_id": "five-bottle-diagnostic-run",
+        "title": "Arm a five-bottle diagnostic trial",
+        "classification": "linealert_trial_workflow",
         "owner": "Operator",
-        "evidence_alignment": "high",
-        "rationale": "Current operator, telemetry, camera, and quality evidence still supports presentation-focused observation if the standard setup reference cannot be confidently restored.",
-        "historical_support": "strong: 4/4 similar synthetic CMMS cases localized to presentation relationships",
-        "boundary": "Observe and record. If findings contradict the standard-change pattern, rerank before another material change."
-      },
-      {
-        "rank": 3,
-        "option_id": "repeat-like-for-like",
-        "title": "Repeat the same-condition verification run",
-        "classification": "operator_control_observation",
-        "owner": "Operator",
-        "evidence_alignment": "high_information_value",
-        "rationale": "A repeat without another material change provides useful repeatability evidence if the operator elects not to apply the top-ranked standard change yet.",
-        "historical_support": "neutral: history favors the standard correction first",
-        "boundary": "No additional material change is introduced. Preserve the same controlled conditions."
-      },
-      {
-        "rank": 4,
-        "option_id": "reduced-speed-trial",
-        "title": "Run the standard temporary reduced-speed diagnostic trial",
-        "classification": "operator_rate_sensitivity_test",
-        "owner": "Operator",
-        "evidence_alignment": "lower",
-        "rationale": "A rate-sensitivity test may add information, but speed did not change when the concern appeared and three similar historical cases occurred at normal line speed.",
-        "historical_support": "weakens rank: 3 similar synthetic cases occurred at normal line speed",
-        "boundary": "Routine operator-friendly demo action, but only one temporary setting change is made before fresh verification. No real production speed value is defined by this fixture."
-      },
-      {
-        "rank": 5,
-        "option_id": "review-label-timing-geometry",
-        "title": "Review label timing / peel geometry and make only the standard guide adjustment if indicated",
-        "classification": "operator_check_and_standard_adjustment",
-        "owner": "Operator",
-        "evidence_alignment": "deprioritized_by_current_and_historical_evidence",
-        "rationale": "Current evidence points more strongly toward presentation stability, and none of the four similar synthetic CMMS cases required a timing change.",
-        "historical_support": "deprioritizing: 0/4 similar synthetic cases required timing change",
-        "boundary": "Deprioritized does not mean healthy. If current evidence supports a standard timing or peel adjustment, make only one bounded change and verify."
+        "evidence_alignment": "required_verification_after_standard_change",
+        "rationale": "The standard change requires fresh bounded evidence before another material change.",
+        "historical_support": "neutral",
+        "boundary": "Arming the trial creates the LineAlert workflow only. The operator executes the actual machine run from the HMI."
       }
     ]
   },
-  "parameters_notice": "All numeric values, historical records, operator permissions, standard changes, and ranked options are synthetic scenario parameters chosen for internal consistency and demo readability. They are not OEM thresholds, commissioned limits, safe operating limits, production recommendations, or proof of root cause."
+  "parameters_notice": "All numeric values, historical records, operator permissions, standard changes, run-mode transitions, and ranked options are synthetic scenario parameters chosen for internal consistency and demo readability. They are not OEM thresholds, commissioned limits, safe operating limits, production recommendations, or proof of root cause."
 }
