@@ -9,7 +9,8 @@
   "design_assumptions": {
     "cmms_history": "excellent_and_well_maintained",
     "cmms_fixture": "labeler2-maintenance-history-v1",
-    "intent": "Historical maintenance evidence is a first-class ranking input and is expected to become more valuable as the maintained history grows."
+    "operator_authority": "routine_guide_actions_operator_friendly_by_default",
+    "intent": "Historical maintenance evidence is a first-class ranking input. In this demo, routine troubleshooting-guide interventions are commissioned to the operator by default unless explicitly marked otherwise."
   },
   "timeline": [
     {
@@ -52,82 +53,85 @@
     "timing_changes_required": 0,
     "same_symptom_family_with_normal_line_speed": 3,
     "history_support": "strong",
-    "summary": "Four well-documented similar historical cases on this synthetic asset localized to bottle-presentation relationships; three required approved guide/presentation correction and none required a timing change.",
+    "summary": "Four well-documented similar historical cases on this synthetic asset localized to bottle-presentation relationships; three required the same standard approved guide/presentation setup restoration and none required a timing change.",
     "boundary": "Historical pattern strongly informs ranking but does not prove the current root cause or current physical state."
   },
   "deterministic_interpretation": {
     "summary": "The verification run remains worse than the synthetic baseline and slightly better than the immediately preceding concern window.",
     "bounded_finding": "Alignment inconsistency persists while presentation-interval variability remains elevated relative to the synthetic baseline.",
-    "causality_boundary": "Current coordinated signals plus strong similar CMMS history support prioritizing presentation-focused localization, but neither current nor historical evidence establishes the present root cause."
+    "standard_change_alignment": "strong",
+    "standard_change": "Restore guide / spacing to the approved marked setup reference",
+    "standard_change_basis": "Current visible alignment evidence, elevated presentation variability, unchanged line speed, and 3/4 highly similar CMMS cases with successful standard guide/presentation correction heavily align with this routine operator-friendly change.",
+    "causality_boundary": "Strong alignment with a known standard change supports trying that bounded intervention first in this synthetic demo. It still does not prove the present root cause."
   },
   "ranked_next_options": {
-    "ranking_semantics": "Current evidence alignment, historical CMMS support, and information value only. Rank is not root-cause probability, proof, authorization, or a safety determination.",
+    "ranking_semantics": "Current evidence alignment, historical CMMS support, and information value only. Rank is not root-cause probability or proof. In this synthetic plant, routine guide interventions are commissioned operator actions by default.",
     "basis": [
-      "operator reports visible misalignment",
+      "operator reports visible misalignment after a roll change",
       "camera still shows an apparent skew event",
       "presentation-interval variability remains elevated versus the synthetic baseline",
       "line speed is unchanged across baseline, concern, and verification windows",
       "four similar well-maintained CMMS cases localized to bottle-presentation relationships",
-      "three similar CMMS cases were resolved by approved guide/presentation correction",
+      "three similar CMMS cases were resolved by the same standard guide/presentation setup restoration",
       "no similar historical case required a timing change"
     ],
     "options": [
       {
         "rank": 1,
-        "option_id": "inspect-presentation-stability",
-        "title": "Inspect bottle presentation stability",
-        "classification": "maintenance_localization",
-        "owner": "Maintenance",
-        "evidence_alignment": "highest_current_and_historical_support",
-        "rationale": "Current operator, telemetry, camera, and quality evidence converges on the presentation relationship, and four similar well-documented CMMS cases on this synthetic asset localized to presentation stability.",
-        "historical_support": "strong: 4/4 similar synthetic CMMS cases localized to presentation relationships",
-        "boundary": "Inspect and localize only. Historical recurrence is not proof of the current cause. Any correction must come from commissioned procedure or qualified authority, then receive its own fresh bounded verification run."
+        "option_id": "restore-guide-spacing-standard",
+        "title": "Restore guide / spacing to the approved marked setup reference",
+        "classification": "standard_operator_change",
+        "owner": "Operator",
+        "evidence_alignment": "strong_standard_change_match",
+        "rationale": "The detected pattern heavily aligns with the standard guide/presentation correction documented in 3/4 highly similar synthetic CMMS cases, while the current camera and presentation-variability evidence remains compatible with that pattern.",
+        "historical_support": "strong: 3/4 highly similar cases used the same standard approved guide/presentation correction",
+        "boundary": "Perform one bounded standard change only, then run the 5-container verification trial before any other material change. Strong match is not proof of root cause."
       },
       {
         "rank": 2,
-        "option_id": "verify-guide-spacing",
-        "title": "Verify guide / spacing relationship",
-        "classification": "maintenance_localization",
-        "owner": "Maintenance",
-        "evidence_alignment": "high_with_historical_support",
-        "rationale": "Current evidence does not directly isolate guide position, but three similar CMMS cases document approved guide/presentation corrections after comparable symptoms.",
-        "historical_support": "strong: 3 similar synthetic cases involved guide/presentation correction",
-        "boundary": "Verification is not permission to adjust. Historical success does not prove the same condition exists now. Any change requires commissioned procedure or qualified authority and a fresh trial."
+        "option_id": "inspect-presentation-stability",
+        "title": "Inspect bottle presentation stability",
+        "classification": "operator_check",
+        "owner": "Operator",
+        "evidence_alignment": "high",
+        "rationale": "Current operator, telemetry, camera, and quality evidence still supports presentation-focused observation if the standard setup reference cannot be confidently restored.",
+        "historical_support": "strong: 4/4 similar synthetic CMMS cases localized to presentation relationships",
+        "boundary": "Observe and record. If findings contradict the standard-change pattern, rerank before another material change."
       },
       {
         "rank": 3,
         "option_id": "repeat-like-for-like",
         "title": "Repeat the same-condition verification run",
-        "classification": "control_observation",
-        "owner": "Shift supervisor",
+        "classification": "operator_control_observation",
+        "owner": "Operator",
         "evidence_alignment": "high_information_value",
-        "rationale": "A repeat without material change still provides useful current-state repeatability evidence, but the strong maintained CMMS history now makes presentation-focused localization more informative first.",
-        "historical_support": "neutral: history favors localization but does not remove the value of repeatability evidence",
-        "boundary": "No material intervention is introduced. Run still requires site authorization and the same controlled test conditions."
+        "rationale": "A repeat without another material change provides useful repeatability evidence if the operator elects not to apply the top-ranked standard change yet.",
+        "historical_support": "neutral: history favors the standard correction first",
+        "boundary": "No additional material change is introduced. Preserve the same controlled conditions."
       },
       {
         "rank": 4,
-        "option_id": "request-reduced-speed-trial",
-        "title": "Request an authorized reduced-speed diagnostic trial",
-        "classification": "rate_sensitivity_test",
-        "owner": "Shift supervisor",
+        "option_id": "reduced-speed-trial",
+        "title": "Run the standard temporary reduced-speed diagnostic trial",
+        "classification": "operator_rate_sensitivity_test",
+        "owner": "Operator",
         "evidence_alignment": "lower",
         "rationale": "A rate-sensitivity test may add information, but speed did not change when the concern appeared and three similar historical cases occurred at normal line speed.",
         "historical_support": "weakens rank: 3 similar synthetic cases occurred at normal line speed",
-        "boundary": "This is a request for an authorized diagnostic trial, not an instruction to change speed."
+        "boundary": "Routine operator-friendly demo action, but only one temporary setting change is made before fresh verification. No real production speed value is defined by this fixture."
       },
       {
         "rank": 5,
         "option_id": "review-label-timing-geometry",
-        "title": "Review label timing / peel geometry evidence",
-        "classification": "deprioritized_investigation",
-        "owner": "Maintenance",
+        "title": "Review label timing / peel geometry and make only the standard guide adjustment if indicated",
+        "classification": "operator_check_and_standard_adjustment",
+        "owner": "Operator",
         "evidence_alignment": "deprioritized_by_current_and_historical_evidence",
         "rationale": "Current evidence points more strongly toward presentation stability, and none of the four similar synthetic CMMS cases required a timing change.",
         "historical_support": "deprioritizing: 0/4 similar synthetic cases required timing change",
-        "boundary": "Deprioritized does not mean healthy. Historical absence is not proof and review does not authorize adjustment."
+        "boundary": "Deprioritized does not mean healthy. If current evidence supports a standard timing or peel adjustment, make only one bounded change and verify."
       }
     ]
   },
-  "parameters_notice": "All numeric values, historical records, and ranked options are synthetic scenario parameters chosen for internal consistency and demo readability. They are not OEM thresholds, commissioned limits, safe operating limits, production recommendations, or proof of root cause."
+  "parameters_notice": "All numeric values, historical records, operator permissions, standard changes, and ranked options are synthetic scenario parameters chosen for internal consistency and demo readability. They are not OEM thresholds, commissioned limits, safe operating limits, production recommendations, or proof of root cause."
 }

@@ -1,44 +1,62 @@
 {
   "schema_version": "linealert.troubleshooting-route-profile.v1",
   "profile_id": "speedway-labeler-troubleshooting-v1",
-  "profile_version": 1,
+  "profile_version": 2,
   "guide_path": "/troubleshooting-guide.html",
   "allowed_finding_scope": "synthetic_demo",
+  "demo_authority_assumption": {
+    "default_role": "operator",
+    "policy": "All candidate checks and interventions shown in the synthetic troubleshooting guide are routine operator-friendly commissioned actions by default for this demo plant unless an action is explicitly marked otherwise.",
+    "runtime_rule": "Rank the useful next action from current evidence and maintained CMMS history, let the operator perform one standard bounded action, then require a fresh verification run before another material change.",
+    "boundary": "This is a synthetic demo assumption only. A real plant may commission the same action to a different role or prohibit it in a given state. Recommendation does not itself authorize an action outside the commissioned plant envelope."
+  },
   "procedures": {
     "LINEALERT.DEMO.LABEL_ALIGNMENT_OFF": {
       "procedure_id": "LABEL_ALIGNMENT_OFF",
-      "default_check": "Inspect Lane B release",
-      "required_semantics": ["arrival_phase", "merge_spacing"]
+      "default_check": "Verify guide / spacing relationship against the approved setup reference",
+      "default_intervention": "Restore guide / spacing to the approved marked setup reference",
+      "default_role": "operator",
+      "required_semantics": ["arrival_phase", "merge_spacing"],
+      "standard_change_match": {
+        "scenario_id": "labeler-roll-change-stability-v1",
+        "match_strength": "strong",
+        "basis": "Current alignment evidence and strong similar CMMS history heavily align with a standard guide / presentation setup correction in the synthetic demo.",
+        "verification": "Perform exactly one bounded standard change, then run the 5-container synthetic verification trial before any additional material change."
+      }
     },
     "LINEALERT.DEMO.LABEL_FOLDS": {
       "procedure_id": "LABEL_FOLDS",
       "default_check": "Inspect belt contact",
+      "default_role": "operator",
       "required_semantics": ["surface_slip", "contact_state"]
     },
     "LINEALERT.DEMO.LABEL_STRETCH_LINES": {
       "procedure_id": "LABEL_STRETCH_LINES",
       "default_check": "Verify web tension",
+      "default_role": "operator",
       "required_semantics": ["web_tension"]
     },
     "LINEALERT.DEMO.LABEL_BUBBLES": {
       "procedure_id": "LABEL_BUBBLES",
       "default_check": "Inspect applicator pressure",
+      "default_role": "operator",
       "required_semantics": ["application_pressure", "contact_time"]
     },
     "LINEALERT.DEMO.MULTIPLE_LABELS": {
       "procedure_id": "MULTIPLE_LABELS",
       "default_check": "Inspect gap sensor condition",
+      "default_role": "operator",
       "required_semantics": ["gap_detection", "label_spacing"]
     }
   },
   "role_checks": {
-    "operator": "Perform only actions commissioned for the operator role on the current asset and operating state. Operator scope may include observation, bounded diagnostic checks, recovery actions, or bounded adjustments; do not exceed the commissioned action envelope.",
-    "senior-operator": "Perform or approve only actions commissioned for the senior-operator role and preserve any justified override or authorization record.",
-    "millwright": "Localize and intervene only within commissioned millwright authority, preserving test conditions and verification requirements.",
-    "maintenance": "Review the bounded procedure, current evidence, intervention history, and commissioned authority before adjustment.",
-    "technician": "Compare controller intent with the verified physical response within commissioned technician authority.",
-    "qa": "Verify the defect against the active sampling plan and commissioned QA authority.",
+    "operator": "Demo default: perform the routine checks and bounded interventions shown in the guide, one material change at a time, then verify the result before another change.",
+    "senior-operator": "Optional escalation or override role where the plant explicitly requires it.",
+    "millwright": "Specialist escalation role only when the current evidence or physical access exceeds the routine operator-friendly demo envelope.",
+    "maintenance": "Specialist escalation role only when the current evidence or intervention exceeds the routine operator-friendly demo envelope.",
+    "technician": "Specialist escalation role for controller or instrumentation investigation outside routine operator actions.",
+    "qa": "Verify the defect against the active sampling plan when quality review is needed.",
     "engineering": "Review the envelope and evidence before changing the model or approved procedure.",
-    "plant-manager": "Assign or authorize the next qualified owner according to commissioned plant policy; do not treat role assignment as diagnosis."
+    "plant-manager": "Resolve exceptions or explicitly restricted actions; do not treat role assignment as diagnosis."
   }
 }
