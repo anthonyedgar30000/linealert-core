@@ -9,6 +9,7 @@ type PlanState = "HOLDS" | "WATCH" | "ADAPT";
 type Owner = "Shift supervisor" | "Operator" | "Maintenance" | "Plant manager";
 type AssetId = "filler" | "labeler" | "packer" | "palletizer";
 type OperatorResult = "appears_clear" | "issue_observed" | "cannot_verify";
+type ReviewState = "PENDING" | "ACCEPTED" | "CORRECTION NEEDED" | "ESCALATED";
 
 type Asset = {
   id: AssetId;
@@ -23,6 +24,19 @@ type Asset = {
   responseEta?: string;
 };
 
+type TrialRecord = {
+  id: string;
+  asset: string;
+  requestedBy: string;
+  triggerObservation: string;
+  requestedRun: string;
+  timestamp: string;
+  visualEvidence: string;
+  telemetryEvidence: string;
+  provenance: string[];
+  review: ReviewState;
+};
+
 const seedAssets: Asset[] = [
   { id: "filler", name: "Filler 1", role: "Upstream process", plan: "HOLDS", owner: "Shift supervisor", next: "No action requested." },
   { id: "labeler", name: "Labeler 2", role: "Application process", plan: "WATCH", owner: "Shift supervisor", next: "Assign one bounded visible check if it is within operator authority.", concern: "Operator reports label alignment is off after a roll change.", runway: "~70 min", responseEta: "32 min" },
@@ -35,6 +49,7 @@ export default function PlantCanvas() {
   const [selectedId, setSelectedId] = useState<AssetId>("labeler");
   const [operatorOpen, setOperatorOpen] = useState(false);
   const [view, setView] = useState<"canvas" | "board">("canvas");
+  const [trial, setTrial] = useState<TrialRecord | null>(null);
 
   const selected = assets.find((asset) => asset.id === selectedId) ?? assets[0];
   const activeCount = assets.filter((asset) => asset.concern).length;
@@ -59,14 +74,55 @@ export default function PlantCanvas() {
         ? "Operator reports the visible application relationship appears out of alignment."
         : "Operator could not verify the visible application relationship safely.";
 
-    setAssets((current) => current.map((asset) => {
-      if (asset.id !== "labeler") return asset;
-      if (result === "appears_clear") {
-        return { ...asset, owner: "Shift supervisor", plan: "WATCH", next: "Review the recorded visible check and decide whether another qualified check is justified.", latestObservation: observation };
-      }
-      return { ...asset, owner: "Maintenance", plan: "WATCH", next: result === "issue_observed" ? "Inspect the reported application relationship; operator stopped at the observation boundary." : "Perform the check from an authorized safe position; operator could not verify it.", latestObservation: observation };
-    }));
+    const owner: Owner = result === "appears_clear" ? "Shift supervisor" : "Maintenance";
+    const next = result === "appears_clear"
+      ? "Request one approved bounded verification run before any additional check or change."
+      : result === "issue_observed"
+        ? "Maintenance reviews the observation, then requests one approved bounded verification run before any additional intervention."
+        : "Maintenance performs the check from an authorized safe position; any later intervention must be followed by a fresh bounded run.";
+
+    setAssets((current) => current.map((asset) => asset.id === "labeler" ? { ...asset, owner, plan: "WATCH", next, latestObservation: observation } : asset));
+    setTrial({
+      id: `LA-TRIAL-${Date.now().toString().slice(-6)}`,
+      asset: "Labeler 2",
+      requestedBy: owner,
+      triggerObservation: observation,
+      requestedRun: "5-container bounded verification trial · synthetic demo parameter",
+      timestamp: new Date().toLocaleString(),
+      visualEvidence: "Awaiting visual feedback",
+      telemetryEvidence: "No live telemetry source connected",
+      provenance: [
+        "Asset identity · Plant Canvas synthetic topology",
+        "Trigger observation · Operator supplied · unverified",
+        "Trial request · Deterministic workflow rule",
+        "Timestamp · Browser session",
+      ],
+      review: "PENDING",
+    });
     setOperatorOpen(false);
+  };
+
+  const simulateEvidence = () => {
+    setTrial((current) => current ? {
+      ...current,
+      visualEvidence: "Synthetic camera classifier: 4/5 containers appear within demo visual alignment envelope; 1 apparent skew event.",
+      telemetryEvidence: "No live telemetry source connected · telemetry field intentionally unpopulated",
+      provenance: [
+        ...current.provenance.filter((item) => !item.startsWith("Visual evidence")),
+        "Visual evidence · Synthetic AI-camera classification for feedback demo",
+        "Telemetry evidence · Source unavailable; no value inferred",
+      ],
+    } : current);
+  };
+
+  const reviewTrial = (review: ReviewState) => {
+    setTrial((current) => current ? { ...current, review } : current);
+    if (review === "ACCEPTED") {
+      setAssets((current) => current.map((asset) => asset.id === "labeler" ? { ...asset, owner: "Shift supervisor", next: "Review the accepted trial record and decide whether another single bounded action is justified." } : asset));
+    }
+    if (review === "ESCALATED") {
+      setAssets((current) => current.map((asset) => asset.id === "labeler" ? { ...asset, owner: "Maintenance", next: "Review the trial evidence package before any further intervention." } : asset));
+    }
   };
 
   return (
@@ -75,7 +131,7 @@ export default function PlantCanvas() {
         <div>
           <span className={styles.kicker}>LINEALERT · PLANT CANVAS · SYNTHETIC DEMO</span>
           <h1>{posture}</h1>
-          <p>Model the plant, see where a concern lives, who owns it, what it affects, and the next bounded action.</p>
+          <p>Model the plant, locate the concern, assign one bounded action, run, collect evidence, and ask a human only for judgment or authorization.</p>
         </div>
         <nav className={styles.nav}>
           <button className={view === "canvas" ? styles.activeView : ""} onClick={() => setView("canvas")}>Plant canvas</button>
@@ -88,7 +144,7 @@ export default function PlantCanvas() {
         <div><span>ACTIVE CONCERNS</span><b>{activeCount}</b></div>
         <div><span>SELECTED ASSET</span><b>{selected.name}</b></div>
         <div><span>PLAN</span><b>{selected.plan}</b></div>
-        <div><span>PRODUCT RULE</span><b>Canvas shows operational posture. Details appear only when needed.</b></div>
+        <div><span>PRODUCT RULE</span><b>One material change per trial. Re-run before advancing.</b></div>
       </section>
 
       {view === "canvas" ? (
@@ -108,7 +164,7 @@ export default function PlantCanvas() {
                 </div>
               ))}
             </div>
-            <div className={styles.dependencyNote}>Process flow: Filler 1 → Labeler 2 → Case Packer 1 → Palletizer 1. Relationship is illustrative, not commissioned plant truth.</div>
+            <div className={styles.dependencyNote}>Process flow is illustrative, not commissioned plant truth. Relationship display does not prove causation.</div>
           </section>
 
           <aside className={styles.assetPanel}>
@@ -124,7 +180,7 @@ export default function PlantCanvas() {
             {selected.concern ? <div className={styles.concern}><span>CURRENT CONCERN</span><p>{selected.concern}</p></div> : <div className={styles.quiet}>No active concern on this synthetic asset.</div>}
             {selected.latestObservation && <div className={styles.observationNote}><span>LATEST OBSERVATION</span><p>{selected.latestObservation}</p></div>}
             <div className={styles.nextStep}><span>NEXT</span><p>{selected.next}</p></div>
-            {selected.id === "labeler" && selected.owner === "Shift supervisor" && <button className={styles.primaryAction} onClick={assignOperator}>Assign one operator check</button>}
+            {selected.id === "labeler" && selected.owner === "Shift supervisor" && !trial && <button className={styles.primaryAction} onClick={assignOperator}>Assign one operator check</button>}
             {selected.id === "labeler" && selected.owner === "Operator" && <button className={styles.primaryAction} onClick={() => setOperatorOpen(true)}>Open operator check</button>}
           </aside>
         </section>
@@ -140,11 +196,42 @@ export default function PlantCanvas() {
           <h2>From the approved operating position, does the visible label application relationship appear aligned?</h2>
           <p><b>Why this check:</b> It tells triage whether a qualified mechanical inspection is needed. It does not establish root cause.</p>
           <div className={styles.operatorAnswers}><button onClick={() => recordResult("appears_clear")}>Appears aligned</button><button onClick={() => recordResult("issue_observed")}>Appears out of alignment</button><button onClick={() => recordResult("cannot_verify")}>Can’t verify safely</button></div>
-          <small className={styles.operatorBoundary}>Operator observation ≠ verified physical state. No adjustment is authorized by this demo.</small>
+          <small className={styles.operatorBoundary}>Every answer records one observation and requests a fresh bounded run before another material change. Operator observation ≠ verified physical state. No adjustment is authorized by this demo.</small>
         </section>
       )}
 
-      <section className={styles.boundary}><div><span>V1 BOUNDARY</span><b>Model the plant → locate the concern → assign the next bounded action.</b></div><p>No telemetry, PLC/controller, CMMS, dispatch, safety-control or equipment-control connection is added here. The topology and workflow are synthetic feedback content.</p></section>
+      {trial && (
+        <section className={styles.trialCard} aria-label="Bounded verification trial">
+          <div className={styles.trialHeading}>
+            <div><span>BOUNDED TRIAL · HUMAN IN THE LOOP</span><h2>{trial.id}</h2></div>
+            <b>{trial.review}</b>
+          </div>
+          <div className={styles.trialGrid}>
+            <div><span>Asset</span><strong>{trial.asset}</strong><small>auto-populated · canvas context</small></div>
+            <div><span>Requested by</span><strong>{trial.requestedBy}</strong><small>auto-populated · workflow owner</small></div>
+            <div><span>Run</span><strong>{trial.requestedRun}</strong><small>workflow rule · not production authorization</small></div>
+            <div><span>Timestamp</span><strong>{trial.timestamp}</strong><small>auto-populated · browser session</small></div>
+          </div>
+          <div className={styles.trialEvidence}>
+            <div><span>Trigger observation</span><p>{trial.triggerObservation}</p></div>
+            <div><span>Visual evidence</span><p>{trial.visualEvidence}</p></div>
+            <div><span>Telemetry</span><p>{trial.telemetryEvidence}</p></div>
+          </div>
+          <div className={styles.provenance}><span>PROVENANCE</span>{trial.provenance.map((item) => <small key={item}>{item}</small>)}</div>
+          {trial.visualEvidence === "Awaiting visual feedback" ? (
+            <button className={styles.primaryAction} onClick={simulateEvidence}>Simulate camera feedback</button>
+          ) : (
+            <div className={styles.reviewActions}>
+              <button onClick={() => reviewTrial("ACCEPTED")}>Accept record</button>
+              <button onClick={() => reviewTrial("CORRECTION NEEDED")}>Correction needed</button>
+              <button onClick={() => reviewTrial("ESCALATED")}>Escalate</button>
+            </div>
+          )}
+          <small className={styles.operatorBoundary}>Synthetic AI-camera output is classified evidence, not verified physical state or root-cause proof. Missing sources stay missing; LineAlert does not silently fill them.</small>
+        </section>
+      )}
+
+      <section className={styles.boundary}><div><span>V1 BOUNDARY</span><b>Observe → one bounded action → run → collect evidence → human review.</b></div><p>No live telemetry, camera, PLC/controller, CMMS, dispatch, safety-control or equipment-control connection is added here. Trial execution remains synthetic feedback content; recommendation is not authorized action.</p></section>
     </main>
   );
 }
