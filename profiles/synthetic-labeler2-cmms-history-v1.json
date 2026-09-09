@@ -1,0 +1,59 @@
+{
+  "schema_version": "linealert.synthetic-cmms-history.v1",
+  "history_id": "labeler2-maintenance-history-v1",
+  "classification": "synthetic_demo_only",
+  "asset": "Labeler 2",
+  "design_assumption": "For this product-vision demo, CMMS history is intentionally assumed to be rich, clean, correctly asset-linked, and well maintained so historical evidence can become more valuable as the record grows.",
+  "source_identity": "synthetic-cmms/labeler2",
+  "records": [
+    {
+      "work_order_id": "WO-SYN-1842",
+      "closed_date": "2026-02-14",
+      "symptom": "Intermittent label skew after product-format change",
+      "verified_localization": "Bottle presentation instability entering applicator",
+      "intervention": "Qualified maintenance corrected presentation guide relationship using approved procedure",
+      "verification": "Three bounded follow-up runs met the site's synthetic acceptance fixture",
+      "parts_replaced": [],
+      "technician_note_quality": "structured_and_complete"
+    },
+    {
+      "work_order_id": "WO-SYN-2197",
+      "closed_date": "2026-04-29",
+      "symptom": "Label alignment drift with otherwise stable label web",
+      "verified_localization": "Presentation guide relationship out of approved setup position",
+      "intervention": "Qualified maintenance restored approved guide setup and verified container tracking",
+      "verification": "Condition did not recur during the documented verification window",
+      "parts_replaced": [],
+      "technician_note_quality": "structured_and_complete"
+    },
+    {
+      "work_order_id": "WO-SYN-2644",
+      "closed_date": "2026-07-11",
+      "symptom": "Apparent skew events during normal line speed",
+      "verified_localization": "Bottle presentation stability degraded upstream of label contact",
+      "intervention": "Qualified maintenance corrected a worn presentation component under approved maintenance procedure",
+      "verification": "Post-maintenance bounded runs returned to the documented synthetic baseline pattern",
+      "parts_replaced": ["synthetic presentation wear component"],
+      "technician_note_quality": "structured_and_complete"
+    },
+    {
+      "work_order_id": "WO-SYN-2811",
+      "closed_date": "2026-08-18",
+      "symptom": "Alignment complaint after roll change",
+      "verified_localization": "No timing fault established; presentation relationship required adjustment",
+      "intervention": "Qualified maintenance restored approved presentation setup; no controller or timing change made",
+      "verification": "Two documented verification runs remained within the synthetic visual fixture",
+      "parts_replaced": [],
+      "technician_note_quality": "structured_and_complete"
+    }
+  ],
+  "derived_history_summary": {
+    "similar_closed_cases": 4,
+    "presentation_related_localizations": 4,
+    "guide_or_presentation_adjustments": 3,
+    "timing_changes_required": 0,
+    "same_symptom_family_with_normal_line_speed": 3,
+    "history_support": "strong"
+  },
+  "boundary": "This synthetic history is a deliberate product-design fixture. Historical pattern can strongly affect ranking but does not prove the current root cause, authorize an intervention, or establish current physical state."
+}
