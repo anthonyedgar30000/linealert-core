@@ -32,13 +32,13 @@
     }
   },
   "role_checks": {
-    "operator": "Perform the displayed inspection only; do not adjust outside operator scope.",
-    "senior-operator": "Confirm the inspection result and preserve any justified override.",
-    "millwright": "Localize the mechanical relationship before adjustment.",
-    "maintenance": "Review the bounded procedure and intervention history.",
-    "technician": "Compare controller intent with the verified physical response.",
-    "qa": "Verify the defect against the active sampling plan.",
-    "engineering": "Review the envelope and evidence before changing the model.",
-    "plant-manager": "Assign the next qualified owner; do not diagnose the machine."
+    "operator": "Perform only actions commissioned for the operator role on the current asset and operating state. Operator scope may include observation, bounded diagnostic checks, recovery actions, or bounded adjustments; do not exceed the commissioned action envelope.",
+    "senior-operator": "Perform or approve only actions commissioned for the senior-operator role and preserve any justified override or authorization record.",
+    "millwright": "Localize and intervene only within commissioned millwright authority, preserving test conditions and verification requirements.",
+    "maintenance": "Review the bounded procedure, current evidence, intervention history, and commissioned authority before adjustment.",
+    "technician": "Compare controller intent with the verified physical response within commissioned technician authority.",
+    "qa": "Verify the defect against the active sampling plan and commissioned QA authority.",
+    "engineering": "Review the envelope and evidence before changing the model or approved procedure.",
+    "plant-manager": "Assign or authorize the next qualified owner according to commissioned plant policy; do not treat role assignment as diagnosis."
   }
 }
