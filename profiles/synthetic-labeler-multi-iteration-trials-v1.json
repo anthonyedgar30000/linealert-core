@@ -11,6 +11,17 @@
     "linealert_role": "arm_trial_capture_evidence_compare_rerank",
     "one_material_change_per_trial": true
   },
+  "production_verification": {
+    "classification": "synthetic_demo_parameter",
+    "required_consecutive_healthy_containers": 50,
+    "presentation_interval_stddev_max_ms": 11.5,
+    "camera_alignment_required": true,
+    "quality_accept_required": true,
+    "reset_streak_on_nonqualifying_container": true,
+    "completion_state": "recovery_observed",
+    "interpretation": "Fifty consecutive production containers meeting the synthetic verification criteria are sufficient to close the active demo concern and return the canvas to normal monitoring.",
+    "boundary": "Recovery observed under configured production-verification criteria does not establish root cause or prove future reliability."
+  },
   "initial_evidence": {
     "presentation_interval_stddev_ms": 21.6,
     "matched_healthy_stddev_ms": 7.8,
@@ -127,6 +138,7 @@
     "recommendation != authorized action",
     "intervention response != causal proof",
     "LineAlert trial arm != HMI equipment execution",
-    "successful 5-container trial != verified production recovery"
+    "successful 5-container trial != verified production recovery",
+    "recovery observed != root cause proof or future reliability guarantee"
   ]
 }
