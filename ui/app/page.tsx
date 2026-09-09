@@ -27,6 +27,7 @@ type Asset = {
 
 type TrialRecord = {
   id: string;
+  scenarioId: string;
   asset: string;
   requestedBy: string;
   triggerObservation: string;
@@ -36,10 +37,41 @@ type TrialRecord = {
   visualEvidence: string;
   telemetryEvidence: string;
   qualityEvidence: string;
+  comparison: string;
+  boundedFinding: string;
   provenance: string[];
   state: TrialState;
   review: ReviewState;
 };
+
+const scenario = {
+  id: "labeler-roll-change-stability-v1",
+  baseline: {
+    speed: 78,
+    presentationStdDevMs: 7.8,
+    aligned: 5,
+    skew: 0,
+    maxOffsetMm: 0.7,
+    confidence: 0.97,
+  },
+  concern: {
+    speed: 78,
+    presentationStdDevMs: 21.6,
+    aligned: 3,
+    skew: 2,
+    maxOffsetMm: 2.9,
+    confidence: 0.95,
+  },
+  verification: {
+    runId: "SYN-L2-VERIFY-001",
+    speed: 78,
+    presentationStdDevMs: 18.9,
+    aligned: 4,
+    skew: 1,
+    maxOffsetMm: 2.4,
+    confidence: 0.96,
+  },
+} as const;
 
 const seedAssets: Asset[] = [
   { id: "filler", name: "Filler 1", role: "Upstream process", plan: "HOLDS", owner: "Shift supervisor", next: "No action requested." },
@@ -86,6 +118,7 @@ export default function PlantCanvas() {
     setAssets((current) => current.map((asset) => asset.id === "labeler" ? { ...asset, owner, plan: "WATCH", next, latestObservation: observation } : asset));
     setTrial({
       id: `LA-TRIAL-${Date.now().toString().slice(-6)}`,
+      scenarioId: scenario.id,
       asset: "Labeler 2",
       requestedBy: owner,
       triggerObservation: observation,
@@ -93,10 +126,13 @@ export default function PlantCanvas() {
       timestamp: new Date().toLocaleString(),
       runContext: "Awaiting admitted completed-run source",
       visualEvidence: "Awaiting admitted camera/classifier evidence",
-      telemetryEvidence: "No live telemetry source connected",
-      qualityEvidence: "No live quality/reject-count source connected",
+      telemetryEvidence: "Awaiting synthetic telemetry source event",
+      qualityEvidence: "Awaiting synthetic quality source event",
+      comparison: "Awaiting verification-run evidence",
+      boundedFinding: "No finding yet. The run evidence has not arrived.",
       provenance: [
         "Asset identity · Plant Canvas synthetic topology",
+        "Scenario identity · Deterministic synthetic fixture",
         "Trigger observation · Operator supplied · unverified",
         "Trial request · Deterministic workflow rule",
         "Timestamp · Browser session",
@@ -108,31 +144,35 @@ export default function PlantCanvas() {
   };
 
   const receiveSyntheticRunEvent = () => {
+    const v = scenario.verification;
     setTrial((current) => current ? {
       ...current,
-      runContext: "Synthetic completed-run event received · 5 containers observed",
-      visualEvidence: "Synthetic camera classifier: 4/5 containers appear within demo visual alignment envelope; 1 apparent skew event.",
-      telemetryEvidence: "No live telemetry source connected · field intentionally remains unpopulated",
-      qualityEvidence: "Synthetic demo counter: 4 visually acceptable · 1 apparent reject candidate",
+      runContext: `Synthetic MES event · ${v.runId} · ${v.speed} containers/min · 5 containers observed`,
+      visualEvidence: `Synthetic camera · 4/5 within demo alignment envelope · 1 apparent skew · max |offset| ${v.maxOffsetMm.toFixed(1)} mm · classifier confidence ${(v.confidence * 100).toFixed(0)}%`,
+      telemetryEvidence: `Synthetic telemetry · presentation-interval variability ${v.presentationStdDevMs.toFixed(1)} ms SD (baseline ${scenario.baseline.presentationStdDevMs.toFixed(1)} ms; concern window ${scenario.concern.presentationStdDevMs.toFixed(1)} ms)`,
+      qualityEvidence: "Synthetic quality counter · 4 accepted · 1 apparent reject candidate",
+      comparison: "Verification run is worse than the synthetic baseline, but slightly better than the immediately preceding concern window. Line speed is unchanged in all three windows.",
+      boundedFinding: "Alignment inconsistency persists while presentation-interval variability remains elevated relative to the synthetic baseline. This supports continued attention to presentation stability; it does not establish root cause.",
       provenance: [
         ...current.provenance,
-        "Run context · Synthetic completed-run event",
-        "Visual evidence · Synthetic AI-camera classification",
-        "Quality evidence · Synthetic demo counter",
-        "Telemetry evidence · Source unavailable; no value inferred",
+        "Run context · synthetic-mes/packaging-line-1",
+        "Visual evidence · synthetic-camera/labeler2 · AI classification",
+        "Telemetry evidence · synthetic-telemetry/labeler2 · deterministic fixture",
+        "Quality evidence · synthetic-quality/labeler2",
+        "Comparison · Deterministic rule over scenario windows",
       ],
       state: "READY FOR HUMAN REVIEW",
     } : current);
-    setAssets((current) => current.map((asset) => asset.id === "labeler" ? { ...asset, next: "Review the auto-assembled trial record. Confirm, correct, or escalate; do not re-enter evidence LineAlert already has." } : asset));
+    setAssets((current) => current.map((asset) => asset.id === "labeler" ? { ...asset, next: "Review the auto-assembled synthetic evidence. Confirm, correct, or escalate; no causal conclusion has been established." } : asset));
   };
 
   const reviewTrial = (review: ReviewState) => {
     setTrial((current) => current ? { ...current, review } : current);
     if (review === "ACCEPTED") {
-      setAssets((current) => current.map((asset) => asset.id === "labeler" ? { ...asset, owner: "Shift supervisor", next: "Review the accepted trial result and decide whether another single bounded action is justified." } : asset));
+      setAssets((current) => current.map((asset) => asset.id === "labeler" ? { ...asset, owner: "Shift supervisor", next: "Review the confirmed bounded finding and decide whether another single bounded action is justified." } : asset));
     }
     if (review === "ESCALATED") {
-      setAssets((current) => current.map((asset) => asset.id === "labeler" ? { ...asset, owner: "Maintenance", next: "Review the auto-assembled trial evidence package before any further intervention." } : asset));
+      setAssets((current) => current.map((asset) => asset.id === "labeler" ? { ...asset, owner: "Maintenance", next: "Review the auto-assembled evidence package before any further intervention." } : asset));
     }
   };
 
@@ -142,7 +182,7 @@ export default function PlantCanvas() {
         <div>
           <span className={styles.kicker}>LINEALERT · PLANT CANVAS · SYNTHETIC DEMO</span>
           <h1>{posture}</h1>
-          <p>Model the plant, locate the concern, assign one bounded action, run, let LineAlert assemble the evidence, then ask a human only for judgment, correction, or authorization.</p>
+          <p>Model the plant, locate the concern, assign one bounded action, run, let LineAlert assemble coordinated evidence, then ask a human only for judgment, correction, or authorization.</p>
         </div>
         <nav className={styles.nav}>
           <button className={view === "canvas" ? styles.activeView : ""} onClick={() => setView("canvas")}>Plant canvas</button>
@@ -155,7 +195,7 @@ export default function PlantCanvas() {
         <div><span>ACTIVE CONCERNS</span><b>{activeCount}</b></div>
         <div><span>SELECTED ASSET</span><b>{selected.name}</b></div>
         <div><span>PLAN</span><b>{selected.plan}</b></div>
-        <div><span>PRODUCT RULE</span><b>System populates the record. Human confirms, corrects, or escalates.</b></div>
+        <div><span>SCENARIO</span><b>{scenario.id} · deterministic synthetic fixture</b></div>
       </section>
 
       {view === "canvas" ? (
@@ -175,7 +215,7 @@ export default function PlantCanvas() {
                 </div>
               ))}
             </div>
-            <div className={styles.dependencyNote}>Process flow is illustrative, not commissioned plant truth. Relationship display does not prove causation.</div>
+            <div className={styles.dependencyNote}>Process flow and numeric values are synthetic demo parameters, not commissioned plant truth or OEM operating limits. Relationship display does not prove causation.</div>
           </section>
 
           <aside className={styles.assetPanel}>
@@ -214,7 +254,7 @@ export default function PlantCanvas() {
       {trial && (
         <section className={styles.trialCard} aria-label="Bounded verification trial">
           <div className={styles.trialHeading}>
-            <div><span>BOUNDED TRIAL · AUTO-ASSEMBLED RECORD</span><h2>{trial.id}</h2></div>
+            <div><span>BOUNDED TRIAL · AUTO-ASSEMBLED RECORD</span><h2>{trial.id}</h2><small>Scenario {trial.scenarioId}</small></div>
             <b>{trial.state}</b>
           </div>
           <div className={styles.trialGrid}>
@@ -225,14 +265,16 @@ export default function PlantCanvas() {
           </div>
           <div className={styles.trialEvidence}>
             <div><span>Trigger observation</span><p>{trial.triggerObservation}</p></div>
-            <div><span>Run context</span><p>{trial.runContext}</p></div>
+            <div><span>Run / MES context</span><p>{trial.runContext}</p></div>
             <div><span>Visual evidence</span><p>{trial.visualEvidence}</p></div>
             <div><span>Quality evidence</span><p>{trial.qualityEvidence}</p></div>
             <div><span>Telemetry</span><p>{trial.telemetryEvidence}</p></div>
+            <div><span>Like-for-like comparison</span><p>{trial.comparison}</p></div>
+            <div><span>Bounded finding</span><p>{trial.boundedFinding}</p></div>
           </div>
           <div className={styles.provenance}><span>PROVENANCE</span>{trial.provenance.map((item) => <small key={item}>{item}</small>)}</div>
           {trial.state === "AWAITING RUN EVIDENCE" ? (
-            <button className={styles.primaryAction} onClick={receiveSyntheticRunEvent}>Demo only · receive completed-run event</button>
+            <button className={styles.primaryAction} onClick={receiveSyntheticRunEvent}>Demo only · receive coordinated source events</button>
           ) : (
             <div className={styles.reviewActions}>
               <button onClick={() => reviewTrial("ACCEPTED")}>Confirm record</button>
@@ -240,11 +282,11 @@ export default function PlantCanvas() {
               <button onClick={() => reviewTrial("ESCALATED")}>Escalate</button>
             </div>
           )}
-          <small className={styles.operatorBoundary}>In a connected deployment the completed-run event and admitted camera, telemetry, MES, and quality sources would populate this record without human re-entry. The demo button represents that external event; it does not authorize or execute a machine run. AI-camera output remains classified evidence, not verified physical state or root-cause proof.</small>
+          <small className={styles.operatorBoundary}>Synthetic MES, telemetry, camera, and quality outputs are coordinated by a deterministic demo fixture so the evidence behaves coherently. They are not measurements from a real machine, commissioned limits, root-cause proof, or authorization to run or change equipment.</small>
         </section>
       )}
 
-      <section className={styles.boundary}><div><span>V1 BOUNDARY</span><b>One bounded action → authorized run → automatic evidence assembly → human judgment.</b></div><p>No live telemetry, camera, PLC/controller, MES, quality system, CMMS, dispatch, safety-control or equipment-control connection is added here. Trial execution remains synthetic feedback content; recommendation is not authorized action.</p></section>
+      <section className={styles.boundary}><div><span>V1 BOUNDARY</span><b>Deterministic scenario → coordinated synthetic sources → auto-assembled evidence → human judgment.</b></div><p>No live telemetry, camera, PLC/controller, MES, quality system, CMMS, dispatch, safety-control or equipment-control connection is added here. Successful or improved synthetic evidence does not establish root cause or a safe production change.</p></section>
     </main>
   );
 }
