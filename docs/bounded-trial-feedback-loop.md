@@ -18,61 +18,62 @@ The default interaction is therefore:
 
 **System populates the record → human confirms, corrects, or escalates.**
 
-Example fields include:
+Example fields include asset identity, workflow owner, timestamp, trial identifier, triggering observation, run context, visual evidence, telemetry evidence, quality evidence, maintenance-history context, and authorization source when available.
 
-- asset identity from the commissioned or currently selected plant context;
-- workflow owner from current routing state;
-- timestamp and trial identifier from the system/session;
-- triggering observation from the preserved operator response;
-- run/batch/work-order context when an admitted MES or workflow source exists;
-- visual evidence from an admitted camera/classifier source;
-- telemetry evidence from an admitted telemetry/historian source;
-- quality or reject counts from an admitted quality source;
-- authorization source from the governed workflow when available.
+Missing sources stay missing. LineAlert must not infer an unavailable value merely to complete a form.
 
-Missing sources stay missing. LineAlert must not infer an unavailable telemetry, quality, or authorization value merely to complete a form.
+## Product-design assumption: excellent CMMS history
+
+For the current product-vision path, assume the plant's CMMS history is **rich, clean, correctly asset-linked, structured enough to interpret, and consistently maintained**.
+
+This is a deliberate design assumption, not a claim about every real plant. It exists so LineAlert can be designed around the long-term value of accumulated maintenance history instead of treating CMMS context as a marginal optional feature.
+
+Under that assumption, historical maintenance evidence is a first-class input alongside current telemetry, camera/quality evidence, operator observations, topology, and approved procedures.
+
+Useful historical facts include:
+
+- prior symptoms on the same asset;
+- verified historical localization or repair domain;
+- intervention performed;
+- parts replaced;
+- operating conditions during the event;
+- whether the intervention held during documented verification;
+- technician notes and structured closure information;
+- recurrence after an earlier intervention.
+
+The core boundary remains:
+
+**historical_pattern != current_root_cause**
+
+Strong history can move an allowed intervention sharply up or down in the ranking. It cannot silently become a diagnosis, current physical-state claim, safety approval, or authorization.
+
+As the maintained CMMS record grows, its ranking influence may increase because the historical comparison set becomes richer. Current admitted evidence still matters: a historical pattern that contradicts current evidence should not override the current evidence merely because it is frequent.
 
 ## Evidence-arrival model
 
-In a connected deployment, a completed-run event or admitted source update should trigger record assembly automatically. The operator should not have to re-enter camera findings, telemetry values, reject counts, timestamps, or asset context that LineAlert can already obtain.
+In a connected deployment, a completed-run event or admitted source update should trigger record assembly automatically. The operator should not have to re-enter camera findings, telemetry values, reject counts, timestamps, asset context, or maintenance history that LineAlert can already obtain.
 
-The static and browser-session demos cannot receive a real machine/run event. Any demo control that advances the trial represents **receipt of a synthetic completed-run event**, not a human manually entering the feedback and not LineAlert authorizing the run.
+The static and browser-session demos cannot receive a real machine/run event. Any demo control that advances the trial represents **receipt of synthetic admitted-source events**, not a human manually entering feedback and not LineAlert authorizing the run.
 
 ## Provenance
 
-Every auto-populated field should retain source class and verification state. At minimum distinguish:
+Every auto-populated field should retain source class and verification state. At minimum distinguish operator supplied/unverified, deterministic workflow-derived, system/session generated, telemetry/historian sourced, AI-camera classified, quality-system sourced, CMMS sourced, AI-extracted from human text, and human confirmed or corrected.
 
-- operator supplied / unverified;
-- deterministic workflow-derived;
-- system/session generated;
-- telemetry/historian sourced;
-- AI-camera classified;
-- AI-extracted from human text;
-- quality-system sourced;
-- human confirmed or corrected.
-
-AI-camera output is classified visual evidence. It is not verified physical state, root-cause proof, or authorization to change equipment.
+AI-camera output is classified visual evidence. CMMS history is historical evidence. Neither is verified current physical state, root-cause proof, or authorization to change equipment.
 
 ## Ranked next-option selection
 
 Confirming the assembled evidence record does not close the response loop. It means the human accepts the evidence package as the basis for the next bounded decision.
 
-After confirmation, LineAlert may rank only the **allowed next options** that are already admitted for the scenario, procedure, role, or commissioning context. The ranking should be deterministic and inspectable wherever practical.
+After confirmation, LineAlert may rank only the **allowed next options** already admitted for the scenario, procedure, role, or commissioning context. The ranking should be deterministic and inspectable wherever practical.
 
 The ranking semantics are:
 
-**evidence alignment and information value != root-cause probability**
+**current evidence alignment + historical support + information value != root-cause probability**
 
-A higher rank means the current admitted evidence makes that option more relevant or more informative to try next. It does not mean LineAlert has proven the cause, that the option is safe, or that the user is authorized to perform it.
+A higher rank means the admitted evidence makes that option more relevant or informative to try next. It does not mean LineAlert has proven the cause, that the option is safe, or that the user is authorized to perform it.
 
-The UI should expose the factors that moved an option up or down, for example:
-
-- operator observation supports;
-- telemetry relationship supports;
-- camera evidence supports;
-- no direct evidence available;
-- unchanged operating variable weakens a rate-change explanation;
-- option preserves like-for-like comparison and one-variable discipline.
+The UI should expose the factors that moved an option up or down, including current operator/telemetry/camera/quality evidence, similar historical cases, historically effective interventions, historical contradictions, unchanged operating variables, and whether the option preserves like-for-like comparison and one-variable discipline.
 
 The human selects one option. Selection records workflow intent only. It does not authorize the intervention, execute a machine change, bypass a safety control, or replace a commissioned procedure.
 
@@ -80,9 +81,9 @@ For any material intervention, the next required state is a fresh bounded run be
 
 The resulting loop is:
 
-**Evidence → ranked allowed options → human selects → authorization / execution outside LineAlert authority → fresh bounded run → new evidence → rerank.**
+**Current evidence + maintained CMMS history → ranked allowed options → human selects → authorization / execution outside LineAlert authority → fresh bounded run → new evidence → rerank.**
 
-An option may move down as new evidence arrives. A successful trial after an intervention may increase the information value of that intervention family, but improvement after a change still does not establish root cause.
+An option may move down as new evidence arrives. Historical success can increase relevance but improvement after a current change still does not establish root cause.
 
 ## Trial isolation
 
@@ -92,7 +93,7 @@ Any setting, mechanical, timing, speed, guide, control, firmware, or other mater
 
 ## Current demo boundary
 
-The current Plant Canvas implementation is browser-session synthetic feedback content. Its five-container trial size, camera classification, numeric source values, and evidence-ranked next options are demo parameters, not OEM requirements or commissioned plant truth.
+The current Plant Canvas implementation is browser-session synthetic feedback content. Its five-container trial size, camera classification, numeric source values, synthetic CMMS work orders, and evidence-ranked next options are demo parameters, not OEM requirements or commissioned plant truth.
 
 No live camera, PLC/controller, historian, MES, quality system, CMMS, dispatch, safety-control, or equipment-control connection is created by this increment.
 
