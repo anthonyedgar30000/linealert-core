@@ -1,0 +1,132 @@
+{
+  "schema_version": "linealert.synthetic-multi-iteration-trial.v1",
+  "scenario_id": "labeler-roll-change-multi-iteration-v1",
+  "classification": "synthetic_demo_only",
+  "asset": "Labeler 2",
+  "plant_context": "Packaging Line 1",
+  "trial_definition": {
+    "trial_size": 5,
+    "unit": "containers",
+    "execution": "operator_executes_from_hmi",
+    "linealert_role": "arm_trial_capture_evidence_compare_rerank",
+    "one_material_change_per_trial": true
+  },
+  "initial_evidence": {
+    "presentation_interval_stddev_ms": 21.6,
+    "matched_healthy_stddev_ms": 7.8,
+    "camera_within_alignment_envelope": "3/5",
+    "apparent_skew_events": 2,
+    "quality_accepted": "3/5",
+    "line_speed_containers_per_min": 78,
+    "timing_relationship_state": "inside historical healthy band",
+    "cmms_similar_cases": 4,
+    "cmms_same_guide_or_presentation_correction": 3
+  },
+  "action_catalog": [
+    {
+      "action_id": "restore-guide-spacing",
+      "title": "Restore guide / spacing to approved marked setup reference",
+      "default_rank": 1,
+      "class": "standard_operator_change"
+    },
+    {
+      "action_id": "adjust-peel-angle",
+      "title": "Adjust peel angle within approved setup range",
+      "default_rank": 2,
+      "class": "standard_operator_change"
+    },
+    {
+      "action_id": "adjust-hold-down",
+      "title": "Adjust hold-down within approved setup range",
+      "default_rank": 3,
+      "class": "standard_operator_change"
+    },
+    {
+      "action_id": "increase-label-delay",
+      "title": "Increase label delay within approved setup range",
+      "default_rank": 4,
+      "class": "standard_operator_change"
+    },
+    {
+      "action_id": "reduce-speed-temporarily",
+      "title": "Reduce speed temporarily for diagnostic sensitivity test",
+      "default_rank": 5,
+      "class": "bounded_operating_change"
+    },
+    {
+      "action_id": "repeat-no-change",
+      "title": "Repeat 5-container run with no further change",
+      "default_rank": 6,
+      "class": "verification_only"
+    }
+  ],
+  "deterministic_trial_outcomes": {
+    "restore-guide-spacing": {
+      "presentation_interval_stddev_ms": 9.1,
+      "camera_within_alignment_envelope": "5/5",
+      "apparent_skew_events": 0,
+      "quality_accepted": "5/5",
+      "interpretation": "Strong improvement toward matched healthy behavior after one bounded change.",
+      "rerank_rule": "Promote repeat-no-change to rank 1 to test repeatability before another material change; keep guide-spacing as supported current configuration."
+    },
+    "adjust-peel-angle": {
+      "presentation_interval_stddev_ms": 18.7,
+      "camera_within_alignment_envelope": "4/5",
+      "apparent_skew_events": 1,
+      "quality_accepted": "4/5",
+      "interpretation": "Visible outcome improves slightly while presentation variability remains materially elevated.",
+      "rerank_rule": "Restore-guide-spacing remains rank 1; peel-angle loses priority because improvement is partial and the historian pattern remains presentation-dominant."
+    },
+    "adjust-hold-down": {
+      "presentation_interval_stddev_ms": 20.2,
+      "camera_within_alignment_envelope": "3/5",
+      "apparent_skew_events": 2,
+      "quality_accepted": "3/5",
+      "interpretation": "Little meaningful change in the bounded evidence window.",
+      "rerank_rule": "Restore-guide-spacing remains rank 1; hold-down moves down because the trial added little supporting evidence."
+    },
+    "increase-label-delay": {
+      "presentation_interval_stddev_ms": 21.1,
+      "camera_within_alignment_envelope": "3/5",
+      "apparent_skew_events": 2,
+      "quality_accepted": "3/5",
+      "interpretation": "No useful improvement and the current/historical timing relationship remains inside its healthy band.",
+      "rerank_rule": "Timing-related action moves down; restore-guide-spacing remains rank 1."
+    },
+    "reduce-speed-temporarily": {
+      "presentation_interval_stddev_ms": 17.6,
+      "camera_within_alignment_envelope": "5/5",
+      "apparent_skew_events": 0,
+      "quality_accepted": "5/5",
+      "interpretation": "Observed consequence is suppressed at lower speed while the presentation relationship remains outside matched healthy behavior.",
+      "rerank_rule": "Rate sensitivity gains support, but restore-guide-spacing remains rank 1 because the underlying presentation relationship is still abnormal."
+    },
+    "repeat-no-change": {
+      "presentation_interval_stddev_ms": 9.4,
+      "camera_within_alignment_envelope": "5/5",
+      "apparent_skew_events": 0,
+      "quality_accepted": "5/5",
+      "interpretation": "Improvement repeats without another material change.",
+      "rerank_rule": "Promote production verification to the next recommended step; do not introduce another change unless production evidence contradicts the bounded result."
+    }
+  },
+  "ranking_inputs": [
+    "current machine and sensor evidence",
+    "latest bounded trial result",
+    "matched historical machine windows",
+    "historian relationship state",
+    "CMMS similar-case history",
+    "operator observation",
+    "commissioned action catalog",
+    "information value of the next trial"
+  ],
+  "ranking_semantics": "Ranks the best-supported next bounded action given the evidence available now. Rank is advisory, not causal probability, proof, authorization, or an equipment command.",
+  "boundaries": [
+    "telemetry != diagnosis",
+    "historical pattern != current root cause",
+    "recommendation != authorized action",
+    "intervention response != causal proof",
+    "LineAlert trial arm != HMI equipment execution",
+    "successful 5-container trial != verified production recovery"
+  ]
+}
