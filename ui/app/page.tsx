@@ -1,233 +1,200 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 
-import OperatorActions, { type OperatorActionObservation } from "./operator-actions";
-import styles from "./operator-view.module.css";
+import styles from "./triage-board.module.css";
 
-type RuntimeObservation = OperatorActionObservation & {
-  temporal_rule_status?: string;
+type TriageStage = "INTAKE" | "TRIAGE" | "ASSIGNED" | "RESPONDING" | "VERIFY";
+
+type TriageItem = {
+  id: string;
+  asset: string;
+  summary: string;
+  stage: TriageStage;
+  owner: string;
+  next: string;
+  plan: "HOLDS" | "WATCH" | "ADAPT";
+  runway?: string;
+  responseEta?: string;
+  source: string;
 };
 
-type ConditionPayload = {
-  configured?: boolean;
-  running?: boolean;
-  source_mode?: string;
-  measurement_count?: number;
-  refusal_count?: number;
-  reason_code?: string;
-  claim_boundary?: string;
-  condition?: {
-    condition_signals?: {
-      observations?: RuntimeObservation[];
+const seededItems: TriageItem[] = [
+  {
+    id: "LA-DEMO-104",
+    asset: "Labeler 2",
+    summary: "Operator reports intermittent hesitation after roll change.",
+    stage: "ASSIGNED",
+    owner: "Maintenance",
+    next: "Observe until maintenance arrives; no additional operator action requested.",
+    plan: "HOLDS",
+    runway: "~70 min",
+    responseEta: "32 min",
+    source: "Synthetic demo observation",
+  },
+  {
+    id: "LA-DEMO-105",
+    asset: "CNC Cell A",
+    summary: "Two updated controllers stopped reporting to the historian after a firmware change.",
+    stage: "TRIAGE",
+    owner: "Shift supervisor",
+    next: "Confirm shared gateway path and maintenance availability before escalating.",
+    plan: "WATCH",
+    runway: "~95 min",
+    responseEta: "44 min",
+    source: "Synthetic dependency-risk demo",
+  },
+  {
+    id: "LA-DEMO-106",
+    asset: "Packaging Line 1",
+    summary: "Downstream buffer is shrinking faster than the expected response window.",
+    stage: "RESPONDING",
+    owner: "Plant manager",
+    next: "Choose an approved adaptation that preserves flow until qualified response arrives.",
+    plan: "ADAPT",
+    runway: "26 min",
+    responseEta: "47 min",
+    source: "Synthetic operational-context demo",
+  },
+];
+
+const stageOrder: TriageStage[] = ["INTAKE", "TRIAGE", "ASSIGNED", "RESPONDING", "VERIFY"];
+
+export default function TriageBoard() {
+  const [items, setItems] = useState<TriageItem[]>(seededItems);
+  const [quickUpdate, setQuickUpdate] = useState("");
+  const [lastCaptured, setLastCaptured] = useState<string | null>(null);
+
+  const adaptCount = items.filter((item) => item.plan === "ADAPT").length;
+  const watchCount = items.filter((item) => item.plan === "WATCH").length;
+  const plantPosture = adaptCount > 0 ? "ADAPTATION REQUIRED" : watchCount > 0 ? "PLAN HOLDS · WATCHING" : "PLAN HOLDS";
+
+  const grouped = useMemo(() => {
+    const result = new Map<TriageStage, TriageItem[]>();
+    stageOrder.forEach((stage) => result.set(stage, []));
+    items.forEach((item) => result.get(item.stage)?.push(item));
+    return result;
+  }, [items]);
+
+  const captureUpdate = (event: FormEvent) => {
+    event.preventDefault();
+    const observation = quickUpdate.trim();
+    if (!observation) return;
+
+    const item: TriageItem = {
+      id: `LA-DEMO-${107 + items.length}`,
+      asset: "Unassigned asset",
+      summary: observation,
+      stage: "INTAKE",
+      owner: "Triage queue",
+      next: "Attach asset/run context and decide whether management attention is justified.",
+      plan: "HOLDS",
+      source: "Operator observation — unverified · browser-session demo only",
     };
-  } | null;
-};
 
-type RuntimeState = {
-  state: "loading" | "active" | "unavailable";
-  payload?: ConditionPayload;
-};
-
-const humanize = (value: string) => value
-  .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
-  .replaceAll("_", " ")
-  .replace(/^./, (letter) => letter.toUpperCase());
-
-const relationshipLabel = (observation: RuntimeObservation) => (
-  `${humanize(observation.topology_from)} → ${humanize(observation.topology_to)}`
-);
-
-const outsideEnvelope = (observation: RuntimeObservation) => (
-  observation.value < observation.min_value || observation.value > observation.max_value
-);
-
-export default function OperatorView() {
-  const [runtime, setRuntime] = useState<RuntimeState>({ state: "loading" });
-
-  useEffect(() => {
-    let active = true;
-
-    const readCondition = async () => {
-      try {
-        const response = await fetch("/api/condition", { cache: "no-store" });
-        if (!response.ok) throw new Error("condition runtime unavailable");
-        const payload = (await response.json()) as ConditionPayload;
-        if (active) setRuntime({ state: "active", payload });
-      } catch {
-        if (active) setRuntime({ state: "unavailable" });
-      }
-    };
-
-    readCondition();
-    const timer = window.setInterval(readCondition, 1500);
-    return () => {
-      active = false;
-      window.clearInterval(timer);
-    };
-  }, []);
-
-  const latestConditions = useMemo(() => {
-    const observations = runtime.payload?.condition?.condition_signals?.observations?.filter(
-      (observation) => observation.quality === "good" && Number.isFinite(observation.value),
-    ) ?? [];
-    const latest = new Map<string, RuntimeObservation>();
-    for (const observation of observations) {
-      latest.set(observation.relationship_id ?? observation.signal, observation);
-    }
-    return [...latest.values()];
-  }, [runtime.payload]);
-
-  const attentionConditions = latestConditions.filter(outsideEnvelope);
-  const status = runtime.state === "unavailable"
-    ? "EVIDENCE UNAVAILABLE"
-    : attentionConditions.length > 0
-      ? "ATTENTION"
-      : latestConditions.length > 0
-        ? "STABLE"
-        : "NO ACTIVE CONDITION";
-  const sourceMode = runtime.payload?.source_mode ?? "unknown";
+    setItems((current) => [item, ...current]);
+    setLastCaptured(observation);
+    setQuickUpdate("");
+  };
 
   return (
     <main className={styles.shell}>
       <header className={styles.header}>
         <div>
-          <span className={styles.kicker}>LINEALERT · OPERATOR VIEW</span>
-          <h1>Current admitted machine conditions</h1>
+          <span className={styles.kicker}>LINEALERT · TRIAGE BOARD · SYNTHETIC DEMO</span>
+          <h1>{plantPosture}</h1>
           <p>
-            This view follows condition evidence produced by LineAlert. Active condition types are
-            highlighted; inactive types stay visible but subdued and do not imply proven absence.
-            Training cases and commissioning fixtures live on separate routes and never replace operator evidence.
+            Intake, triage, ownership, response and verification. The board shows what needs attention now;
+            deeper evidence stays behind the workflow.
           </p>
         </div>
-        <nav className={styles.nav} aria-label="Operator view navigation">
-          <Link href="/health">Machine Health</Link>
-          <Link className={styles.secondary} href="/training">Training Lab</Link>
-          <Link className={styles.secondary} href="/commissioning">Commissioning Lab</Link>
+        <nav className={styles.nav} aria-label="LineAlert navigation">
+          <Link href="/health">Evidence / history</Link>
+          <Link href="/training">Training</Link>
+          <Link href="/commissioning">Commissioning</Link>
         </nav>
       </header>
 
-      <section className={styles.statusStrip} aria-label="Current condition status">
-        <div>
-          <span>STATION STATUS</span>
-          <b>{status}</b>
-        </div>
-        <div>
-          <span>SOURCE MODE</span>
-          <b>{sourceMode}</b>
-        </div>
-        <div>
-          <span>ADMITTED MEASUREMENTS</span>
-          <b>{runtime.payload?.measurement_count ?? 0}</b>
-        </div>
-        <div>
-          <span>REFUSALS</span>
-          <b>{runtime.payload?.refusal_count ?? 0}</b>
-        </div>
+      <section className={styles.posture} aria-label="Plant triage posture">
+        <div><span>ACTIVE ITEMS</span><b>{items.length}</b></div>
+        <div><span>WATCHING</span><b>{watchCount}</b></div>
+        <div><span>ADAPT</span><b>{adaptCount}</b></div>
+        <div><span>BOARD RULE</span><b>Only interrupt when the plan may need attention.</b></div>
       </section>
 
-      <section className={styles.workspace}>
-        <div className={styles.sectionHeading}>
-          <div>
-            <span>ACTIVE EVIDENCE</span>
-            <h2>Relationships requiring operator attention</h2>
-          </div>
-          <small>Latest admitted measurement per relationship</small>
+      <section className={styles.intake}>
+        <div>
+          <span className={styles.sectionLabel}>QUICK UPDATE</span>
+          <h2>Say it before you forget it.</h2>
+          <p>
+            Capture the observation now. LineAlert preserves the original wording and routes it into triage;
+            this demo does not claim the observation is verified machine evidence.
+          </p>
         </div>
-
-        {runtime.state === "loading" && (
-          <div className={styles.emptyState}>Reading the current condition stream…</div>
-        )}
-
-        {runtime.state === "unavailable" && (
-          <div className={styles.emptyState}>
-            Condition evidence is unavailable. Do not substitute a training case or commissioning
-            scenario for live or retained machine evidence.
+        <form onSubmit={captureUpdate} className={styles.intakeForm}>
+          <textarea
+            aria-label="Quick update observation"
+            value={quickUpdate}
+            onChange={(event) => setQuickUpdate(event.target.value)}
+            placeholder="It started sounding rough after the roll change…"
+            rows={3}
+          />
+          <button type="submit">Record update</button>
+        </form>
+        {lastCaptured && (
+          <div className={styles.receipt}>
+            <b>Update received.</b>
+            <span>Added to Intake as an unverified operator observation. No equipment action was authorized.</span>
           </div>
         )}
+      </section>
 
-        {runtime.state === "active" && latestConditions.length === 0 && (
-          <div className={styles.emptyState}>
-            No admitted condition measurement is active. Machine Health remains available for
-            retained history; training and commissioning remain separate learning/test environments.
-          </div>
-        )}
-
-        {latestConditions.length > 0 && (
-          <div className={styles.conditionGrid}>
-            {latestConditions.map((observation) => {
-              const outside = outsideEnvelope(observation);
-              return (
-                <article
-                  className={`${styles.conditionCard} ${outside ? styles.attention : ""}`}
-                  key={observation.relationship_id ?? observation.signal}
-                >
-                  <div className={styles.cardHeader}>
-                    <span>{outside ? "OUTSIDE ENVELOPE" : "IN ENVELOPE"}</span>
-                    <b>{observation.value.toFixed(0)} {observation.unit}</b>
+      <section className={styles.board} aria-label="Triage workflow board">
+        {stageOrder.map((stage) => (
+          <section className={styles.column} key={stage}>
+            <header>
+              <span>{stage}</span>
+              <b>{grouped.get(stage)?.length ?? 0}</b>
+            </header>
+            <div className={styles.cardStack}>
+              {(grouped.get(stage) ?? []).map((item) => (
+                <article className={`${styles.card} ${styles[item.plan.toLowerCase()]}`} key={item.id}>
+                  <div className={styles.cardTopline}>
+                    <span>{item.asset}</span>
+                    <small>{item.id}</small>
                   </div>
-                  <h3>{relationshipLabel(observation)}</h3>
+                  <h3>{item.summary}</h3>
                   <dl>
-                    <div><dt>Commissioned</dt><dd>{observation.min_value}–{observation.max_value} {observation.unit}</dd></div>
-                    <div><dt>Signal</dt><dd>{observation.signal}</dd></div>
-                    <div><dt>Asset</dt><dd>{observation.asset_id}</dd></div>
-                    <div><dt>Correlation</dt><dd>{observation.correlation_id ?? "—"}</dd></div>
+                    <div><dt>Owner</dt><dd>{item.owner}</dd></div>
+                    {item.runway && <div><dt>Runway</dt><dd>{item.runway}</dd></div>}
+                    {item.responseEta && <div><dt>Response ETA</dt><dd>{item.responseEta}</dd></div>}
+                    <div><dt>Plan</dt><dd>{item.plan}</dd></div>
                   </dl>
-                  <p>
-                    {outside
-                      ? "The measured relationship requires investigation. This does not establish physical root cause."
-                      : "The latest admitted measurement is inside its commissioned envelope."}
-                  </p>
-
-                  {outside && (
-                    <OperatorActions observation={observation} sourceMode={sourceMode} />
-                  )}
-
-                  <Link className={styles.historyLink} href="/health">
-                    Review retained condition history →
-                  </Link>
+                  <div className={styles.nextStep}>
+                    <span>NEXT</span>
+                    <p>{item.next}</p>
+                  </div>
+                  <small className={styles.source}>{item.source}</small>
                 </article>
-              );
-            })}
-          </div>
-        )}
+              ))}
+              {(grouped.get(stage)?.length ?? 0) === 0 && (
+                <div className={styles.empty}>Nothing waiting here.</div>
+              )}
+            </div>
+          </section>
+        ))}
       </section>
 
       <section className={styles.boundary}>
         <div>
-          <span>EVIDENCE BOUNDARY</span>
-          <b>Operator conclusions follow admitted evidence—not training or canned scenario state.</b>
+          <span>V1 BOUNDARY</span>
+          <b>Make abnormal situations feel organized before they feel solved.</b>
         </div>
         <p>
-          {runtime.payload?.claim_boundary
-            ?? "Condition evidence does not by itself establish physical root cause, remaining useful life, future failure, or equipment-action authority."}
+          This surface performs demo intake and workflow orientation only. Triage is not diagnosis,
+          recommendation is not authorized action, and historical evidence does not prove current root cause.
         </p>
-      </section>
-
-      <section className={styles.commissioningCard}>
-        <div>
-          <span>FIELD-GROUNDED LEARNING PATH</span>
-          <h2>Plant troubleshooting training</h2>
-          <p>
-            Training cases unlock only when their failure pattern has documented field provenance.
-            The player follows symptoms, evidence, persona boundaries, escalation, and verification
-            without treating a historical pattern as proof of a current root cause.
-          </p>
-        </div>
-        <Link href="/training">Open Training Lab →</Link>
-      </section>
-
-      <section className={styles.commissioningCard}>
-        <div>
-          <span>CONDITION REFERENCE</span>
-          <h2>Known machine condition types</h2>
-          <p>
-            Arrival phase, pressure, slip, tension, and sensor sequence remain available as a shared
-            troubleshooting vocabulary. Only admitted evidence can mark a condition active.
-          </p>
-        </div>
-        <Link href="/commissioning">Review condition detail →</Link>
       </section>
     </main>
   );
