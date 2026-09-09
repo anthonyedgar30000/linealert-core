@@ -1,0 +1,80 @@
+{
+  "schema_version": "linealert.synthetic-shift-incident-calendar.v1",
+  "classification": "synthetic_demo_only",
+  "plant_context": "Packaging Line 1",
+  "calendar_seed": "linealert-calendar-v1",
+  "simulation_calendar": {
+    "date_source": "browser_local_calendar_date_at_demo_load",
+    "time_basis": "synthetic_utc_day_arithmetic_for_repeatability",
+    "initial_time_local_display": "14:00:00",
+    "note": "The calendar date follows the viewer's browser date; the demo clock starts at the evening-shift boundary for repeatable playback."
+  },
+  "shifts": [
+    {
+      "code": "D",
+      "name": "DAY SHIFT",
+      "start": "06:00",
+      "end": "14:00",
+      "next_hard_window": "13:45"
+    },
+    {
+      "code": "E",
+      "name": "EVENING SHIFT",
+      "start": "14:00",
+      "end": "22:00",
+      "next_hard_window": "21:30"
+    },
+    {
+      "code": "N",
+      "name": "NIGHT SHIFT",
+      "start": "22:00",
+      "end": "06:00+1d",
+      "next_hard_window": "05:30+1d"
+    }
+  ],
+  "planned_windows": [
+    {"name": "Night production", "start": "00:00", "end": "05:30"},
+    {"name": "Sanitation", "start": "05:30", "end": "06:00"},
+    {"name": "Day production", "start": "06:00", "end": "13:45"},
+    {"name": "Changeover", "start": "13:45", "end": "14:00"},
+    {"name": "Evening production", "start": "14:00", "end": "21:30"},
+    {"name": "Changeover", "start": "21:30", "end": "22:00"},
+    {"name": "Night production", "start": "22:00", "end": "24:00"}
+  ],
+  "incident_frequency": {
+    "unit": "shift",
+    "maximum_scheduled_incidents_per_shift": 1,
+    "clean_shift_weight_percent": 80,
+    "incident_shift_weight_percent": 20,
+    "event_family_weights_within_all_shifts_percent": {
+      "alignment_after_roll_change": 10,
+      "peel_edge_instability": 5,
+      "hold_down_contact_instability": 3,
+      "rate_sensitive_skew": 2
+    },
+    "semantics": "Weights are deterministic synthetic-demo parameters. They are not observed plant reliability rates, OEM failure rates, or maintenance forecasts."
+  },
+  "event_time_window": {
+    "earliest_after_shift_start_minutes": 45,
+    "latest_before_hard_window_minutes": 45,
+    "deterministic_source": "hash(calendar_seed + shift_start_date + shift_code + event_time)"
+  },
+  "ticket_history": {
+    "summary_window_days": 30,
+    "maximum_detailed_tickets_rendered": 12,
+    "current_incident_history_scope": "current incident only",
+    "older_detail_behavior": "roll_up_into_30_day_shift_counts_instead_of_appending_unbounded_dom_history"
+  },
+  "incident_identity": {
+    "format": "INC-YYYYMMDD-SHIFT-01",
+    "source": "calendar date of shift start + shift code + per-shift sequence"
+  },
+  "boundaries": [
+    "synthetic frequency != plant failure rate",
+    "scheduled synthetic incident != predicted real incident",
+    "telemetry != diagnosis",
+    "anomaly != fault",
+    "recommendation != authorized action",
+    "recovery observed != root cause proof or future reliability guarantee"
+  ]
+}
