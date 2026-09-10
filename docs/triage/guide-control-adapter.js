@@ -10,6 +10,7 @@
   let guideObservation=null;
   let controlPending=false;
   let controlError=null;
+  let pendingResumeVerification=null;
 
   const priorRenderHero=renderHero;
 
@@ -28,6 +29,13 @@
     return !!(status&&status.everActivated&&status.active&&!status.suspended);
   }
 
+  function sourceRunState(){
+    const status=sourceStatus();
+    if(!status)return null;
+    const code=status.runStateCode;
+    return code===0||code===1||code===2?code:null;
+  }
+
   function syncIncident(){
     const id=currentIncident&&String(currentIncident.id||'').startsWith('OPC-L2-')
       ?currentIncident.id
@@ -37,7 +45,23 @@
       guideStage=id?'verify':'idle';
       guideObservation=null;
       controlError=null;
+      pendingResumeVerification=null;
     }
+  }
+
+  function syncWorkflowToSource(){
+    const runState=sourceRunState();
+    if(runState===0&&guideStage==='awaiting_stop'){
+      if(mode!=='diagnostic')enterDiagnostic();
+      guideStage='verify';
+    }
+    if(runState===1&&pendingResumeVerification!==null){
+      const skippedRecommended=pendingResumeVerification;
+      pendingResumeVerification=null;
+      guideStage='idle';
+      startProductionVerification(skippedRecommended);
+    }
+    return runState;
   }
 
   function appendHistory(title,detail){
@@ -85,14 +109,14 @@
   }
 
   async function stopForDiagnostic(){
+    if(sourceRunState()!==1)return;
     try{
       await demoControl('stop_for_diagnostic');
-      enterDiagnostic();
-      guideStage='verify';
+      guideStage='awaiting_stop';
       appendJournal(
         'simulator_control',
-        'Synthetic Labeler stopped for bounded diagnostic',
-        'Simulator-only control acknowledged. This is not equipment control or proof of machine state.',
+        'Synthetic Labeler stop requested for bounded diagnostic',
+        'Control was acknowledged; inspection stays blocked until qualified OPC UA reports stopped.',
         'linealert-labeler2-simulator-control'
       );
     }catch(err){
@@ -102,6 +126,7 @@
   }
 
   async function inspectGuide(){
+    if(sourceRunState()!==0)return;
     try{
       const observation=await demoControl('inspect_guide');
       guideObservation=observation;
@@ -128,7 +153,7 @@
   }
 
   async function restoreGuide(){
-    if(!guideObservation||guideObservation.within_reference)return;
+    if(sourceRunState()!==0||!guideObservation||guideObservation.within_reference)return;
     try{
       await demoControl('restore_guide',{observation_id:guideObservation.observation_id});
       guideStage='restored';
@@ -149,6 +174,7 @@
   }
 
   async function runDiagnosticBatch(sourceHandler,event){
+    if(sourceRunState()!==0)return;
     if(sourceHandler)sourceHandler.call(el('hmiBtn'),event);
     try{
       await demoControl('run_diagnostic_batch');
@@ -170,13 +196,15 @@
   }
 
   async function resumeProduction(skippedRecommended){
+    if(sourceRunState()!==0)return;
     try{
       await demoControl('resume_production');
-      startProductionVerification(skippedRecommended);
+      pendingResumeVerification=skippedRecommended;
+      guideStage='awaiting_production';
       appendJournal(
         'simulator_control',
-        'Synthetic production resumed for verification',
-        'Fresh production observations must qualify through OPC UA before the concern can close.',
+        'Synthetic production resume requested for verification',
+        'Production verification starts only after qualified OPC UA reports production running.',
         'linealert-labeler2-simulator-control'
       );
     }catch(err){
@@ -194,13 +222,36 @@
     const next=el('nextBtn');
     if(!title||!why||!next)return;
 
+    const runState=syncWorkflowToSource();
+
     if(controlPending){
       next.disabled=true;
       next.textContent='Waiting for simulator control acknowledgment…';
       return;
     }
+    if(runState===null){
+      title.textContent=VERIFY_TITLE;
+      why.textContent='Qualified source run state is unavailable. Workflow action is blocked.';
+      next.disabled=true;
+      next.textContent='Waiting for qualified OPC UA run state';
+      return;
+    }
     if(controlError){
       why.textContent='Simulator-only control did not complete: '+controlError+'. No equipment action was taken.';
+    }
+    if(guideStage==='awaiting_stop'){
+      title.textContent=VERIFY_TITLE;
+      why.textContent='Stop request acknowledged. Inspection remains blocked until qualified OPC UA reports run_state_code 0.';
+      next.disabled=true;
+      next.textContent='Waiting for OPC UA stopped state';
+      return;
+    }
+    if(guideStage==='awaiting_production'){
+      title.textContent='Production resume requested';
+      why.textContent='Waiting for qualified OPC UA to report production before verification begins.';
+      next.disabled=true;
+      next.textContent='Waiting for OPC UA production state';
+      return;
     }
     if(trialInProgress){
       next.disabled=true;
@@ -211,15 +262,23 @@
     if(recommendation!=='guide')return;
 
     title.textContent=VERIFY_TITLE;
-    if(mode==='production'){
-      why.textContent='Inspection first. Enter the bounded diagnostic state before recording the simulated operator observation. Verification does not authorize an adjustment by itself.';
+
+    if(runState===1){
+      why.textContent='Inspection first. Qualified OPC UA still reports production running, so the simulated guide observation is blocked until the source reports stopped.';
       next.disabled=false;
       next.textContent='Stop synthetic machine for bounded diagnostic';
       return;
     }
 
+    if(runState===2){
+      why.textContent='Qualified OPC UA reports a diagnostic run in progress. Wait for the source to return to the stopped diagnostic state before another workflow action.';
+      next.disabled=true;
+      next.textContent='Diagnostic run active · waiting for source state';
+      return;
+    }
+
     if(guideStage==='verify'){
-      why.textContent='Compare the visible guide / spacing relationship with the approved synthetic reference. Record what the operator observes before considering any material change.';
+      why.textContent='Qualified OPC UA reports the synthetic Labeler stopped. Compare the visible guide / spacing relationship with the approved synthetic reference before considering any material change.';
       next.disabled=false;
       next.textContent='Record simulated guide / spacing observation';
       return;
@@ -274,18 +333,21 @@
         return;
       }
       syncIncident();
+      const runState=syncWorkflowToSource();
+      if(runState===null)return;
       if(nextStage==='production_verification'){
-        await resumeProduction(false);
+        if(runState===0)await resumeProduction(false);
         return;
       }
       if(!incident||recommendation!=='guide'){
         if(priorNext)return priorNext.call(this,event);
         return;
       }
-      if(mode==='production'){
+      if(runState===1){
         await stopForDiagnostic();
         return;
       }
+      if(runState!==0)return;
       if(guideStage==='verify'){
         await inspectGuide();
         return;
@@ -305,6 +367,7 @@
         if(priorHmi)return priorHmi.call(this,event);
         return;
       }
+      if(sourceRunState()!==0)return;
       await runDiagnosticBatch(priorHmi,event);
     };
 
@@ -313,7 +376,7 @@
         if(priorReturn)return priorReturn.call(this,event);
         return;
       }
-      if(mode!=='diagnostic'||trialInProgress||!lastConfirmedTrial)return;
+      if(sourceRunState()!==0||trialInProgress||!lastConfirmedTrial)return;
       await resumeProduction(nextStage!=='production_verification');
     };
 

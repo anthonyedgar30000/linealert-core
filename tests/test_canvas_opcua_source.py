@@ -44,6 +44,13 @@ def test_canvas_opcua_trial_waits_for_external_source_evidence():
     assert "Test response ≠ causal proof." in script
 
 
+def test_opcua_source_status_exposes_qualified_run_state_to_workflow_adapters():
+    script = (ROOT / "docs" / "triage" / "opcua-source-adapter.js").read_text(encoding="utf-8")
+
+    assert "runStateCode:latest?numeric(latest,'run_state_code'):null" in script
+    assert "sourceSequence:latest?numeric(latest,'emulator_sequence'):null" in script
+
+
 def test_guide_control_adapter_verifies_before_restore_and_uses_simulator_control_channel():
     script = (ROOT / "docs" / "triage" / "guide-control-adapter.js").read_text(
         encoding="utf-8"
@@ -60,6 +67,27 @@ def test_guide_control_adapter_verifies_before_restore_and_uses_simulator_contro
     assert "synthetic_human_observation" not in script  # classification comes from control result
     assert "No guide correction indicated" in script
     assert "fresh OPC UA observations" in script
+
+
+def test_guide_workflow_is_gated_by_qualified_opcua_run_state_not_browser_mode():
+    script = (ROOT / "docs" / "triage" / "guide-control-adapter.js").read_text(
+        encoding="utf-8"
+    )
+
+    assert "function sourceRunState()" in script
+    assert "runStateCode" in script
+    assert "if(sourceRunState()!==1)return;" in script
+    assert "if(sourceRunState()!==0)return;" in script
+    assert "if(runState===1)" in script
+    assert "if(runState!==0)return;" in script
+    assert "Waiting for OPC UA stopped state" in script
+    assert "Inspection remains blocked until qualified OPC UA reports run_state_code 0" in script
+    assert (
+        "Production verification starts only after qualified OPC UA reports production running"
+        in script
+    )
+    assert "if(mode==='production')" not in script
+    assert "if(mode!=='diagnostic'||trialInProgress" not in script
 
 
 def test_public_home_labels_browser_build_as_scenario_preview():
