@@ -26,8 +26,12 @@ def test_public_routes_attach_shared_session_adapters():
     assert "../demo-session.js" in plant_wrapper
     assert "./trial-discipline-adapter.js" in plant_wrapper
     assert "./session-adapter.js" in plant_wrapper
+    assert "./recovery-fast-forward-adapter.js" in plant_wrapper
     assert plant_wrapper.index("./trial-discipline-adapter.js") < plant_wrapper.index(
         "./session-adapter.js"
+    )
+    assert plant_wrapper.index("./session-adapter.js") < plant_wrapper.index(
+        "./recovery-fast-forward-adapter.js"
     )
 
     assert "troubleshooting-guide-reference-v102.html" in guide_wrapper
@@ -65,6 +69,23 @@ def test_shared_session_contract_carries_workflow_and_evidence_state():
     assert "recommendationTitle" in guide_adapter
     assert "latestTrial" in guide_adapter
     assert "productionVerification" in guide_adapter
+
+
+def test_post_recovery_fast_forward_starts_from_clean_live_projection():
+    adapter = read(DOCS / "triage" / "recovery-fast-forward-adapter.js")
+
+    assert "const baseCompleteRecovery=completeRecovery" in adapter
+    assert "const baseSpeedClick=button.onclick" in adapter
+    assert "function clearFastForwardState" in adapter
+    assert "fast=false" in adapter
+    assert "fastTarget=null" in adapter
+    assert "fastEvent=null" in adapter
+    assert "recoveryObserved=false" in adapter
+    assert "currentIncident=null" in adapter
+    assert "leaveRecoveredEpisodeForAdvance();" in adapter
+    assert "baseSpeedClick.call(button)" in adapter
+    assert "handledIncidentIds.clear" not in adapter
+    assert "Preserve handledIncidentIds" in adapter
 
 
 def test_trial_discipline_requires_explicit_restore_before_next_material_change():

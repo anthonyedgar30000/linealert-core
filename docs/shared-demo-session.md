@@ -40,6 +40,14 @@ A promising material change remains experimental until a no-change repeat reprod
 
 The demo never performs an automatic equipment restore. A restore recommendation is a recommendation, not an equipment command or authorization.
 
+## Post-recovery fast-forward handoff
+
+When the configured 50-container production verification completes, the incident is closed and recovery remains visible as the just-completed episode. Any stale fast-forward target/event from the earlier incident is cleared at recovery completion.
+
+If the user then chooses **Speed up to next incident**, the browser demo first leaves the recovered episode projection and returns the Canvas to normal monitoring before selecting the next unhandled calendar-seeded concern. The closed incident identity remains in `handledIncidentIds` and its chronology remains in history/Event Log evidence; only the live projection is cleared. This prevents a completed verification from poisoning or reusing the previous fast-forward target.
+
+This handoff is UI/session behavior only. It does not delete plant evidence, alter equipment state, or reinterpret the completed recovery as proof of cause.
+
 ## Preserved baseline pages
 
 The pre-sync PR #102 pages are retained as static baselines:
