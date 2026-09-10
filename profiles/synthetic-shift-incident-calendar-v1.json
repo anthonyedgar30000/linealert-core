@@ -47,12 +47,19 @@
     "clean_shift_weight_percent": 80,
     "incident_shift_weight_percent": 20,
     "event_family_weights_within_all_shifts_percent": {
-      "alignment_after_roll_change": 10,
+      "alignment_variability": 10,
       "peel_edge_instability": 5,
       "hold_down_contact_instability": 3,
       "rate_sensitive_skew": 2
     },
     "semantics": "Weights are deterministic synthetic-demo parameters. They are not observed plant reliability rates, OEM failure rates, or maintenance forecasts."
+  },
+  "preceding_changeover_context": {
+    "alignment_variability_rule": "When the alignment-variability family is scheduled, the synthetic plant event model separately records a label-roll change before the concern timestamp.",
+    "condition_title": "Alignment variability emerging",
+    "context_event": "Label roll replaced and changeover record completed",
+    "source_identity": "synthetic-operator/changeover",
+    "relationship_boundary": "preceded by change != caused by change"
   },
   "event_time_window": {
     "earliest_after_shift_start_minutes": 45,
@@ -72,6 +79,7 @@
   "boundaries": [
     "synthetic frequency != plant failure rate",
     "scheduled synthetic incident != predicted real incident",
+    "preceded by change != caused by change",
     "telemetry != diagnosis",
     "anomaly != fault",
     "recommendation != authorized action",
