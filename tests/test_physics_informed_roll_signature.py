@@ -80,7 +80,7 @@ def test_event_model_emits_coupled_signature_before_concern_supporting_evidence(
     assert "model_match_is_supporting_evidence_not_diagnosis_or_root_cause_proof" in event_model
 
 
-def test_plant_canvas_and_event_log_load_physics_before_event_model():
+def test_operator_ui_uses_signature_to_weight_investigation_not_show_raw_card():
     plant = read(DOCS / "triage" / "index.html")
     event_log = read(DOCS / "event-log.html")
     adapter = read(DOCS / "triage" / "physics-signature-adapter.js")
@@ -92,9 +92,37 @@ def test_plant_canvas_and_event_log_load_physics_before_event_model():
         "plant-event-model.js"
     )
     assert "physics-signature-adapter.js" in plant
-    assert "PHYSICS-INFORMED SYNTHETIC SIGNATURE" in adapter
-    assert "Show calculator relationships" in adapter
-    assert "Model match ≠ diagnosis" in adapter
+    assert "INVESTIGATION ANCHOR" in adapter
+    assert "Recent label-roll change" in adapter
+    assert "Check roll loading + web path against approved changeover reference" in adapter
+    assert "Illustrative generic demo checks only" in adapter
+    assert "Analyst evidence · synthetic signal model" in adapter
+    assert "PHYSICS-INFORMED SYNTHETIC SIGNATURE" not in adapter
+    assert "Investigation priority ≠ causal probability" in adapter
+
+
+def test_profile_defines_investigation_anchor_and_safe_generic_check_surface():
+    profile = json.loads(read(PROFILES / "synthetic-roll-physics-signature-v1.json"))
+    use = profile["investigation_use"]
+    check = profile["illustrative_generic_roll_change_check"]
+
+    assert use["primary_ui_role"] == "behind_the_scenes_investigation_weighting"
+    assert use["strong_anchor_sequence"] == [
+        "recorded_label_roll_change",
+        "production_restart",
+        "coupled_signature_detected",
+        "presentation_variability_deviation",
+        "concern_threshold_crossed",
+    ]
+    assert "investigation priority" in use["meaning"].lower()
+    assert check["title"] == (
+        "Check roll loading + web path against approved changeover reference"
+    )
+    assert "roll seated and centered" in check["check_items"]
+    assert "approved thread path" in check["check_items"][1]
+    assert "Observe first" in check["action_boundary"]
+    assert "client/OEM instructions" in check["commissioning_note"]
+    assert "investigation priority != causal probability" in profile["boundaries"]
 
 
 def test_event_log_profile_registers_signature_without_causal_claim():
