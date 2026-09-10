@@ -84,9 +84,7 @@ def test_diagnostic_mode_does_not_imply_maintenance_dispatch():
     assert "Not dispatched" in adapter
     assert "No maintenance dispatch is recorded for this concern" in adapter
     assert "synthetic_crew_occupancy" in adapter
-    assert "mode==='diagnostic'" not in adapter.split(
-        "maintenanceEta=qualifiedAvailabilityEta"
-    )[0]
+    assert "if(mode==='diagnostic')return 0" not in adapter
 
 
 def test_post_recovery_fast_forward_starts_from_clean_live_projection():
