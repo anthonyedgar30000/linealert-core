@@ -31,6 +31,7 @@ def test_route_profile_checks_before_conditional_restore():
     profile = load("profiles/speedway-labeler-troubleshooting-v1.routes.json")
     route = profile["procedures"]["LINEALERT.DEMO.LABEL_ALIGNMENT_OFF"]
 
+    assert profile["profile_version"] == 4
     assert route["default_check"].startswith("Verify guide / spacing")
     assert route["default_intervention"].startswith("If a current observation shows")
     assert "Historical similarity does not establish" in route["standard_change_match"]["basis"]
