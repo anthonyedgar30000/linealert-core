@@ -29,6 +29,8 @@
   let lastVerificationSequence=null;
   let sourceConcernLatched=false;
   let pendingSourceTrial=null;
+  let availabilityState='preview';
+  let availabilityReason=null;
 
   const browserLive=live;
   const browserMaybeTriggerIncident=maybeTriggerIncident;
@@ -95,10 +97,10 @@
   }
 
   function sourceRunText(code){
-    if(code===0)return 'STOPPED · OPC UA EMULATOR';
-    if(code===2)return 'DIAGNOSTIC RUN · OPC UA EMULATOR';
-    if(code===1)return 'PRODUCTION RUNNING · OPC UA EMULATOR';
-    return 'SOURCE STATE UNKNOWN · OPC UA EMULATOR';
+    if(code===0)return 'LABELER 2 STOPPED · OPC UA CONNECTED';
+    if(code===2)return 'LABELER 2 DIAGNOSTIC RUN · OPC UA CONNECTED';
+    if(code===1)return 'LABELER 2 RUNNING · OPC UA CONNECTED';
+    return 'LABELER 2 STATE UNKNOWN · OPC UA CONNECTED';
   }
 
   function clearCalendarMachineEpisode(){
@@ -142,48 +144,116 @@
     active=true;
     suspended=false;
     latest=payload;
+    availabilityState='qualified';
+    availabilityReason=payload&&payload.reason_code||null;
     fast=false;
     fastTarget=null;
     fastEvent=null;
     setBanner(
       'SOURCE · LABELER 2 OPC UA EMULATOR · CONNECTED',
       'Qualified read-only simulator evidence is driving machine observations. Plant schedule, staffing and workflow context remain synthetic.',
-      'simulator_only · read_only'
+      'connected · qualified'
     );
     apply(payload);
     renderActions();
     updateSpeedControl();
   }
 
-  function disableWorkflowForUnavailable(){
+  function disableWorkflowForPausedSource(){
     ['nextBtn','returnProdBtn','armBtn','hmiBtn'].forEach(id=>{
       const node=el(id);
       if(node)node.disabled=true;
     });
   }
 
-  function markUnavailable(reason){
+  function markConnectedUnqualified(payload){
+    if(!everActivated)return;
+    active=false;
+    suspended=true;
+    latest=payload;
+    availabilityState='connected_unqualified';
+    availabilityReason=payload&&payload.reason_code||'EVIDENCE.OPCUA_SAMPLE_UNQUALIFIED';
+    setBanner(
+      'SOURCE · LABELER 2 OPC UA EMULATOR · CONNECTED',
+      'Evidence is temporarily unqualified, so machine interpretation is paused until a qualified sample returns.',
+      'connected · evidence unqualified'
+    );
+    const posture=el('postureTop');
+    if(posture)posture.textContent='EVIDENCE UNQUALIFIED · INTERPRETATION PAUSED';
+    const runMode=el('modeTop');
+    if(runMode)runMode.textContent='OPC UA CONNECTED · EVIDENCE UNQUALIFIED';
+    const note=el('speedNote');
+    if(note)note.textContent='OPC UA remains connected · machine interpretation paused for evidence qualification.';
+    const speed=el('speedBtn');
+    if(speed){
+      speed.disabled=true;
+      speed.textContent='EVIDENCE UNQUALIFIED';
+    }
+    disableWorkflowForPausedSource();
+  }
+
+  function markDisconnected(payload){
+    if(!everActivated)return;
+    active=false;
+    suspended=true;
+    latest=payload||null;
+    availabilityState='disconnected';
+    availabilityReason=payload&&payload.reason_code||'EVIDENCE.OPCUA_CONNECTION_UNAVAILABLE';
+    setBanner(
+      'SOURCE · LABELER 2 OPC UA EMULATOR · DISCONNECTED',
+      'Machine interpretation is paused. Last observations may remain visible only as stale context; browser-generated machine evidence will not take over.',
+      'disconnected · fail closed'
+    );
+    const posture=el('postureTop');
+    if(posture)posture.textContent='SOURCE DISCONNECTED · FAIL CLOSED';
+    const runMode=el('modeTop');
+    if(runMode)runMode.textContent='MACHINE INTERPRETATION PAUSED';
+    const note=el('speedNote');
+    if(note)note.textContent='OPC UA source disconnected · machine evidence frozen · browser fallback disabled.';
+    const speed=el('speedBtn');
+    if(speed){
+      speed.disabled=true;
+      speed.textContent='SOURCE DISCONNECTED';
+    }
+    disableWorkflowForPausedSource();
+  }
+
+  function markBridgeUnavailable(reason){
     if(!everActivated)return;
     active=false;
     suspended=true;
     latest=null;
+    availabilityState='bridge_unavailable';
+    availabilityReason=reason||'EVIDENCE.BRIDGE_UNAVAILABLE';
     setBanner(
-      'SOURCE · LABELER 2 OPC UA EMULATOR · UNAVAILABLE',
-      'Machine interpretation is paused. Last observations may remain visible only as stale context; the Canvas will not fall back to browser-generated machine evidence.',
-      reason||'fail_closed'
+      'SOURCE · LOCAL OPC UA BRIDGE · UNAVAILABLE',
+      'The Canvas cannot currently read bridge telemetry, so machine interpretation is paused. OPC UA connection state is not inferred from this browser error.',
+      'bridge unavailable · source state unknown'
     );
     const posture=el('postureTop');
-    if(posture)posture.textContent='SOURCE UNAVAILABLE · FAIL CLOSED';
+    if(posture)posture.textContent='BRIDGE UNAVAILABLE · FAIL CLOSED';
     const runMode=el('modeTop');
     if(runMode)runMode.textContent='MACHINE INTERPRETATION PAUSED';
     const note=el('speedNote');
-    if(note)note.textContent='OPC UA source unavailable · machine evidence frozen · browser fallback disabled.';
+    if(note)note.textContent='Local telemetry bridge unavailable · OPC UA connection state unknown.';
     const speed=el('speedBtn');
     if(speed){
       speed.disabled=true;
-      speed.textContent='SOURCE UNAVAILABLE';
+      speed.textContent='BRIDGE UNAVAILABLE';
     }
-    disableWorkflowForUnavailable();
+    disableWorkflowForPausedSource();
+  }
+
+  function pauseForPayload(payload){
+    if(payload&&payload.connected===true){
+      markConnectedUnqualified(payload);
+      return;
+    }
+    if(payload&&payload.connected===false){
+      markDisconnected(payload);
+      return;
+    }
+    markBridgeUnavailable(payload&&payload.reason_code||'EVIDENCE.TELEMETRY_STATE_UNKNOWN');
   }
 
   function sourceConcern(payload){
@@ -387,12 +457,14 @@
 
   function apply(payload){
     if(!qualifiedPayload(payload)){
-      if(everActivated)markUnavailable(payload&&payload.reason_code);
+      if(everActivated)pauseForPayload(payload);
       return;
     }
     latest=payload;
     active=true;
     suspended=false;
+    availabilityState='qualified';
+    availabilityReason=payload&&payload.reason_code||null;
     const sourceSequence=numeric(payload,'emulator_sequence');
     updateEvidenceDom(payload);
     maybeOpenSourceConcern(payload);
@@ -441,10 +513,16 @@
       const note=el('speedNote');
       if(button){
         button.disabled=true;
-        button.textContent=active?'● OPC UA SOURCE':'SOURCE UNAVAILABLE';
+        if(active)button.textContent='● OPC UA SOURCE';
+        else if(availabilityState==='connected_unqualified')button.textContent='EVIDENCE UNQUALIFIED';
+        else if(availabilityState==='disconnected')button.textContent='SOURCE DISCONNECTED';
+        else button.textContent='BRIDGE UNAVAILABLE';
       }
       if(note){
-        note.textContent=active?'Machine evidence follows the external emulator at source cadence; calendar incident fast-forward is disabled.':'Machine evidence is paused until the qualified OPC UA source returns.';
+        if(active)note.textContent='Machine evidence follows the external emulator at source cadence; calendar incident fast-forward is disabled.';
+        else if(availabilityState==='connected_unqualified')note.textContent='OPC UA remains connected · machine interpretation paused for evidence qualification.';
+        else if(availabilityState==='disconnected')note.textContent='OPC UA source disconnected · machine interpretation paused.';
+        else note.textContent='Local telemetry bridge unavailable · OPC UA connection state unknown.';
       }
       return;
     }
@@ -463,21 +541,24 @@
         }else{
           active=true;
           suspended=false;
+          latest=payload;
+          availabilityState='qualified';
+          availabilityReason=payload&&payload.reason_code||null;
           setBanner(
             'SOURCE · LABELER 2 OPC UA EMULATOR · CONNECTED',
             'Qualified read-only simulator evidence is driving machine observations. Plant schedule, staffing and workflow context remain synthetic.',
-            'simulator_only · read_only'
+            'connected · qualified'
           );
           apply(payload);
           renderHero();
           updateSpeedControl();
         }
       }else if(everActivated){
-        markUnavailable(payload&&payload.reason_code);
+        pauseForPayload(payload);
       }
     }catch(err){
       if(everActivated){
-        markUnavailable(err&&err.message?err.message:'EVIDENCE.BRIDGE_UNAVAILABLE');
+        markBridgeUnavailable(err&&err.message?err.message:'EVIDENCE.BRIDGE_UNAVAILABLE');
       }
     }finally{
       window.setTimeout(poll,500);
@@ -492,10 +573,19 @@
   );
   window.LineAlertOpcuaSource={
     status:function(){
+      const connected=availabilityState==='qualified'||availabilityState==='connected_unqualified'
+        ?true
+        :availabilityState==='disconnected'
+          ?false
+          :null;
       return {
         everActivated,
         active,
         suspended,
+        availabilityState,
+        availabilityReason,
+        connected,
+        admitted:availabilityState==='qualified',
         profile:latest&&latest.profile||null,
         sourceId:latest&&latest.source_id||null,
         assetId:latest&&latest.asset_id||null,
