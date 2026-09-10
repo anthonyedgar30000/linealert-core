@@ -1,0 +1,44 @@
+{
+  "schema_version": "linealert.synthetic-plant-event-log.v1",
+  "classification": "synthetic_demo_only",
+  "plant_context": "Synthetic packaging plant",
+  "purpose": "Provide a bounded Event Viewer-style chronology for production, changeover, operator, telemetry, CMMS, maintenance, LineAlert concern, trial, recommendation, and recovery events on the same synthetic calendar as the Plant Canvas.",
+  "event_record": {
+    "required_fields": ["event_id", "timestamp", "clock_quality", "source_identity", "asset_identity", "event_class", "severity", "message", "classification"],
+    "structured_fields": "Event-specific fields preserve related incident/work-order identifiers and bounded context without converting sequence into causation.",
+    "supersession_rule": "Corrections should supersede prior records rather than silently rewrite them in a production implementation."
+  },
+  "sources": [
+    "synthetic-mes/packaging-line-1",
+    "synthetic-hmi/packaging-line-1",
+    "synthetic-hmi/labeler2",
+    "synthetic-operator/changeover",
+    "synthetic-operator/labeler2",
+    "synthetic-telemetry/labeler2",
+    "synthetic-cmms/plant",
+    "synthetic-maintenance/dispatch",
+    "linealert/deterministic",
+    "linealert/trial-workflow"
+  ],
+  "roll_change_context": {
+    "condition_title": "Alignment variability emerging",
+    "recorded_preceding_event": "Label roll replaced and changeover record completed",
+    "relationship_semantics": "The roll-change record may be shown as recent context only when the synthetic event exists before the concern timestamp.",
+    "boundary": "preceded by change != caused by change"
+  },
+  "browser_demo_retention": {
+    "generated_history": "Rendered on demand for the selected time window rather than appended indefinitely.",
+    "interactive_journal_max_events": 200,
+    "event_table_max_rows": 250,
+    "boundary": "Bounded browser display is not a production retention policy or evidence deletion rule."
+  },
+  "boundaries": [
+    "event log != diagnosis",
+    "event order != causal proof",
+    "operator record != verified physical state",
+    "synthetic work-order event != CMMS truth",
+    "recommendation != authorization or equipment command",
+    "successful trial != safe production change",
+    "recovery observed != root cause proof or future reliability guarantee"
+  ]
+}
