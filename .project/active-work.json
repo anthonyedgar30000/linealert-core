@@ -18,11 +18,13 @@
     "publication_policy": {
       "state_only_merge_requires_immediate_self_sync": false,
       "publication_pr_self_reference_required": false,
-      "rule": "A state-only publication does not require another pull request merely to record its own merge. Create a corrective sync only when a substantive external lifecycle, authority, deployment, equipment, or scope fact changes or contradicts the published snapshot."
+      "rule": "A state-only publication does not require another pull request merely to record its own merge. Create a corrective sync only when a substantive external lifecycle, authority, deployment, equipment, or scope fact changes or contradicts the published snapshot.",
+      "current_correction_reason": "The August 2 snapshot ended at PR 38-era repository state. PRs through #114, GitHub Pages deployment, maintenance follow-up closure, and the evolving investigation workspace now supersede those cached current-state claims while preserving PR 37/38 evidence as history."
     }
   },
   "live_observation": {
-    "observed_at": "2026-09-10T03:02:00-04:00",
+    "observed_at": "2026-09-10T03:06:00-04:00",
+    "default_branch": "main",
     "default_branch_head": "4037c2c0bcadce3e3e6e414735c0045b65db6027",
     "default_branch_tree": "9ae2eaaae207c1503cd6ce09b50d91c0c9df0410",
     "latest_functional_merge": {
@@ -30,15 +32,25 @@
       "title": "Add evolving investigation workspace",
       "merge_commit": "4037c2c0bcadce3e3e6e414735c0045b65db6027"
     },
-    "open_pull_requests_before_sync_increment": [],
+    "open_pull_requests_before_branch_creation": [],
     "active_sync_pull_request": 115,
     "open_issues": [31],
     "recently_closed_issues": {
+      "23": {
+        "state": "closed_completed",
+        "closed_by_pull_request": 38,
+        "reason": "all_four_atomic_ingestion_windows_resolved"
+      },
       "111": {
         "state": "closed_completed",
         "reason": "maintenance_observe_followups_resolved_by_pr112_and_pr113",
         "closed_on": "2026-09-10"
       }
+    },
+    "visibility": {
+      "github_metadata": "public",
+      "canonical_policy": "public",
+      "status": "verified_public"
     },
     "main_ci": {
       "run_id": 34447779672,
@@ -60,15 +72,67 @@
     "azure_lab_resources": "not_observed",
     "physical_equipment_connection": "not_observed",
     "network_listener_for_live_equipment": "not_observed",
-    "equipment_control_path": "not_observed"
+    "equipment_control_path": "not_observed",
+    "equipment_documentation": "synthetic demo profiles and planning material observed; no Labeler 2 OEM manual or commissioned machine package observed"
   },
   "active_work": {
     "branch": "agent/sync-current-reality-v1",
     "pull_request": 115,
-    "objective": "Synchronize repository coordination state with current merged demo, CI, deployment, issue, and equipment-documentation reality.",
-    "permitted_paths": [".project/active-work.json"],
-    "capability_boundary": "repository_state_only_no_runtime_or_equipment_change",
+    "objective": "Synchronize repository coordination state and its state-contract tests with current merged demo, CI, deployment, issue, and equipment-documentation reality.",
+    "permitted_paths": [
+      ".project/active-work.json",
+      "tests/test_project_state.py"
+    ],
+    "capability_boundary": "repository_state_and_state_contract_tests_only_no_runtime_or_equipment_change",
     "status_at_snapshot_write": "implemented_on_branch_pending_exact_head_ci_and_merge"
+  },
+  "trusted_baseline": {
+    "historical_role": "Preserved PR 37/38 repository and runtime evidence. This is no longer the current overall repository head.",
+    "last_completed_increment": {
+      "pull_request": 38,
+      "title": "Resolve remaining atomic ingestion windows",
+      "source_head": "0d5d8180a5edffaeca8a9822800d7e729ef96327",
+      "merge_commit": "06f795e760c7ad360bc51e264f8c55238a2a60da",
+      "increment_type": "tier_1_in_memory_runtime_atomicity_remediation",
+      "pull_request_ci": {
+        "run_id": 30516440394,
+        "conclusion": "success",
+        "python_versions": ["3.11", "3.12"],
+        "checkout_provenance": "literal_pull_request_head_sha",
+        "test_summary": "74_passed_0_xfailed"
+      },
+      "submitted_reviews": 0,
+      "deployment_status": "not_deployed"
+    },
+    "last_repository_state_increment": {
+      "pull_request": 37,
+      "title": "Correct post-PR36 Stage 1 governance state",
+      "source_head": "fc22177e1b855fd6f416f648330cd3416215a96c",
+      "merge_commit": "97256907cd428a8a0ba3dfb7d4020fa19a2485ee",
+      "increment_type": "tier_1_repository_state_and_test_correction",
+      "pull_request_ci": {
+        "run_id": 30509312378,
+        "conclusion": "success",
+        "python_versions": ["3.11", "3.12"],
+        "checkout_provenance": "literal_pull_request_head_sha",
+        "test_summary": "72_passed_2_xfailed"
+      },
+      "submitted_reviews": 0,
+      "deployment_status": "not_deployed"
+    },
+    "last_merged_runtime_increment": {
+      "pull_request": 38,
+      "source_head": "0d5d8180a5edffaeca8a9822800d7e729ef96327",
+      "merge_commit": "06f795e760c7ad360bc51e264f8c55238a2a60da",
+      "resolved_windows": [
+        "FW-01_event_identity_commit",
+        "FW-02_timing_start_evidence_preservation",
+        "FW-03_later_subscriber_rollback",
+        "FW-04_diagnostic_derivation_rollback"
+      ],
+      "remaining_windows": [],
+      "external_side_effect_rollback": "not_claimed"
+    }
   },
   "current_demo_reality": {
     "classification": "controlled_synthetic_static_demo",
@@ -80,56 +144,16 @@
     ],
     "workflow_summary": "Synthetic plant state can progress from normal production through concern, bounded diagnostic action, explicit restore/repeat/retain discipline, production verification, recovery observation, maintenance observe-only, post-maintenance observation, and evolving investigation views.",
     "recent_merged_increments": [
-      {
-        "pull_request": 104,
-        "title": "Require explicit restore before stacking troubleshooting changes",
-        "role": "one_material_change_restore_repeat_retain_discipline"
-      },
-      {
-        "pull_request": 105,
-        "title": "Add synchronized plant Event Log and recorded changeover context",
-        "role": "append_only_style_synthetic_chronology_and_context"
-      },
-      {
-        "pull_request": 106,
-        "title": "Add physics-informed synthetic roll-change signature",
-        "role": "illustrative_physics_informed_signature"
-      },
-      {
-        "pull_request": 107,
-        "title": "Use physics signature to weight roll-change investigation",
-        "role": "bounded_investigation_evidence_not_causal_probability"
-      },
-      {
-        "pull_request": 108,
-        "title": "Fix fast-forward after recovery verification",
-        "role": "clean_post_recovery_handoff"
-      },
-      {
-        "pull_request": 109,
-        "title": "Decouple diagnostic mode from maintenance response",
-        "role": "diagnostic_state_not_maintenance_dispatch"
-      },
-      {
-        "pull_request": 110,
-        "title": "Suspend normal interpretation during asset maintenance",
-        "role": "asset_scoped_maintenance_observe_gate"
-      },
-      {
-        "pull_request": 112,
-        "title": "Fix maintenance quiet-state lifecycle in demo",
-        "role": "reachable_synthetic_maintenance_and_post_maintenance_observation"
-      },
-      {
-        "pull_request": 113,
-        "title": "Harden maintenance lifecycle fast-forward and guide state",
-        "role": "maintenance_event_fast_forward_and_guide_overlay_hardening"
-      },
-      {
-        "pull_request": 114,
-        "title": "Add evolving investigation workspace",
-        "role": "qualitative_evolving_working_explanations_and_evidence_workspace"
-      }
+      {"pull_request": 104, "title": "Require explicit restore before stacking troubleshooting changes", "role": "one_material_change_restore_repeat_retain_discipline"},
+      {"pull_request": 105, "title": "Add synchronized plant Event Log and recorded changeover context", "role": "append_only_style_synthetic_chronology_and_context"},
+      {"pull_request": 106, "title": "Add physics-informed synthetic roll-change signature", "role": "illustrative_physics_informed_signature"},
+      {"pull_request": 107, "title": "Use physics signature to weight roll-change investigation", "role": "bounded_investigation_evidence_not_causal_probability"},
+      {"pull_request": 108, "title": "Fix fast-forward after recovery verification", "role": "clean_post_recovery_handoff"},
+      {"pull_request": 109, "title": "Decouple diagnostic mode from maintenance response", "role": "diagnostic_state_not_maintenance_dispatch"},
+      {"pull_request": 110, "title": "Suspend normal interpretation during asset maintenance", "role": "asset_scoped_maintenance_observe_gate"},
+      {"pull_request": 112, "title": "Fix maintenance quiet-state lifecycle in demo", "role": "reachable_synthetic_maintenance_and_post_maintenance_observation"},
+      {"pull_request": 113, "title": "Harden maintenance lifecycle fast-forward and guide state", "role": "maintenance_event_fast_forward_and_guide_overlay_hardening"},
+      {"pull_request": 114, "title": "Add evolving investigation workspace", "role": "qualitative_evolving_working_explanations_and_evidence_workspace"}
     ],
     "maintenance_lifecycle": {
       "sequence": [
@@ -151,12 +175,7 @@
     "investigation_workspace": {
       "state": "merged_and_deployed_static_demo",
       "behavior": "Keeps a best-supported working explanation plus credible alternatives visible, with evidence consistent with, evidence against or limiting, and missing or discriminating evidence. The view evolves from the shared synthetic session and event journal.",
-      "standing_model": [
-        "most_supported",
-        "plausible",
-        "lower_priority",
-        "less_supported"
-      ],
+      "standing_model": ["most_supported", "plausible", "lower_priority", "less_supported"],
       "boundaries": [
         "working_explanation != diagnosis",
         "investigation_priority != causal_probability",
@@ -202,7 +221,29 @@
       "tracking_issue": 31,
       "runbook_path": "docs/labs/microsoft-opc-plc-azure-iot-operations.md",
       "classification": "tier_2_planning_and_evidence_workstream",
-      "state": "open_owner_authorized_waiting_for_environment_and_identity_package",
+      "state": "owner_authorized_waiting_for_azure_environment_and_identity_package",
+      "authority": {
+        "owner_stage_1_authority": "granted_for_disposable_non_production_lab",
+        "independent_review_for_bounded_stage_1": "not_required_by_current_owner_risk_decision",
+        "qualified_review_for_later_live_or_production_scope": "required",
+        "live_linealert_adapter_authority": "not_granted",
+        "physical_equipment_authority": "not_granted",
+        "equipment_control_authority": "not_granted"
+      },
+      "blockers": [
+        "no_azure_management_connection_available_in_current_workspace",
+        "disposable_subscription_region_resource_group_cleanup_owner_and_credential_custodian_not_recorded"
+      ],
+      "capability_boundary": {
+        "documentation_and_evidence_planning": true,
+        "disposable_stage_1_azure_lab_after_environment_gates": true,
+        "offline_fixture_mapping_after_captured_evidence": false,
+        "linealert_live_opcua_or_mqtt_adapter": false,
+        "public_opcua_exposure": false,
+        "credentials_in_repository": false,
+        "physical_equipment_connection": false,
+        "equipment_control": false
+      },
       "azure_resources": "not_observed",
       "live_linealert_adapter": "not_established",
       "physical_equipment_connection": "not_observed",
@@ -214,6 +255,9 @@
     "31": {
       "title": "Plan Microsoft OPC PLC Simulator + Azure IoT Operations lab",
       "state": "open_owner_authorized_waiting_for_environment",
+      "azure_resources": "not_observed",
+      "execution_environment": "not_available_in_current_workspace",
+      "identity_resource_package": "not_recorded",
       "live_adapter_authority": "not_granted"
     },
     "111": {
@@ -224,13 +268,49 @@
     "23": {
       "title": "Track atomic ingestion failure windows",
       "state": "closed_completed",
-      "resolution": "PR #38"
+      "final_remediation": "FW-03_and_FW-04_merged_by_pr38",
+      "remaining_scope": [],
+      "latest_verification": {
+        "pull_request": 38,
+        "ci_run": 30516440394,
+        "test_summary": "74_passed_0_xfailed",
+        "remaining_xfails": []
+      },
+      "limitations": [
+        "rollback_requires_declared_checkpoint_and_restore_callbacks",
+        "arbitrary_external_side_effects_are_not_transactional",
+        "nested_or_concurrent_publication_is_not_claimed",
+        "software_atomicity_does_not_establish_equipment_safety"
+      ]
     },
     "27": {
       "title": "Adopt risk-tiered solo-maintainer governance policy",
       "state": "closed_completed",
       "role": "active_governance_policy"
     }
+  },
+  "governance_incident_history": {
+    "historical_detail": "Earlier governance incidents remain preserved in Git history. Exact PR 37/38 lifecycle evidence remains repeated here because current state-contract tests rely on those bounded historical records.",
+    "incidents": [
+      {
+        "id": "pr37-state-correction-merged-2026-07-30",
+        "pr": 37,
+        "source_head": "fc22177e1b855fd6f416f648330cd3416215a96c",
+        "merge_commit": "97256907cd428a8a0ba3dfb7d4020fa19a2485ee",
+        "ci_run": 30509312378,
+        "reviews": 0,
+        "classification": "repository_state_correction"
+      },
+      {
+        "id": "pr38-runtime-atomicity-merged-2026-07-30",
+        "pr": 38,
+        "source_head": "0d5d8180a5edffaeca8a9822800d7e729ef96327",
+        "merge_commit": "06f795e760c7ad360bc51e264f8c55238a2a60da",
+        "ci_run": 30516440394,
+        "reviews": 0,
+        "classification": "runtime_atomicity_remediation_merge_authority_not_observable_in_connected_github_evidence"
+      }
+    ]
   },
   "ci_policy": {
     "required_checkout": "literal_event_sha",
@@ -251,8 +331,16 @@
       "anthonyedgar30000/HelixMemoryService": "early_memory_prototype_non_authoritative"
     }
   },
+  "deployment_state": {
+    "status": "not_deployed",
+    "azure_lab_resources": "not_observed",
+    "physical_equipment_connection": "not_observed",
+    "network_listener": "not_observed",
+    "equipment_control_path": "not_observed"
+  },
+  "deployment_state_scope": "production_runtime_and_equipment_path_only; public GitHub Pages demo deployment is recorded separately under live_observation.public_pages",
   "governance_and_provenance": {
-    "historical_detail": "Earlier governance incidents and exact historical records remain preserved in prior revisions of this file and Git history; this current snapshot does not rewrite them.",
+    "historical_detail": "Earlier governance incidents and exact historical records remain preserved in prior revisions and Git history; this current snapshot does not rewrite them.",
     "historical_governance_issue": 27,
     "net_zero_main_housekeeping": [
       {
