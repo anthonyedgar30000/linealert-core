@@ -206,7 +206,9 @@ class LabelerDemoState:
             "sequence_at_action": self._sequence,
             "recorded_at": datetime.now(UTC).isoformat(),
             "equipment_effect": "none_physical_simulator_only",
-            "boundary": "Simulator control changes synthetic state only; it is not equipment control.",
+            "boundary": (
+                "Simulator control changes synthetic state only; it is not equipment control."
+            ),
         }
 
 
