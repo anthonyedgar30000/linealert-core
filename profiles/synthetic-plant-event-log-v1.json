@@ -2,7 +2,7 @@
   "schema_version": "linealert.synthetic-plant-event-log.v1",
   "classification": "synthetic_demo_only",
   "plant_context": "Synthetic packaging plant",
-  "purpose": "Provide a bounded Event Viewer-style chronology for production, changeover, operator, telemetry, CMMS, maintenance, LineAlert concern, trial, recommendation, and recovery events on the same synthetic calendar as the Plant Canvas.",
+  "purpose": "Provide a bounded Event Viewer-style chronology for production, changeover, operator, telemetry, CMMS, maintenance, LineAlert concern, trial, recommendation, recovery, and physics-informed synthetic signature events on the same synthetic calendar as the Plant Canvas.",
   "event_record": {
     "required_fields": ["event_id", "timestamp", "clock_quality", "source_identity", "asset_identity", "event_class", "severity", "message", "classification"],
     "structured_fields": "Event-specific fields preserve related incident/work-order identifiers and bounded context without converting sequence into causation.",
@@ -26,6 +26,14 @@
     "relationship_semantics": "The roll-change record may be shown as recent context only when the synthetic event exists before the concern timestamp.",
     "boundary": "preceded by change != caused by change"
   },
+  "physics_informed_signature": {
+    "profile": "synthetic-roll-physics-signature-v1.json",
+    "event_class": "SIGNATURE",
+    "message": "Coupled rotational/tension signature moved outside synthetic healthy settling reference",
+    "channels": ["rpm", "rotational_frequency_hz", "imbalance_force_n", "vibration_1x_mm_s", "web_tension_peak_to_peak_n", "motor_current_peak_to_peak_a"],
+    "semantics": "One synthetic setup disturbance drives a coupled deterministic signal family. The event records that the configured synthetic signature rule became distinguishable from the same-elapsed healthy settling reference.",
+    "boundary": "physics-informed model match != diagnosis or current root-cause proof"
+  },
   "browser_demo_retention": {
     "generated_history": "Rendered on demand for the selected time window rather than appended indefinitely.",
     "interactive_journal_max_events": 200,
@@ -37,6 +45,9 @@
     "event order != causal proof",
     "operator record != verified physical state",
     "synthetic work-order event != CMMS truth",
+    "physics-informed synthetic model != OEM machine model",
+    "signature match != diagnosis",
+    "historical pattern != current root cause",
     "recommendation != authorization or equipment command",
     "successful trial != safe production change",
     "recovery observed != root cause proof or future reliability guarantee"
