@@ -10,23 +10,33 @@ def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_plant_canvas_links_to_evolving_investigation():
+def test_plant_canvas_opens_evolving_investigation_over_live_canvas():
     wrapper = read(DOCS / "triage" / "index.html")
     adapter = read(DOCS / "triage" / "investigation-link-adapter.js")
 
     assert "./investigation-link-adapter.js" in wrapper
     assert "Open evolving investigation" in adapter
     assert "../investigation/" in adapter
+    assert "investigationDrawerBackdrop" in adapter
+    assert "investigationFrame" in adapter
+    assert 'role="dialog"' in adapter
+    assert "iframe" in adapter
+    assert "Plant Canvas continues running underneath" in adapter
+    assert "preventDefault" in adapter
+    assert "Full page" in adapter
     assert "Working explanations" in adapter
     assert "root_cause_status" not in adapter
+    assert "root cause" not in adapter.lower()
 
 
-def test_investigation_page_uses_shared_session_and_event_journal():
+def test_investigation_page_uses_shared_session_event_journal_and_project_profile():
     page = read(DOCS / "investigation" / "index.html")
 
     assert "../demo-session.js" in page
     assert "../event-journal.js" in page
     assert "../investigation-model.js" in page
+    assert "../profiles/synthetic-labeler2-investigation-v1.json" in page
+    assert "../../profiles/" not in page
     assert "CURRENT WORKING PICTURE" in page
     assert "BEST NEXT BOUNDED STEP" in page
     assert "How the investigation changed" in page
