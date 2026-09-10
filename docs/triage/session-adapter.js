@@ -155,7 +155,9 @@
       fastTarget=saved.fast&&Number.isFinite(saved.fast.target)?saved.fast.target:null;
       fastEvent=saved.fast?saved.fast.event:null;
 
-      if(window.LineAlertTrialDiscipline&&saved.discipline)window.LineAlertTrialDiscipline.restore(saved.discipline);
+      if(window.LineAlertTrialDiscipline){
+        window.LineAlertTrialDiscipline.restore(saved.discipline||{completedTrials:iteration});
+      }
 
       const history=document.getElementById('history');
       if(history&&saved.decisionHistoryHtml)history.innerHTML=saved.decisionHistoryHtml;
