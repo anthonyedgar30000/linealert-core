@@ -5,228 +5,231 @@
     "owner": "anthonyedgar30000",
     "name": "linealert-core",
     "full_name": "anthonyedgar30000/linealert-core",
-    "role": "authoritative_linealert_implementation"
+    "role": "authoritative_linealert_implementation",
+    "visibility": "public",
+    "default_branch": "main"
   },
-  "updated_on": "2026-08-02",
+  "updated_on": "2026-09-10",
   "state_model": {
     "record_type": "repository_coordination_snapshot",
-    "captured_from_main": "06f795e760c7ad360bc51e264f8c55238a2a60da",
+    "captured_from_main": "4037c2c0bcadce3e3e6e414735c0045b65db6027",
     "current_reality_source": "live_github_and_explicit_user_direction",
-    "semantics": "This is a time-bounded coordination snapshot. Live GitHub lifecycle, CI, review, repository-control, deployment, equipment-documentation, and equipment evidence supersedes cached current-state claims.",
+    "semantics": "This is a time-bounded coordination snapshot. Live GitHub lifecycle, exact current branch head, CI, deployment, equipment documentation, and equipment evidence supersede cached claims.",
     "publication_policy": {
       "state_only_merge_requires_immediate_self_sync": false,
       "publication_pr_self_reference_required": false,
-      "rule": "A state-only publication does not require another pull request merely to record its own merge. A corrective sync is required when a substantive external lifecycle, authority, deployment, equipment, or scope fact changes before merge or contradicts the published snapshot.",
-      "current_correction_reason": "PR 38 merged a substantive runtime transaction change and closed Issue 23 after the PR 37 state publication, contradicting the cached PR 36 and pre-PR 38 atomicity snapshot."
+      "rule": "A state-only publication does not require another pull request merely to record its own merge. Create a corrective sync only when a substantive external lifecycle, authority, deployment, equipment, or scope fact changes or contradicts the published snapshot."
     }
   },
   "live_observation": {
-    "observed_at": "2026-08-02T02:16:00-04:00",
-    "default_branch": "main",
-    "default_branch_head": "06f795e760c7ad360bc51e264f8c55238a2a60da",
-    "open_pull_requests_before_branch_creation": [],
+    "observed_at": "2026-09-10T03:02:00-04:00",
+    "default_branch_head": "4037c2c0bcadce3e3e6e414735c0045b65db6027",
+    "default_branch_tree": "9ae2eaaae207c1503cd6ce09b50d91c0c9df0410",
+    "latest_functional_merge": {
+      "pull_request": 114,
+      "title": "Add evolving investigation workspace",
+      "merge_commit": "4037c2c0bcadce3e3e6e414735c0045b65db6027"
+    },
+    "open_pull_requests_before_sync_increment": [],
+    "active_sync_pull_request": 115,
     "open_issues": [31],
     "recently_closed_issues": {
-      "19": {
-        "state": "closed_not_planned",
-        "successor_issue": 31,
-        "reason": "Microsoft_OPC_PLC_Azure_path_selected_first"
-      },
-      "23": {
+      "111": {
         "state": "closed_completed",
-        "closed_by_pull_request": 38,
-        "reason": "all_four_atomic_ingestion_windows_resolved"
-      },
-      "35": {
-        "state": "closed_not_planned",
-        "parent_issue": 31,
-        "reason": "independent_review_not_required_for_bounded_disposable_stage1"
+        "reason": "maintenance_observe_followups_resolved_by_pr112_and_pr113",
+        "closed_on": "2026-09-10"
       }
     },
-    "adopted_governance_issue": 27,
-    "visibility": {
-      "github_metadata": "public",
-      "canonical_policy": "public",
-      "status": "verified_public"
+    "main_ci": {
+      "run_id": 34447779672,
+      "head_sha": "4037c2c0bcadce3e3e6e414735c0045b65db6027",
+      "conclusion": "success"
     },
-    "deployment": "not_deployed",
+    "public_pages": {
+      "status": "deployed",
+      "workflow_run": 34447779687,
+      "source_commit": "4037c2c0bcadce3e3e6e414735c0045b65db6027",
+      "source_tree": "9ae2eaaae207c1503cd6ce09b50d91c0c9df0410",
+      "plant_canvas": "https://anthonyedgar30000.github.io/linealert-core/triage/",
+      "troubleshooting_guide": "https://anthonyedgar30000.github.io/linealert-core/troubleshooting-guide.html",
+      "event_log": "https://anthonyedgar30000.github.io/linealert-core/event-log/",
+      "investigation_workspace": "https://anthonyedgar30000.github.io/linealert-core/investigation/",
+      "note": "GitHub Pages is a static controlled synthetic demo, not a production LineAlert runtime."
+    },
+    "production_runtime_deployment": "not_observed",
     "azure_lab_resources": "not_observed",
     "physical_equipment_connection": "not_observed",
-    "network_listener": "not_observed",
-    "equipment_control_path": "not_observed",
-    "equipment_documentation": "generic_demo_profile_and_planning_runbook_only_no_oem_or_commissioning_evidence_observed"
+    "network_listener_for_live_equipment": "not_observed",
+    "equipment_control_path": "not_observed"
   },
-  "trusted_baseline": {
-    "branch": "main",
-    "commit": "06f795e760c7ad360bc51e264f8c55238a2a60da",
-    "commit_role": "observed_main_head_after_pr38_merge",
-    "main_ci_status": "not_exposed_or_not_verified_for_merge_commit",
-    "last_completed_increment": {
-      "pull_request": 38,
-      "title": "Resolve remaining atomic ingestion windows",
-      "source_head": "0d5d8180a5edffaeca8a9822800d7e729ef96327",
-      "merge_commit": "06f795e760c7ad360bc51e264f8c55238a2a60da",
-      "increment_type": "tier_1_in_memory_runtime_atomicity_remediation",
-      "pull_request_ci": {
-        "run_id": 30516440394,
-        "conclusion": "success",
-        "python_versions": ["3.11", "3.12"],
-        "checkout_provenance": "literal_pull_request_head_sha",
-        "test_summary": "74_passed_0_xfailed"
+  "active_work": {
+    "branch": "agent/sync-current-reality-v1",
+    "pull_request": 115,
+    "objective": "Synchronize repository coordination state with current merged demo, CI, deployment, issue, and equipment-documentation reality.",
+    "permitted_paths": [".project/active-work.json"],
+    "capability_boundary": "repository_state_only_no_runtime_or_equipment_change",
+    "status_at_snapshot_write": "implemented_on_branch_pending_exact_head_ci_and_merge"
+  },
+  "current_demo_reality": {
+    "classification": "controlled_synthetic_static_demo",
+    "primary_surface": "Plant Canvas",
+    "supporting_surfaces": [
+      "Troubleshooting Guide",
+      "Plant Event Log",
+      "Evolving Investigation Workspace"
+    ],
+    "workflow_summary": "Synthetic plant state can progress from normal production through concern, bounded diagnostic action, explicit restore/repeat/retain discipline, production verification, recovery observation, maintenance observe-only, post-maintenance observation, and evolving investigation views.",
+    "recent_merged_increments": [
+      {
+        "pull_request": 104,
+        "title": "Require explicit restore before stacking troubleshooting changes",
+        "role": "one_material_change_restore_repeat_retain_discipline"
       },
-      "submitted_reviews": 0,
-      "merge_authority_evidence": "fresh_named_merge_instruction_not_observable_in_connected_github_evidence",
-      "deployment_status": "not_deployed"
-    },
-    "last_repository_state_increment": {
-      "pull_request": 37,
-      "title": "Correct post-PR36 Stage 1 governance state",
-      "source_head": "fc22177e1b855fd6f416f648330cd3416215a96c",
-      "merge_commit": "97256907cd428a8a0ba3dfb7d4020fa19a2485ee",
-      "increment_type": "tier_1_repository_state_and_test_correction",
-      "pull_request_ci": {
-        "run_id": 30509312378,
-        "conclusion": "success",
-        "python_versions": ["3.11", "3.12"],
-        "checkout_provenance": "literal_pull_request_head_sha",
-        "test_summary": "72_passed_2_xfailed"
+      {
+        "pull_request": 105,
+        "title": "Add synchronized plant Event Log and recorded changeover context",
+        "role": "append_only_style_synthetic_chronology_and_context"
       },
-      "submitted_reviews": 0,
-      "deployment_status": "not_deployed"
-    },
-    "last_merged_runtime_increment": {
-      "pull_request": 38,
-      "title": "Resolve remaining atomic ingestion windows",
-      "source_head": "0d5d8180a5edffaeca8a9822800d7e729ef96327",
-      "merge_commit": "06f795e760c7ad360bc51e264f8c55238a2a60da",
-      "verified_result": "74_passed_0_xfailed_on_literal_pull_request_head",
-      "resolved_windows": [
-        "FW-01_event_identity_commit",
-        "FW-02_timing_start_evidence_preservation",
-        "FW-03_later_subscriber_rollback",
-        "FW-04_diagnostic_derivation_rollback"
+      {
+        "pull_request": 106,
+        "title": "Add physics-informed synthetic roll-change signature",
+        "role": "illustrative_physics_informed_signature"
+      },
+      {
+        "pull_request": 107,
+        "title": "Use physics signature to weight roll-change investigation",
+        "role": "bounded_investigation_evidence_not_causal_probability"
+      },
+      {
+        "pull_request": 108,
+        "title": "Fix fast-forward after recovery verification",
+        "role": "clean_post_recovery_handoff"
+      },
+      {
+        "pull_request": 109,
+        "title": "Decouple diagnostic mode from maintenance response",
+        "role": "diagnostic_state_not_maintenance_dispatch"
+      },
+      {
+        "pull_request": 110,
+        "title": "Suspend normal interpretation during asset maintenance",
+        "role": "asset_scoped_maintenance_observe_gate"
+      },
+      {
+        "pull_request": 112,
+        "title": "Fix maintenance quiet-state lifecycle in demo",
+        "role": "reachable_synthetic_maintenance_and_post_maintenance_observation"
+      },
+      {
+        "pull_request": 113,
+        "title": "Harden maintenance lifecycle fast-forward and guide state",
+        "role": "maintenance_event_fast_forward_and_guide_overlay_hardening"
+      },
+      {
+        "pull_request": 114,
+        "title": "Add evolving investigation workspace",
+        "role": "qualitative_evolving_working_explanations_and_evidence_workspace"
+      }
+    ],
+    "maintenance_lifecycle": {
+      "sequence": [
+        "production",
+        "maintenance_observe_only",
+        "maintenance_complete",
+        "post_maintenance_observation",
+        "normal_interpretation"
       ],
-      "remaining_windows": [],
-      "transaction_boundary": "declared_mosaic_managed_consumer_state_and_event_identity_only",
-      "external_side_effect_rollback": "not_claimed",
-      "deployment_status": "not_deployed"
+      "synthetic_post_maintenance_target_containers": 10,
+      "boundary": "Post-maintenance observation is demo interpretation gating only; it is not return-to-service authorization, maintenance-success proof, or safety approval."
+    },
+    "trial_discipline": {
+      "automatic_restore": false,
+      "stack_unverified_changes": false,
+      "rule": "last verified state -> one material change -> bounded evidence -> restore/repeat/retain -> only then consider one additional material change"
+    },
+    "event_log_boundary": "Recorded event order and temporal proximity are context evidence, not causal proof.",
+    "investigation_workspace": {
+      "state": "merged_and_deployed_static_demo",
+      "behavior": "Keeps a best-supported working explanation plus credible alternatives visible, with evidence consistent with, evidence against or limiting, and missing or discriminating evidence. The view evolves from the shared synthetic session and event journal.",
+      "standing_model": [
+        "most_supported",
+        "plausible",
+        "lower_priority",
+        "less_supported"
+      ],
+      "boundaries": [
+        "working_explanation != diagnosis",
+        "investigation_priority != causal_probability",
+        "test_response != causal_proof",
+        "intervention_followed_by_improvement != proof_of_mechanism",
+        "episode_closure != causal_certainty",
+        "recommendation != authorized_action",
+        "synthetic_demo_evidence != physical_machine_evidence"
+      ],
+      "not_implemented": [
+        "llm_hypothesis_generation",
+        "automatic_lesson_promotion",
+        "equipment_control",
+        "oem_procedure_authority",
+        "production_authority"
+      ]
     }
+  },
+  "equipment_and_source_reality": {
+    "labeler_2": {
+      "physical_asset_connected": false,
+      "oem_manual_observed_in_repository": false,
+      "commissioned_machine_profile_observed": false,
+      "commissioned_return_to_service_procedure_observed": false,
+      "verified_calibration_package_observed": false,
+      "controller_backup_or_firmware_baseline_observed": false,
+      "runtime_control_path_observed": false
+    },
+    "available_repository_material": {
+      "synthetic_profiles": true,
+      "speedway_named_route_profile": "profiles/speedway-labeler-troubleshooting-v1.routes.json",
+      "speedway_route_scope": "synthetic_demo",
+      "physics_roll_profile": "illustrative_non_oem",
+      "cmms_history": "synthetic_demo_only",
+      "plant_event_log": "synthetic_demo_only",
+      "investigation_profile": "profiles/synthetic-labeler2-investigation-v1.json"
+    },
+    "boundary": "Synthetic profiles, screenshots, event chronology, working explanations, and physics-informed illustrative models do not establish OEM configuration, commissioned machine truth, verified physical state, or safe production authority."
   },
   "workstreams": [
     {
       "workstream_id": "microsoft-opc-plc-azure-iot-operations-lab-v1",
       "tracking_issue": 31,
-      "runbook_pull_request": 32,
       "runbook_path": "docs/labs/microsoft-opc-plc-azure-iot-operations.md",
       "classification": "tier_2_planning_and_evidence_workstream",
-      "state": "owner_authorized_waiting_for_azure_environment_and_identity_package",
-      "completed_scope": [
-        "official_microsoft_path_selected",
-        "documentation_runbook_merged",
-        "pr32_exact_head_ci_success",
-        "bounded_stage_1_owner_authority_recorded",
-        "openplc_predecessor_issue_19_closed_not_planned",
-        "issue_35_closed_not_planned",
-        "pr37_repository_state_correction_merged"
-      ],
-      "next_stage": "isolated_codespaces_k3s_quickstart_evidence_capture",
-      "authority": {
-        "owner_stage_1_authority": "granted_for_disposable_non_production_lab",
-        "independent_review_for_bounded_stage_1": "not_required_by_current_owner_risk_decision",
-        "qualified_review_for_later_live_or_production_scope": "required",
-        "live_linealert_adapter_authority": "not_granted",
-        "physical_equipment_authority": "not_granted",
-        "equipment_control_authority": "not_granted"
-      },
-      "blockers": [
-        "no_azure_management_connection_available_in_current_workspace",
-        "disposable_subscription_region_resource_group_cleanup_owner_and_credential_custodian_not_recorded"
-      ],
-      "capability_boundary": {
-        "documentation_and_evidence_planning": true,
-        "disposable_stage_1_azure_lab_after_environment_gates": true,
-        "offline_fixture_mapping_after_captured_evidence": false,
-        "linealert_live_opcua_or_mqtt_adapter": false,
-        "public_opcua_exposure": false,
-        "credentials_in_repository": false,
-        "physical_equipment_connection": false,
-        "equipment_control": false
-      },
-      "linked_gate_disposition": {
-        "issue": 35,
-        "state": "closed_not_planned",
-        "review_evidence_claimed": false,
-        "scope": "bounded_disposable_stage1_only"
-      },
-      "rollback": "No Azure rollback is currently required because no Azure lab resources are observed. After Stage 1 starts, execute the merged runbook teardown and verify no resource, listener, credential, certificate, workload, or control-path residue."
+      "state": "open_owner_authorized_waiting_for_environment_and_identity_package",
+      "azure_resources": "not_observed",
+      "live_linealert_adapter": "not_established",
+      "physical_equipment_connection": "not_observed",
+      "equipment_control": "not_authorized",
+      "note": "Recent GitHub Pages demo deployment does not satisfy or advance the Azure Stage 1 evidence gate. Issue #31 remains open."
     }
   ],
   "issue_lifecycle": {
-    "23": {
-      "title": "Track atomic ingestion failure windows",
-      "state": "closed_completed",
-      "characterization": "completed_by_pr28",
-      "partial_remediation": "FW-01_and_FW-02_merged_by_pr29",
-      "final_remediation": "FW-03_and_FW-04_merged_by_pr38",
-      "resolved_scope": [
-        "FW-01_event_identity_commit",
-        "FW-02_timing_start_evidence_preservation",
-        "FW-03_later_subscriber_rollback",
-        "FW-04_diagnostic_derivation_rollback"
-      ],
-      "remaining_scope": [],
-      "latest_verification": {
-        "pull_request": 38,
-        "ci_run": 30516440394,
-        "test_summary": "74_passed_0_xfailed",
-        "remaining_xfails": []
-      },
-      "limitations": [
-        "rollback_requires_declared_checkpoint_and_restore_callbacks",
-        "arbitrary_external_side_effects_are_not_transactional",
-        "nested_or_concurrent_publication_is_not_claimed",
-        "software_atomicity_does_not_establish_equipment_safety"
-      ]
-    },
-    "19": {
-      "title": "Plan isolated OpenPLC labeler lab emulator",
-      "state": "closed_not_planned",
-      "risk_tier": "tier_2",
-      "successor_issue": 31,
-      "disposition": "Microsoft_OPC_PLC_Azure_path_selected_first",
-      "implementation_authority": "not_granted"
-    },
     "31": {
       "title": "Plan Microsoft OPC PLC Simulator + Azure IoT Operations lab",
       "state": "open_owner_authorized_waiting_for_environment",
-      "risk_tier": "tier_2_bounded_disposable_stage1",
-      "runbook_pull_request": 32,
-      "runbook_status": "merged",
-      "owner_stage_1_authority": "granted_for_disposable_non_production_lab",
-      "independent_review_for_stage_1": "not_required_by_current_owner_risk_decision",
-      "azure_resources": "not_observed",
-      "execution_environment": "not_available_in_current_workspace",
-      "identity_resource_package": "not_recorded",
       "live_adapter_authority": "not_granted"
     },
-    "35": {
-      "title": "Qualify reviewer for Azure OPC PLC Stage 1",
-      "state": "closed_not_planned",
-      "parent_issue": 31,
-      "review_evidence": "not_claimed",
-      "disposition": "review_not_required_for_bounded_disposable_stage1",
-      "later_scope_review_requirement": "preserved"
+    "111": {
+      "title": "Circle back: maintenance observe demo follow-ups",
+      "state": "closed_completed",
+      "resolution": "PR #112 and PR #113"
+    },
+    "23": {
+      "title": "Track atomic ingestion failure windows",
+      "state": "closed_completed",
+      "resolution": "PR #38"
     },
     "27": {
       "title": "Adopt risk-tiered solo-maintainer governance policy",
       "state": "closed_completed",
       "role": "active_governance_policy"
-    },
-    "15": {
-      "title": "Enforce independent review on main before further merges",
-      "state": "closed_not_planned",
-      "acceptance_status": "not_satisfied",
-      "superseded_by_issue": 27
     }
   },
   "ci_policy": {
@@ -234,7 +237,7 @@
     "pull_request_sha": "github.event.pull_request.head.sha",
     "push_sha": "github.sha",
     "verification": "git_rev_parse_HEAD_must_equal_expected_sha",
-    "synthetic_merge_ref": "useful_mergeability_evidence_but_not_exact_head_evidence"
+    "green_check_scope": "declared_ci_checks_on_inspected_commit_only"
   },
   "repository_lineage": {
     "authoritative": ["anthonyedgar30000/linealert-core"],
@@ -243,130 +246,41 @@
       "anthonyedgar30000/ContextOS": "execution_containment_boundary"
     },
     "design_archaeology": {
-      "anthonyedgar30000/LineAlertDemo": {
-        "classification": "legacy_prototype",
-        "pull_requests": {"1": "merged", "2": "merged", "3": "open"},
-        "disposition": "non_authoritative_do_not_copy_or_merge_wholesale"
-      },
-      "anthonyedgar30000/linealert-analysis-engine": {
-        "classification": "merged_legacy_prototype_non_authoritative",
-        "pull_requests": {"1": "merged"},
-        "disposition": "preserve_as_design_archaeology"
-      },
-      "anthonyedgar30000/HelixMemoryService": {
-        "classification": "early_memory_prototype",
-        "pull_requests": {},
-        "disposition": "not_current_persistence_retrieval_or_lifecycle_authority"
-      }
+      "anthonyedgar30000/LineAlertDemo": "legacy_prototype_non_authoritative",
+      "anthonyedgar30000/linealert-analysis-engine": "legacy_prototype_non_authoritative",
+      "anthonyedgar30000/HelixMemoryService": "early_memory_prototype_non_authoritative"
     }
   },
-  "governance_incident_history": {
-    "historical_detail": "Historical incident identifiers remain preserved in this snapshot and in prior git revisions. Later policy adoption does not rewrite earlier lifecycle evidence.",
-    "incidents": [
-      {"id": "pr12-blocked-merge-2026-07-22", "pr": 12},
-      {"id": "pr13-zero-review-merge-2026-07-22", "pr": 13},
-      {"id": "pr14-zero-review-merge-2026-07-23", "pr": 14},
-      {"id": "pr16-zero-review-gate-bypass-2026-07-28", "pr": 16},
-      {"id": "pr17-zero-review-gate-bypass-2026-07-28", "pr": 17},
-      {"id": "pr20-zero-review-gate-bypass-2026-07-28", "pr": 20},
-      {"id": "pr21-review-gate-probe-merged-zero-review-2026-07-28", "pr": 21},
-      {"id": "pr22-zero-review-architecture-publication-2026-07-28", "pr": 22},
-      {"id": "pr24-explicit-no-merge-boundary-bypassed-2026-07-28", "pr": 24},
-      {"id": "pr29-merged-without-separately-recorded-named-authority-2026-07-29", "pr": 29},
-      {"id": "pr30-merged-without-separately-recorded-named-authority-2026-07-29", "pr": 30},
-      {"id": "pr32-merged-without-separately-recorded-named-authority-2026-07-29", "pr": 32},
-      {"id": "pr33-merged-without-separately-recorded-named-authority-2026-07-29", "pr": 33},
-      {"id": "pr34-merged-without-separately-recorded-named-authority-2026-07-29", "pr": 34},
-      {"id": "pr36-concurrent-governance-change-not-reflected-2026-07-29", "pr": 36},
+  "governance_and_provenance": {
+    "historical_detail": "Earlier governance incidents and exact historical records remain preserved in prior revisions of this file and Git history; this current snapshot does not rewrite them.",
+    "historical_governance_issue": 27,
+    "net_zero_main_housekeeping": [
       {
-        "id": "pr37-state-correction-merged-2026-07-30",
-        "pr": 37,
-        "source_head": "fc22177e1b855fd6f416f648330cd3416215a96c",
-        "merge_commit": "97256907cd428a8a0ba3dfb7d4020fa19a2485ee",
-        "ci_run": 30509312378,
-        "reviews": 0,
-        "classification": "repository_state_correction"
+        "commit": "ccc3b49fd4f1db48f89ce7b0b1dd265b8278bb1f",
+        "effect": "temporary .project/reality-sync-probe.tmp created accidentally on main"
       },
       {
-        "id": "pr38-runtime-atomicity-merged-2026-07-30",
-        "pr": 38,
-        "source_head": "0d5d8180a5edffaeca8a9822800d7e729ef96327",
-        "merge_commit": "06f795e760c7ad360bc51e264f8c55238a2a60da",
-        "ci_run": 30516440394,
-        "reviews": 0,
-        "classification": "runtime_atomicity_remediation_merge_authority_not_observable_in_connected_github_evidence"
+        "commit": "acfd9791fa4eef624098cf69805893389afd7ef2",
+        "effect": "temporary probe removed; repository tree returned exactly to the PR #113 merge tree before PR #114 later advanced main"
       }
     ],
-    "recent_lifecycle": [
-      {
-        "pull_request": 37,
-        "state": "merged",
-        "merge_commit": "97256907cd428a8a0ba3dfb7d4020fa19a2485ee",
-        "classification": "post_pr36_state_correction"
-      },
-      {
-        "pull_request": 38,
-        "state": "merged",
-        "merge_commit": "06f795e760c7ad360bc51e264f8c55238a2a60da",
-        "classification": "remaining_atomicity_remediation"
-      },
-      {
-        "issue": 23,
-        "state": "closed_completed",
-        "classification": "all_four_atomicity_windows_resolved"
-      },
-      {
-        "issue": 31,
-        "state": "open_owner_authorized_waiting_for_environment",
-        "classification": "bounded_stage1_execution_waiting_for_environment_identity_gates"
-      }
-    ]
+    "net_zero_housekeeping_boundary": "No residual repository content, runtime, deployment, or equipment consequence is claimed from the temporary probe. Git history is intentionally preserved rather than rewritten."
   },
-  "repository_controls": {
-    "historical_main_review_gate": {
-      "tracking_issue": 15,
-      "observed_effect_through_pr38": "zero_review_merges_permitted",
-      "probe_pull_request": 21,
-      "probe_result": "merged_with_zero_submitted_reviews",
-      "status": "not_effective_or_not_verified",
-      "supersession": "Issue 27 replaced this blanket blocker with risk-tiered governance; the historical enforcement result remains evidence."
-    },
-    "tier_1_policy": {
-      "tracking_issue": 27,
-      "independent_github_approval_required": false,
-      "fresh_named_merge_instruction_required": true,
-      "exact_head_ci_required": true
-    },
-    "tier_2_policy": {
-      "tracking_issue": 27,
-      "qualified_review_required_for": [
-        "live_linealert_adapter",
-        "persistent_external_integration",
-        "physical_equipment_connection",
-        "production_network_connection",
-        "equipment_control",
-        "safety_or_oem_claim",
-        "production_release"
-      ],
-      "bounded_stage1_exception": {
-        "tracking_issue": 31,
-        "scope": "disposable_non_production_microsoft_simulator_quickstart",
-        "owner_authority_sufficient": true
-      }
-    },
-    "repository_visibility": {
-      "github_metadata": "public",
-      "canonical_policy": "public",
-      "status": "verified_public",
-      "policy_source": "explicit_user_direction"
-    }
-  },
-  "deployment_state": {
-    "status": "not_deployed",
-    "azure_lab_resources": "not_observed",
-    "physical_equipment_connection": "not_observed",
-    "network_listener": "not_observed",
-    "equipment_control_path": "not_observed"
-  },
-  "tracked_pull_requests": []
+  "canonical_boundaries": [
+    "telemetry != diagnosis",
+    "anomaly != fault",
+    "correlation != causation",
+    "model_match != proof",
+    "recommendation != authorized_action",
+    "historical_pattern != current_root_cause",
+    "sensor_value != verified_physical_state",
+    "successful_test != safe_production_change",
+    "browser_session_snapshot != plant_record",
+    "maintenance_activity != normal_production_context",
+    "maintenance_completion != verified_return_to_service",
+    "post_maintenance_observation != return_to_service_authorization",
+    "working_explanation != diagnosis",
+    "investigation_priority != causal_probability",
+    "github_pages_demo != production_runtime"
+  ]
 }
