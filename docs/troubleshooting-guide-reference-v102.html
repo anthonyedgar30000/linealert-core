@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Labeling Troubleshooting Guide — LineAlert</title>
+<style>
+:root{--ink:#14213d;--paper:#f5f7fa;--card:#fff;--muted:#61708a;--blue:#2a5ca8;--orange:#d98e2b;--burn:#d9642f;--green:#2e8b57;--red:#c0392b;--teal:#0e8c96;--soft:#eef3f6;--match:#edf7ef}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,system-ui,sans-serif}.poster{max-width:1500px;margin:auto;padding:30px 34px 44px}.top{display:flex;justify-content:space-between;gap:28px;align-items:flex-start;border-bottom:4px solid var(--ink);padding-bottom:18px}.brand h1{font-size:38px;line-height:1;margin:0 0 8px;letter-spacing:.02em}.brand p{margin:0 0 12px;max-width:720px;color:#3c4a63}.pill,a.pill{display:inline-flex;align-items:center;gap:7px;border:1.5px dashed var(--teal);background:#eaf7f8;color:#075e66;padding:7px 12px;border-radius:999px;text-decoration:none;font:700 12px ui-monospace,monospace}.how{max-width:385px;background:white;border:2px solid var(--ink);border-radius:10px;padding:14px 18px}.how h2,.eyebrow{font:800 11px ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px}.how ol{margin:0;padding-left:18px;font-size:13px;line-height:1.55}.assumption{margin:16px 0;background:#eef6f0;border:2px solid var(--green);border-radius:12px;padding:14px 16px}.assumption b{display:block;margin-bottom:4px}.match{margin:18px 0;background:var(--match);border:2px solid var(--green);border-radius:14px;padding:18px}.match-grid{display:grid;grid-template-columns:1.3fr .7fr;gap:20px}.match h2{font-size:25px;margin:4px 0 8px}.match p{margin:4px 0 8px;line-height:1.5}.score{display:grid;gap:8px}.score div{background:white;border:1px solid #cbdccc;border-radius:10px;padding:10px}.score span{display:block;font-size:10px;font-weight:800;letter-spacing:.08em;color:#5d6d60}.score b{font-size:15px}.issue-banner{background:#2e7d4f;color:white;text-align:center;padding:12px;border-radius:8px;font-size:18px;font-weight:900;letter-spacing:.03em;margin:18px 0 14px}.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:20px}.card{--accent:var(--blue);background:white;border:2px solid var(--accent);border-radius:12px;padding:14px;display:flex;flex-direction:column;min-height:560px}.card:nth-child(2){--accent:var(--orange)}.card:nth-child(3){--accent:var(--burn)}.card:nth-child(4){--accent:var(--green)}.card:nth-child(5){--accent:var(--red)}.card h3{margin:0;color:var(--accent);font-size:15px}.head{display:flex;gap:8px;align-items:center}.num{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:900;font-size:12px}.section{font:800 10px ui-monospace,monospace;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin:14px 0 5px}.card ul{margin:0;padding-left:17px;font-size:12px;line-height:1.55}.actions{list-style:none;padding:0!important;counter-reset:n}.actions li{counter-increment:n;position:relative;padding-left:23px;margin:4px 0;font-weight:700}.actions li:before{content:counter(n);position:absolute;left:0;top:1px;width:16px;height:16px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:white;font-size:9px}.operator{margin-top:auto;background:#f2f6f3;border-left:4px solid var(--green);padding:9px;border-radius:0 7px 7px 0;font-size:11px;line-height:1.45}.operator b{display:block;color:var(--green);font-size:10px;text-transform:uppercase;letter-spacing:.06em}.standard{margin-top:8px;background:#fff8e8;border:1px solid #ead8ab;border-radius:8px;padding:8px;font-size:11px;line-height:1.4}.standard b{display:block;margin-bottom:3px}.bottom{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:18px;margin-top:22px}.box{background:white;border:2px solid var(--ink);border-radius:10px;padding:14px 16px}.box h3{font:800 11px ui-monospace,monospace;text-transform:uppercase;letter-spacing:.07em;margin:0 0 8px}.box ul{margin:0;padding-left:17px;font-size:12px;line-height:1.55}.workflow{margin-top:20px;background:var(--ink);color:white;border-radius:14px;padding:22px}.workflow h2{margin:0 0 8px}.flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-weight:800}.step{background:#233252;border-radius:8px;padding:10px 12px}.arrow{color:#8fd9de}.boundary{color:#b7c2d4;font-size:11px;margin:12px 0 0;line-height:1.5}.footer{text-align:center;color:var(--muted);font:11px ui-monospace,monospace;margin-top:16px}@media(max-width:1100px){.cards{grid-template-columns:1fr 1fr}.match-grid,.bottom{grid-template-columns:1fr}.top{flex-direction:column}.how{max-width:none}}@media(max-width:650px){.cards{grid-template-columns:1fr}.poster{padding:20px}.brand h1{font-size:29px}}
+</style>
+</head>
+<body>
+<main class="poster">
+<header class="top">
+  <div class="brand">
+    <div class="eyebrow">LINEALERT · CONTROLLED SYNTHETIC DEMO</div>
+    <h1>LABELING TROUBLESHOOTING GUIDE</h1>
+    <p>Operator-first reference for visible labeling issues, standard bounded changes, and fresh verification. This demo intentionally treats the listed interventions as routine operator-friendly actions by default.</p>
+    <a class="pill" href="./triage/">Open current LineAlert demonstration ↗</a>
+  </div>
+  <aside class="how">
+    <h2>How to use this reference</h2>
+    <ol>
+      <li>Start with the issue LineAlert routed.</li>
+      <li>Use current evidence and CMMS history to rank the standard action.</li>
+      <li>Operator performs one routine bounded action.</li>
+      <li>Run a fresh verification before another material change.</li>
+      <li>Escalate only when the evidence or physical task falls outside the routine operator envelope.</li>
+    </ol>
+  </aside>
+</header>
+
+<section class="assumption">
+  <b>Demo authority assumption</b>
+  All actions listed below are commissioned to the operator in this synthetic plant by default. A real plant can override any action by asset, state, role, prerequisite, or safety condition.
+</section>
+
+<section class="match">
+  <div class="match-grid">
+    <div>
+      <div class="eyebrow">CURRENT DETECTED ISSUE · STRONG STANDARD-CHANGE MATCH</div>
+      <h2>Label alignment off after roll change</h2>
+      <p>Current visible alignment evidence, elevated presentation variability, unchanged line speed, and strong similar CMMS history heavily align with a familiar standard change:</p>
+      <p><strong>Restore guide / spacing to the approved marked setup reference.</strong></p>
+      <p>In the synthetic CMMS, 3 of 4 highly similar closed cases used the same approved guide/presentation correction. That makes it the sensible first bounded change here. It still does not prove the current root cause.</p>
+      <span class="pill">Suggested next action · operator-friendly standard change</span>
+    </div>
+    <div class="score">
+      <div><span>CURRENT EVIDENCE</span><b>Compatible</b></div>
+      <div><span>SIMILAR CMMS CASES</span><b>4</b></div>
+      <div><span>SAME STANDARD CORRECTION</span><b>3 / 4</b></div>
+      <div><span>LINE SPEED CHANGED?</span><b>No</b></div>
+      <div><span>NEXT</span><b>One change → 5-container verification</b></div>
+    </div>
+  </div>
+</section>
+
+<div class="issue-banner">WHAT ISSUE ARE YOU SEEING?</div>
+<section class="cards">
+  <article class="card">
+    <div class="head"><span class="num">1</span><h3>Label Alignment Is Off</h3></div>
+    <div class="section">Examples</div><ul><li>Crooked label</li><li>Rotated label</li><li>Inconsistent placement</li><li>Drifting placement</li></ul>
+    <div class="section">Checks</div><ul><li>Compare bottle presentation to the approved reference</li><li>Check guide / spacing relationship</li><li>Observe whether the issue repeats after the roll change</li><li>Note whether the issue changes with speed</li></ul>
+    <div class="section">Operator actions</div><ol class="actions"><li>Restore guide / spacing to approved marked reference</li><li>Adjust peel angle</li><li>Adjust hold down</li><li>Increase label delay</li><li>Reduce speed temporarily</li></ol>
+    <div class="standard"><b>Current scenario</b>LineAlert heavily ranks the standard guide / spacing restoration first.</div>
+    <div class="operator"><b>Operator-friendly by default</b>Make one routine bounded change, record it, then verify before another material change.</div>
+  </article>
+
+  <article class="card">
+    <div class="head"><span class="num">2</span><h3>Label Has Folds</h3></div>
+    <div class="section">Examples</div><ul><li>Wrinkles</li><li>Folded edges</li><li>Label bunching</li><li>Uneven application</li></ul>
+    <div class="section">Checks</div><ul><li>Is label speed too high?</li><li>Is aligner speed too slow?</li><li>Are folds random or consistent?</li><li>Does reducing speed help?</li></ul>
+    <div class="section">Operator actions</div><ol class="actions"><li>Decrease label speed</li><li>Increase aligner speed</li><li>Verify product stability</li><li>Reduce conveyor speed</li></ol>
+    <div class="standard"><b>Pattern note</b>Folds can align with speed mismatch or poor label setting.</div>
+    <div class="operator"><b>Operator-friendly by default</b>Try the top-ranked standard change and rerun before stacking changes.</div>
+  </article>
+
+  <article class="card">
+    <div class="head"><span class="num">3</span><h3>Label Has Stretch Lines</h3></div>
+    <div class="section">Examples</div><ul><li>Stretched label</li><li>Tension marks</li><li>Distorted print</li><li>Label pulling</li></ul>
+    <div class="section">Checks</div><ul><li>Is label tension too high?</li><li>Does the issue worsen at higher speed?</li><li>Are feed rollers pulling unevenly?</li></ul>
+    <div class="section">Operator actions</div><ol class="actions"><li>Decrease label speed</li><li>Increase aligner speed</li><li>Inspect feed rollers</li><li>Verify label tension</li></ol>
+    <div class="standard"><b>Pattern note</b>Stretch lines can align with excessive tension or feed-speed mismatch.</div>
+    <div class="operator"><b>Operator-friendly by default</b>Routine inspection and standard bounded adjustment are operator actions in this demo.</div>
+  </article>
+
+  <article class="card">
+    <div class="head"><span class="num">4</span><h3>Bubbles On Labels</h3></div>
+    <div class="section">Examples</div><ul><li>Trapped air bubbles</li><li>Incomplete adhesion</li><li>Lifting label edges</li></ul>
+    <div class="section">Checks</div><ul><li>Enough pressure time?</li><li>Is bottle stable?</li><li>Is contact pressure consistent?</li><li>Does slowing machine help?</li></ul>
+    <div class="section">Operator actions</div><ol class="actions"><li>Increase aligner run-on</li><li>Increase bottle pressure</li><li>Decrease label speed</li><li>Inspect contact / wipe pressure</li></ol>
+    <div class="standard"><b>Pattern note</b>Bubbles can align with insufficient pressure time or unstable contact.</div>
+    <div class="operator"><b>Operator-friendly by default</b>Use the evidence-ranked routine change, then verify.</div>
+  </article>
+
+  <article class="card">
+    <div class="head"><span class="num">5</span><h3>Multiple Labels Applying</h3></div>
+    <div class="section">Examples</div><ul><li>Double labels</li><li>Skipped gaps</li><li>Overlapping labels</li></ul>
+    <div class="section">Checks</div><ul><li>Is sensor detecting gaps properly?</li><li>Is spacing consistent?</li><li>Is issue intermittent?</li><li>Does issue occur at specific speeds?</li></ul>
+    <div class="section">Operator actions</div><ol class="actions"><li>Adjust sensor sensitivity</li><li>Reposition sensor</li><li>Move sensor position</li><li>Check label spacing</li><li>Inspect feed timing</li></ol>
+    <div class="standard"><b>Pattern note</b>Multiple labels can align with sensor or feed-timing issues.</div>
+    <div class="operator"><b>Operator-friendly by default</b>Standard sensor and feed checks shown here are routine operator actions in this demo.</div>
+  </article>
+</section>
+
+<section class="bottom">
+  <div class="box"><h3>Default operating rule</h3><ul><li>Use evidence and history to rank the ordinary action.</li><li>Make one material change at a time.</li><li>Give the machine/process time to express the result.</li><li>Capture the fresh evidence automatically where possible.</li><li>Rerank after every bounded trial.</li></ul></div>
+  <div class="box"><h3>Escalate when</h3><ul><li>The standard change does not improve the issue.</li><li>Evidence contradicts the familiar pattern.</li><li>The task requires access outside the normal operator position.</li><li>Mechanical damage, unsafe conditions, or non-routine behavior appears.</li></ul></div>
+  <div class="box"><h3>Evidence discipline</h3><ul><li>Historical pattern ≠ current root cause.</li><li>Strong match ≠ proof.</li><li>Operator action ≠ unrestricted discretion.</li><li>Successful trial ≠ safe production change.</li></ul></div>
+</section>
+
+<section class="workflow">
+  <div class="eyebrow" style="color:#8fd9de">LINEALERT DEMO LOOP</div>
+  <h2>Routine standard change first; governance only when it matters.</h2>
+  <div class="flow"><span class="step">Detect issue</span><span class="arrow">→</span><span class="step">Match current + historical evidence</span><span class="arrow">→</span><span class="step">Rank standard operator action</span><span class="arrow">→</span><span class="step">Operator makes one bounded change</span><span class="arrow">→</span><span class="step">Fresh verification</span><span class="arrow">→</span><span class="step">Rerank / close / escalate</span></div>
+  <p class="boundary">Synthetic demo only. The listed authority and interventions are not OEM instructions, production limits, or evidence about a physical Speedway machine. A real plant commissions its own action envelope.</p>
+</section>
+<div class="footer">Controlled labeling troubleshooting reference · LineAlert Core</div>
+</main>
+</body>
+</html>
