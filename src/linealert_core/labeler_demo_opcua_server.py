@@ -111,21 +111,36 @@ class LabelerDemoState:
             self._roll_change_applied = True
         self._sequence = sequence
 
+    def _observation_locked(self) -> LabelerObservable:
+        if self._diagnostic_batches_remaining > 0:
+            self._diagnostic_batches_remaining -= 1
+            run_state_code = 2
+        elif self._production_enabled:
+            run_state_code = 1
+        else:
+            run_state_code = 0
+        return observable_for_sequence(
+            self._sequence,
+            guide_offset_mm=self._guide_offset_mm,
+            run_state_code=run_state_code,
+        )
+
     def observation(self, sequence: int) -> LabelerObservable:
+        """Evaluate an explicit scenario sequence for deterministic tests and replay fixtures."""
+
         with self._lock:
             self._prepare_locked(sequence)
-            if self._diagnostic_batches_remaining > 0:
-                self._diagnostic_batches_remaining -= 1
-                run_state_code = 2
-            elif self._production_enabled:
-                run_state_code = 1
-            else:
-                run_state_code = 0
-            return observable_for_sequence(
-                sequence,
-                guide_offset_mm=self._guide_offset_mm,
-                run_state_code=run_state_code,
-            )
+            return self._observation_locked()
+
+    def next_observation(self) -> LabelerObservable:
+        """Advance scenario progression only while production or a diagnostic batch is moving."""
+
+        with self._lock:
+            if self._cycle < 0:
+                self._prepare_locked(0)
+            elif self._production_enabled or self._diagnostic_batches_remaining > 0:
+                self._prepare_locked(self._sequence + 1)
+            return self._observation_locked()
 
     def stop_for_diagnostic(self) -> dict[str, Any]:
         with self._lock:
@@ -464,9 +479,9 @@ async def serve_emulator(
     namespace_index = await server.register_namespace(NAMESPACE_URI)
     root = await server.nodes.objects.add_object(namespace_index, "LineAlertLabeler2")
 
-    first = state.observation(0).opcua_nodes()
+    first_observation = state.next_observation()
     variables: dict[str, Any] = {}
-    for node_id, value in first.items():
+    for node_id, value in first_observation.opcua_nodes().items():
         browse_name = node_id.rsplit(".", 1)[-1]
         variables[node_id] = await root.add_variable(
             ua.NodeId(node_id, namespace_index),
@@ -486,15 +501,13 @@ async def serve_emulator(
         }
     )
 
-    sequence = 0
     try:
         async with server:
             while True:
-                observation = state.observation(sequence)
+                observation = state.next_observation()
                 for node_id, value in observation.opcua_nodes().items():
                     await variables[node_id].write_value(value)
-                sequence += 1
-                if not loop and sequence >= 160:
+                if not loop and observation.sequence >= 159:
                     return
                 await asyncio.sleep(publish_interval_seconds)
     finally:
