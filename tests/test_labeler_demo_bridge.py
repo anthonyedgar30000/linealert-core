@@ -11,6 +11,7 @@ from linealert_core.labeler_demo_bridge import (
     LabelerSnapshot,
     _control_target_url,
     _qualified_signal,
+    _simulator_target_url,
 )
 
 
@@ -133,11 +134,20 @@ def test_demo_control_proxy_is_explicit_and_loopback_only():
         "restore_guide",
         "run_diagnostic_batch",
         "resume_production",
+        "fast_forward_to_next_concern",
     }
     assert _control_target_url("http://127.0.0.1:4842", "inspect_guide") == (
         "http://127.0.0.1:4842/control/inspect-guide"
+    )
+    assert _control_target_url("http://127.0.0.1:4842", "fast_forward_to_next_concern") == (
+        "http://127.0.0.1:4842/control/fast-forward-next-concern"
+    )
+    assert _simulator_target_url("http://127.0.0.1:4842", "/events?after=40") == (
+        "http://127.0.0.1:4842/events?after=40"
     )
     with pytest.raises(ValueError, match="unknown simulator control action"):
         _control_target_url("http://127.0.0.1:4842", "set_anything")
     with pytest.raises(ValueError, match="loopback HTTP"):
         _control_target_url("https://example.com", "inspect_guide")
+    with pytest.raises(ValueError, match="loopback HTTP"):
+        _simulator_target_url("http://example.com", "/events?after=0")
