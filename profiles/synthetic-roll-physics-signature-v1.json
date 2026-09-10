@@ -40,12 +40,36 @@
     "problem": "A single synthetic setup disturbance gradually increases effective eccentricity and periodic tension modulation, which also modulates torque/current and the 1x rotational vibration response.",
     "use": "Compare shape, timing and coupled features rather than treating any one high value as a diagnosis."
   },
+  "investigation_use": {
+    "primary_ui_role": "behind_the_scenes_investigation_weighting",
+    "strong_anchor_sequence": [
+      "recorded_label_roll_change",
+      "production_restart",
+      "coupled_signature_detected",
+      "presentation_variability_deviation",
+      "concern_threshold_crossed"
+    ],
+    "meaning": "When this ordered evidence sequence exists, the recorded roll change becomes the strongest first investigation anchor. This is investigation priority, not causal probability or proof.",
+    "operator_surface": "Show the weighted investigation anchor and the next bounded check; keep raw physics values in analyst evidence rather than prime operator UI."
+  },
+  "illustrative_generic_roll_change_check": {
+    "title": "Check roll loading + web path against approved changeover reference",
+    "check_items": [
+      "roll seated and centered",
+      "web follows the approved thread path",
+      "guide and spacing match the marked setup reference",
+      "web tracks without obvious drag or sideways pull"
+    ],
+    "action_boundary": "Observe first. Correct only a confirmed mismatch under the authorized client or OEM procedure.",
+    "commissioning_note": "These are generic synthetic-demo prompts only and should be replaced with client/OEM instructions and commissioned pictures when available."
+  },
   "commissioning_boundary": "Real deployment would replace or calibrate these coefficients and thresholds using actual geometry, drives, sensors, mounting, operating modes, known-good runs, controlled tests where authorized, equipment documentation, and qualified expert review.",
   "vibration_boundary": "F = m*e*omega^2 computes an idealized forcing term. Converting that force to mm/s uses a synthetic transfer gain because actual structural mass, stiffness, damping, resonance and sensor mounting are not known.",
   "boundaries": [
     "physics-informed synthetic model != OEM machine model",
     "model-consistent signal != verified physical state",
     "signature match != diagnosis",
+    "investigation priority != causal probability",
     "historical pattern != current root cause",
     "correlation != causation",
     "recommendation != authorized action",
