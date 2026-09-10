@@ -133,7 +133,10 @@ def test_shared_views_suppress_stale_troubleshooting_during_maintenance():
     assert "MAINTENANCE · NORMAL INTERPRETATION PAUSED" in guide_adapter
     assert "No LineAlert troubleshooting action requested" in guide_adapter
     assert "POST-MAINTENANCE OBSERVATION" in guide_adapter
-    assert "No troubleshooting recommendation is active during this observation gate" in guide_adapter
+    assert (
+        "No troubleshooting recommendation is active during this observation gate"
+        in guide_adapter
+    )
     assert "Observation != return-to-service authorization" in guide_adapter
 
 
