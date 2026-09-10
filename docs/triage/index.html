@@ -14,7 +14,7 @@
     const response=await fetch('./plant-canvas-v102.html',{cache:'no-store'});
     if(!response.ok)throw new Error('baseline '+response.status);
     let html=await response.text();
-    const injection='<script src="../demo-session.js"><'+'/script><script src="./trial-discipline-adapter.js"><'+'/script><script src="./session-adapter.js"><'+'/script><script src="./recovery-fast-forward-adapter.js"><'+'/script><script src="../physics-informed-roll-model.js"><'+'/script><script src="../plant-event-model.js"><'+'/script><script src="./event-context-adapter.js"><'+'/script><script src="./physics-signature-adapter.js"><'+'/script><script src="../event-journal.js"><'+'/script><script src="../event-log-nav.js"><'+'/script>';
+    const injection='<script src="../demo-session.js"><'+'/script><script src="./trial-discipline-adapter.js"><'+'/script><script src="./maintenance-response-adapter.js"><'+'/script><script src="./session-adapter.js"><'+'/script><script src="./recovery-fast-forward-adapter.js"><'+'/script><script src="../physics-informed-roll-model.js"><'+'/script><script src="../plant-event-model.js"><'+'/script><script src="./event-context-adapter.js"><'+'/script><script src="./physics-signature-adapter.js"><'+'/script><script src="../event-journal.js"><'+'/script><script src="../event-log-nav.js"><'+'/script>';
     html=html.replace('</body>',injection+'</body>');
     document.open();
     document.write(html);
