@@ -13,6 +13,7 @@
   let pendingKind=null;
   let controlPending=false;
   let controlError=null;
+  let recordedConcernId=null;
 
   const priorUpdateSpeedControl=updateSpeedControl;
   const priorSpeedClick=button.onclick;
@@ -64,6 +65,7 @@
       if(lastClockSequence!==null&&sequence<lastClockSequence){
         lastEventSequence=0;
         sourceEvents=[];
+        recordedConcernId=null;
       }
     }
     if(Number.isFinite(clockAnchor)){
@@ -121,6 +123,33 @@
         });
       }catch(_){}
     }
+  }
+
+  function recordConcernIfNeeded(){
+    try{
+      if(!opcActive()||!incident||!currentIncident)return;
+      const id=String(currentIncident.id||'');
+      if(!id.startsWith('OPC-L2-')||recordedConcernId===id)return;
+      recordedConcernId=id;
+      const status=sourceStatus();
+      if(window.LineAlertEventJournal&&window.LineAlertEventJournal.append){
+        window.LineAlertEventJournal.append({
+          time:currentIncident.time,
+          source:'linealert/deterministic-opc',
+          eventClass:'CONCERN',
+          severity:'Notice',
+          asset:'Labeler 2',
+          message:'Qualified OPC UA evidence crossed the Labeler 2 concern gate',
+          clockQuality:'qualified_source_plus_simulator_clock',
+          classification:'synthetic_demo_only',
+          fields:{
+            incident_id:id,
+            plant_sequence:status&&status.sourceSequence,
+            boundary:'threshold_crossing_is_not_diagnosis'
+          }
+        });
+      }
+    }catch(_){}
   }
 
   async function pollPlantEvents(){
@@ -252,6 +281,7 @@
   window.setInterval(function(){
     if(!opcActive())return;
     syncClockToSource();
+    recordConcernIfNeeded();
     updateSpeedControl();
   },250);
   pollPlantEvents();
