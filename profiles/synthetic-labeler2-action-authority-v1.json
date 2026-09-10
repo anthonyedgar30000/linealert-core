@@ -20,8 +20,8 @@
       "eligible_roles": ["operator", "maintenance"],
       "authorization": "standing_operator_authority",
       "change_class": "verification_only",
-      "operator_scope": "Compare the visible guide / spacing relationship with the commissioned marked or visual reference. Do not adjust during this action.",
-      "machine_state_requirement": "approved observation state",
+      "operator_scope": "Compare the visible guide / spacing relationship with the commissioned marked or visual reference from the approved external access position. Do not adjust during this action.",
+      "machine_state_requirement": "ordinary production or approved stopped state; never diagnostic-batch motion",
       "verification_requirement": "if an out-of-reference condition is observed, rerank before any correction",
       "rollback": "not_applicable_verification_only"
     },
@@ -29,9 +29,9 @@
       "eligible_roles": ["operator", "maintenance"],
       "authorization": "standing_operator_authority",
       "change_class": "bounded_material_change",
-      "operator_scope": "Only after a current out-of-reference observation, restore guide / spacing to the positively identified approved marked reference. Do not guess a reference or stack another material change before fresh evidence.",
-      "machine_state_requirement": "approved stopped diagnostic state",
-      "verification_requirement": "fresh bounded machine evidence required after restoration before another material change or production conclusion",
+      "operator_scope": "Only after a current out-of-reference observation, restore guide / spacing through the commissioned external adjustment to the positively identified approved marked reference. Do not guess a reference or stack another material change before fresh evidence.",
+      "machine_state_requirement": "ordinary production or approved stopped state; never diagnostic-batch motion",
+      "verification_requirement": "fresh qualified machine evidence required after restoration before another material change or production conclusion; a running restore proceeds directly into production verification",
       "rollback": "stop and escalate if the approved reference cannot be positively identified or the bounded restoration cannot be completed as commissioned"
     },
     "repeat-like-for-like": {
@@ -68,7 +68,8 @@
     "standing_authority != unrestricted_discretion",
     "verification_only != authorization_to_adjust",
     "operator_authorized != universally_operator_authorized",
+    "commissioned_demo_permission != real_machine_permission",
     "successful_test != safe_production_change"
   ],
-  "parameters_notice": "This authority profile is synthetic demo policy, not Speedway/OEM guidance or commissioned plant procedure. A real deployment must commission plant-specific permissions by asset, action, operating state, prerequisites, limits, authorization path, verification, and rollback."
+  "parameters_notice": "This authority profile is synthetic demo policy, not Speedway/OEM guidance or commissioned plant procedure. The running guide / spacing access assumption applies only to this demo profile. A real deployment must commission plant-specific permissions by asset, action, operating state, prerequisites, limits, authorization path, verification, and rollback."
 }
