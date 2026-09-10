@@ -499,6 +499,8 @@
         profile:latest&&latest.profile||null,
         sourceId:latest&&latest.source_id||null,
         assetId:latest&&latest.asset_id||null,
+        runStateCode:latest?numeric(latest,'run_state_code'):null,
+        sourceSequence:latest?numeric(latest,'emulator_sequence'):null,
         lastSourceSequence
       };
     }
