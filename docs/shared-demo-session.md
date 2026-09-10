@@ -4,7 +4,7 @@
 
 The GitHub Pages Plant Canvas and labeling troubleshooting guide are two views of one controlled synthetic demo session.
 
-The Plant Canvas remains the source view for the synthetic plant state. It publishes a browser-local snapshot. The guide consumes that snapshot and presents the same simulated date/time, shift, active incident, evidence, ranked bounded action, latest five-container result, production-verification state, and recovery state.
+The Plant Canvas remains the source view for the synthetic plant state. It publishes a browser-local snapshot. The guide consumes that snapshot and presents the same simulated date/time, shift, active incident, evidence, ranked bounded action, latest five-container result, production-verification state, recovery state, and maintenance interpretation state.
 
 This is a static-demo compatibility mechanism only. It is not the production persistence architecture.
 
@@ -23,6 +23,7 @@ The snapshot is classified `synthetic_demo_only` and includes:
 - latest confirmed five-container trial
 - trial-discipline state: completed trials, pending experimental change, explicit restore requirement, and retained verified intermediate changes
 - production-verification streak and recovery state
+- maintenance / post-maintenance observation projection for the shared guide
 - bounded workflow state needed to resume the Plant Canvas
 - synthetic production counters and handled incident identities
 
@@ -48,15 +49,25 @@ The preserved PR #102 baseline used `mode === 'diagnostic'` as a shortcut for bo
 
 This is a presentation/state-model correction only. It does not assert that maintenance is unnecessary, authorize an operator action, or infer a physical machine state. A future dispatch workflow should record response ownership explicitly rather than infer it from diagnostic mode.
 
-## Maintenance observation gate
+## Maintenance observation lifecycle
 
-`docs/triage/maintenance-observe-adapter.js` adds an asset-scoped interpretation gate for Labeler 2. When the synthetic CMMS schedule contains an active work order whose asset identity is exactly `Labeler 2`, LineAlert remains connected for telemetry and event capture but normal production interpretation is suspended for that asset.
+`docs/triage/maintenance-observe-adapter.js` adds an asset-scoped interpretation gate for Labeler 2. The preserved PR #102 baseline did not naturally generate a Labeler 2 work order, which made the previous maintenance gate effectively unreachable in the ordinary demo. The adapter now adds one deterministic **synthetic** Labeler 2 inspection / cleaning work order to the existing evening maintenance window on calendar-seeded shifts that otherwise have no LineAlert incident. This is demo scheduling only; it is not an OEM maintenance interval or recommendation.
 
-While the work order is active, the public demo suppresses new normal-production concern triggering, blocks entry into new diagnostic trials, pauses production-recovery verification counting, disables incident fast-forward, and replaces the action card with **Maintenance in progress · normal recommendations paused**. The Canvas labels the state **MAINTENANCE · OBSERVE ONLY** rather than pretending that maintenance-period measurements belong to the production envelope.
+When that work order becomes active, LineAlert remains connected to the synthetic source/event context but stops applying the normal production interpretation layer to Labeler 2. Product counters and normal production-rate evidence do not continue accumulating through the maintenance interval. New concern triggering, troubleshooting recommendations, new diagnostic trials, production-recovery verification counting, and incident fast-forward are suppressed for the maintained asset. The Canvas labels the state **MAINTENANCE · OBSERVE ONLY**.
 
-An existing concern is not deleted or rewritten merely because maintenance begins. Its evidence and chronology remain preserved; LineAlert simply stops treating maintenance-period observations as ordinary production evidence. Maintenance work itself is context, not proof of the machine's physical condition or of the concern's cause.
+The maintenance interval can be fast-forwarded to its own completion so the static demo does not force the viewer to wait through a real-time maintenance duration. That acceleration ends at the work-order boundary; it does not skip ahead to a LineAlert concern or fabricate a maintenance result.
 
-This bounded increment does not yet commission a return-to-service verification procedure. Maintenance completion therefore does not establish a healthy machine, and a production deployment must use an explicit asset-specific return-to-service gate before normal production interpretation is treated as authoritative again.
+Maintenance start and completion are appended to the synthetic Event Journal when that journal is available. The work order and maintenance chronology are evidence about what happened, not proof of machine condition or root cause.
+
+### Post-maintenance observation
+
+Maintenance completion does not immediately restore normal LineAlert interpretation. The demo enters **POST-MAINTENANCE OBSERVATION** and watches 10 synthetic production containers against the demo's existing healthy presentation reference before normal production interpretation resumes. A nonqualifying sample resets that short observation streak.
+
+This observation gate is deliberately narrower than safety or operational return-to-service approval. It does not authorize production, certify the equipment as safe, establish that maintenance succeeded, or prove a prior fault was corrected. It only prevents the demo from silently switching straight from maintenance context back into normal production interpretation without first observing fresh production evidence.
+
+`docs/triage/maintenance-session-adapter.js` publishes the maintenance lifecycle into the shared browser snapshot. `docs/maintenance-guide-adapter.js` keeps the troubleshooting guide quiet while maintenance or post-maintenance observation is active, so a stale pre-maintenance recommendation is not presented as the current next action.
+
+An existing incident is never deleted merely because maintenance occurs. Historical evidence remains preserved. A production implementation would need commissioned asset-specific maintenance and return-to-service rules rather than this synthetic demonstration policy.
 
 ## Post-recovery fast-forward handoff
 
@@ -73,7 +84,7 @@ The pre-sync PR #102 pages are retained as static baselines:
 - `docs/triage/plant-canvas-v102.html`
 - `docs/troubleshooting-guide-reference-v102.html`
 
-The public route wrappers load those preserved pages and attach the shared-session and trial-discipline adapters. This keeps the increments bounded and avoids silently rewriting the already-demonstrated plant and troubleshooting behavior. A later runtime migration should replace this compatibility layer with application/domain state.
+The public route wrappers load those preserved pages and attach compatibility adapters. This keeps the increments bounded and avoids silently rewriting the already-demonstrated plant and troubleshooting behavior. A later runtime migration should replace this compatibility layer with application/domain state.
 
 ## Boundaries
 
@@ -85,6 +96,7 @@ The public route wrappers load those preserved pages and attach the shared-sessi
 - Diagnostic state != maintenance dispatch.
 - Maintenance activity != normal production context.
 - Maintenance completion != verified return to service.
+- Post-maintenance observation != return-to-service authorization.
 - Restore recommendation != automatic equipment restore.
 - Historical pattern != current root cause.
 - Verified intermediate state != root-cause proof.
