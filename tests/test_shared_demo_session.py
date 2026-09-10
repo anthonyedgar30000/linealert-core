@@ -2,6 +2,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
+PROFILE = ROOT / "profiles" / "synthetic-labeler-multi-iteration-trials-v1.json"
 
 
 def read(path: Path) -> str:
@@ -23,7 +24,11 @@ def test_public_routes_attach_shared_session_adapters():
 
     assert "plant-canvas-v102.html" in plant_wrapper
     assert "../demo-session.js" in plant_wrapper
+    assert "./trial-discipline-adapter.js" in plant_wrapper
     assert "./session-adapter.js" in plant_wrapper
+    assert plant_wrapper.index("./trial-discipline-adapter.js") < plant_wrapper.index(
+        "./session-adapter.js"
+    )
 
     assert "troubleshooting-guide-reference-v102.html" in guide_wrapper
     assert "./demo-session.js" in guide_wrapper
@@ -45,18 +50,45 @@ def test_shared_session_contract_carries_workflow_and_evidence_state():
         "currentIncident",
         "recommendationTitle",
         "latestTrial",
+        "discipline",
         "verification",
         "decisionHistoryHtml",
         "handledIncidentIds",
     ):
         assert field in plant_adapter
 
+    assert "LineAlertTrialDiscipline.snapshot" in plant_adapter
+    assert "LineAlertTrialDiscipline.restore" in plant_adapter
     assert "NO ACTIVE DETECTED ISSUE · REFERENCE MODE" in guide_adapter
     assert "CURRENT DETECTED ISSUE · SHARED LIVE DEMO STATE" in guide_adapter
     assert "RECOVERY OBSERVED · REFERENCE MODE" in guide_adapter
     assert "recommendationTitle" in guide_adapter
     assert "latestTrial" in guide_adapter
     assert "productionVerification" in guide_adapter
+
+
+def test_trial_discipline_requires_explicit_restore_before_next_material_change():
+    discipline = read(DOCS / "triage" / "trial-discipline-adapter.js")
+
+    assert "stacking has not been earned yet" in discipline
+    assert "Restore previous setting → arm 5-container verification" in discipline
+    assert "No automatic equipment reset occurred" in discipline
+    assert "Restore required before another material change" in discipline
+    assert "Verified intermediate state retained" in discipline
+    assert "state.completedTrials++" in discipline
+    assert "iteration++" not in discipline
+    assert "state.pendingExperimental&&MATERIAL_ACTIONS.has(actionKey)" in discipline
+    assert "state.restoreContext&&MATERIAL_ACTIONS.has(actionKey)" in discipline
+
+
+def test_synthetic_profile_declares_earned_stacking_semantics():
+    profile = read(PROFILE)
+
+    assert '"automatic_restore": false' in profile
+    assert '"stack_unverified_changes": false' in profile
+    assert '"restore-previous-setting"' in profile
+    assert "retained verified intermediate state" in profile
+    assert "LineAlert restore recommendation != automatic equipment restore" in profile
 
 
 def test_static_sync_preserves_linealert_boundaries():
