@@ -161,7 +161,7 @@ body{margin:0;font-family:Inter,system-ui,sans-serif;background:#eef1ed;color:#1
     ).join(''):'<div class="empty">No episode evidence recorded yet. The page will evolve as the shared synthetic workflow records observations, tests, interventions and verification.</div>';
   }
 
-  fetch('../../profiles/synthetic-labeler2-investigation-v1.json',{cache:'no-store'})
+  fetch('../profiles/synthetic-labeler2-investigation-v1.json',{cache:'no-store'})
     .then(response=>{if(!response.ok)throw new Error('profile '+response.status);return response.json();})
     .then(value=>{profile=value;render();})
     .catch(err=>{
