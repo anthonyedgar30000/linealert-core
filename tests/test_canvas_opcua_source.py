@@ -32,9 +32,25 @@ def test_canvas_opcua_mode_suppresses_browser_machine_generation_and_fails_close
     assert "maybeTriggerIncident=function()" in script
     assert "if(everActivated)return;" in script
     assert "live=function(delta)" in script
-    assert "SOURCE UNAVAILABLE · FAIL CLOSED" in script
-    assert "will not fall back to browser-generated machine evidence" in script
+    assert "SOURCE DISCONNECTED · FAIL CLOSED" in script
+    assert "browser-generated machine evidence will not take over" in script
     assert "calendar incident fast-forward is disabled" in script
+
+
+def test_canvas_distinguishes_connection_from_evidence_admission_and_bridge_state():
+    script = (ROOT / "docs" / "triage" / "opcua-source-adapter.js").read_text(encoding="utf-8")
+
+    assert "function markConnectedUnqualified(payload)" in script
+    assert "function markDisconnected(payload)" in script
+    assert "function markBridgeUnavailable(reason)" in script
+    assert "if(payload&&payload.connected===true)" in script
+    assert "if(payload&&payload.connected===false)" in script
+    assert "connected · evidence unqualified" in script
+    assert "SOURCE · LABELER 2 OPC UA EMULATOR · DISCONNECTED" in script
+    assert "SOURCE · LOCAL OPC UA BRIDGE · UNAVAILABLE" in script
+    assert "OPC UA connection state is not inferred from this browser error" in script
+    assert "availabilityState==='qualified'||availabilityState==='connected_unqualified'" in script
+    assert "admitted:availabilityState==='qualified'" in script
 
 
 def test_canvas_opcua_trial_waits_for_external_source_evidence():

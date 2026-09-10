@@ -157,6 +157,41 @@ Once a qualified Labeler 2 source has been admitted:
 - production verification counts qualifying source batches;
 - source disconnect fails closed without browser machine-evidence fallback.
 
+## Connection state and evidence admission
+
+OPC UA transport state and LineAlert evidence admission are separate dimensions. The Canvas must not
+claim the source disconnected merely because one telemetry snapshot is not admissible.
+
+The local UI classifies source state as:
+
+```text
+bridge connected + payload connected:true + evidence admitted
+→ SOURCE CONNECTED · QUALIFIED
+
+bridge connected + payload connected:true + evidence not admitted
+→ SOURCE CONNECTED · EVIDENCE UNQUALIFIED
+→ machine interpretation paused
+
+bridge connected + payload connected:false
+→ SOURCE DISCONNECTED · FAIL CLOSED
+→ machine interpretation paused
+
+browser cannot read /api/telemetry
+→ LOCAL BRIDGE UNAVAILABLE · FAIL CLOSED
+→ OPC UA connection state unknown
+→ machine interpretation paused
+```
+
+Every non-qualified state still fails closed for machine interpretation and never re-enables browser
+generated machine evidence. The distinction is about preserving source truth: an evidence-quality
+problem, a confirmed OPC UA disconnect, and a browser-to-bridge failure are not the same condition.
+
+```text
+connection_state != evidence_admission_state
+bridge_unavailable != proven_opcua_disconnect
+unqualified_sample != disconnected_source
+```
+
 ## Observable source contract
 
 The OPC UA emulator exposes only:
@@ -202,10 +237,25 @@ bridge running. Expected result:
 OPC UA disconnect
 → bridge connected:false
 → retained observations marked stale
-→ Canvas SOURCE UNAVAILABLE · FAIL CLOSED
+→ Canvas SOURCE DISCONNECTED · FAIL CLOSED
 → machine interpretation paused
 → no browser telemetry fallback
 ```
+
+A separate admission test should keep the bridge and OPC UA connection alive while returning an
+unqualified required signal or semantic admission result. Expected result:
+
+```text
+bridge connected:true
+→ OPC UA connection remains reported connected
+→ evidence is not admitted
+→ Canvas SOURCE CONNECTED · EVIDENCE UNQUALIFIED
+→ machine interpretation paused
+→ no browser telemetry fallback
+```
+
+If the browser cannot read `/api/telemetry`, the Canvas reports the local bridge unavailable and does
+not infer that OPC UA itself disconnected.
 
 ## Boundaries
 
@@ -220,6 +270,8 @@ simulated_human_observation != verified_physical_state
 verification_only != authorization_to_adjust
 simulator_control != equipment_control
 browser_workflow_state != machine_state
+connection_state != evidence_admission_state
+bridge_unavailable != proven_opcua_disconnect
 test_response != causal_proof
 recommendation != authorized_action
 successful_test != safe_production_change
