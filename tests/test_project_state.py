@@ -21,6 +21,7 @@ PR37_HEAD = "fc22177e1b855fd6f416f648330cd3416215a96c"
 PR37_MERGE = "97256907cd428a8a0ba3dfb7d4020fa19a2485ee"
 PR38_HEAD = "0d5d8180a5edffaeca8a9822800d7e729ef96327"
 PR38_MERGE = "06f795e760c7ad360bc51e264f8c55238a2a60da"
+PR114_MERGE = "4037c2c0bcadce3e3e6e414735c0045b65db6027"
 
 
 def load_project_state() -> dict[str, Any]:
@@ -29,13 +30,13 @@ def load_project_state() -> dict[str, Any]:
     return value
 
 
-def test_state_snapshot_advances_to_pr38_main() -> None:
+def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
     state = load_project_state()
     assert state["schema_version"] == "project.active-work.v1"
     assert state["repository"]["full_name"] == (
         "anthonyedgar30000/linealert-core"
     )
-    assert state["state_model"]["captured_from_main"] == PR38_MERGE
+    assert state["state_model"]["captured_from_main"] == PR114_MERGE
 
     policy = state["state_model"]["publication_policy"]
     assert policy["state_only_merge_requires_immediate_self_sync"] is False
@@ -44,18 +45,34 @@ def test_state_snapshot_advances_to_pr38_main() -> None:
     assert "PR 38" in policy["current_correction_reason"]
 
     observation = state["live_observation"]
-    assert observation["default_branch_head"] == PR38_MERGE
+    assert observation["default_branch_head"] == PR114_MERGE
     assert observation["open_pull_requests_before_branch_creation"] == []
+    assert observation["active_sync_pull_request"] == 115
     assert observation["open_issues"] == [31]
     assert observation["recently_closed_issues"]["23"] == {
         "state": "closed_completed",
         "closed_by_pull_request": 38,
         "reason": "all_four_atomic_ingestion_windows_resolved",
     }
+    assert observation["recently_closed_issues"]["111"]["state"] == (
+        "closed_completed"
+    )
     assert observation["visibility"]["status"] == "verified_public"
+    assert observation["main_ci"] == {
+        "run_id": 34447779672,
+        "head_sha": PR114_MERGE,
+        "conclusion": "success",
+    }
+
+    pages = observation["public_pages"]
+    assert pages["status"] == "deployed"
+    assert pages["workflow_run"] == 34447779687
+    assert pages["source_commit"] == PR114_MERGE
+    assert pages["investigation_workspace"].endswith("/investigation/")
+    assert "static controlled synthetic demo" in pages["note"]
 
 
-def test_pr38_runtime_atomicity_is_current_and_bounded() -> None:
+def test_pr38_runtime_atomicity_is_preserved_and_bounded() -> None:
     state = load_project_state()
     completed = state["trusted_baseline"]["last_completed_increment"]
     assert completed["pull_request"] == 38
@@ -177,6 +194,49 @@ def test_pr37_and_pr38_lifecycle_evidence_is_preserved() -> None:
     assert "not_observable" in pr38["classification"]
 
 
+def test_current_demo_boundaries_include_investigation_and_maintenance() -> None:
+    state = load_project_state()
+    demo = state["current_demo_reality"]
+    assert "Evolving Investigation Workspace" in demo["supporting_surfaces"]
+    assert demo["maintenance_lifecycle"]["synthetic_post_maintenance_target_containers"] == 10
+    assert demo["trial_discipline"]["automatic_restore"] is False
+    assert demo["trial_discipline"]["stack_unverified_changes"] is False
+
+    investigation = demo["investigation_workspace"]
+    assert investigation["state"] == "merged_and_deployed_static_demo"
+    assert "working_explanation != diagnosis" in investigation["boundaries"]
+    assert "investigation_priority != causal_probability" in investigation["boundaries"]
+    assert "llm_hypothesis_generation" in investigation["not_implemented"]
+    assert "equipment_control" in investigation["not_implemented"]
+
+
+def test_current_equipment_reality_does_not_claim_commissioning() -> None:
+    state = load_project_state()
+    labeler = state["equipment_and_source_reality"]["labeler_2"]
+    assert labeler["physical_asset_connected"] is False
+    assert labeler["oem_manual_observed_in_repository"] is False
+    assert labeler["commissioned_machine_profile_observed"] is False
+    assert labeler["runtime_control_path_observed"] is False
+
+    material = state["equipment_and_source_reality"][
+        "available_repository_material"
+    ]
+    assert material["speedway_route_scope"] == "synthetic_demo"
+    assert material["physics_roll_profile"] == "illustrative_non_oem"
+
+
+def test_net_zero_sync_probe_history_is_preserved_transparently() -> None:
+    provenance = load_project_state()["governance_and_provenance"]
+    housekeeping = provenance["net_zero_main_housekeeping"]
+    assert [item["commit"] for item in housekeeping] == [
+        "ccc3b49fd4f1db48f89ce7b0b1dd265b8278bb1f",
+        "acfd9791fa4eef624098cf69805893389afd7ef2",
+    ]
+    assert "No residual repository content" in (
+        provenance["net_zero_housekeeping_boundary"]
+    )
+
+
 def test_ci_workflow_verifies_literal_event_sha() -> None:
     state = load_project_state()
     policy = state["ci_policy"]
@@ -232,11 +292,15 @@ def test_publication_and_readme_guidance_remain_current() -> None:
     assert "successful_test != safe_production_change" in lineage
 
 
-def test_deployment_and_equipment_reality_remain_bounded() -> None:
-    assert load_project_state()["deployment_state"] == {
+def test_production_deployment_and_equipment_reality_remain_bounded() -> None:
+    state = load_project_state()
+    assert state["deployment_state"] == {
         "status": "not_deployed",
         "azure_lab_resources": "not_observed",
         "physical_equipment_connection": "not_observed",
         "network_listener": "not_observed",
         "equipment_control_path": "not_observed",
     }
+    assert "public GitHub Pages demo deployment is recorded separately" in (
+        state["deployment_state_scope"]
+    )
