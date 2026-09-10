@@ -48,6 +48,16 @@ The preserved PR #102 baseline used `mode === 'diagnostic'` as a shortcut for bo
 
 This is a presentation/state-model correction only. It does not assert that maintenance is unnecessary, authorize an operator action, or infer a physical machine state. A future dispatch workflow should record response ownership explicitly rather than infer it from diagnostic mode.
 
+## Maintenance observation gate
+
+`docs/triage/maintenance-observe-adapter.js` adds an asset-scoped interpretation gate for Labeler 2. When the synthetic CMMS schedule contains an active work order whose asset identity is exactly `Labeler 2`, LineAlert remains connected for telemetry and event capture but normal production interpretation is suspended for that asset.
+
+While the work order is active, the public demo suppresses new normal-production concern triggering, blocks entry into new diagnostic trials, pauses production-recovery verification counting, disables incident fast-forward, and replaces the action card with **Maintenance in progress · normal recommendations paused**. The Canvas labels the state **MAINTENANCE · OBSERVE ONLY** rather than pretending that maintenance-period measurements belong to the production envelope.
+
+An existing concern is not deleted or rewritten merely because maintenance begins. Its evidence and chronology remain preserved; LineAlert simply stops treating maintenance-period observations as ordinary production evidence. Maintenance work itself is context, not proof of the machine's physical condition or of the concern's cause.
+
+This bounded increment does not yet commission a return-to-service verification procedure. Maintenance completion therefore does not establish a healthy machine, and a production deployment must use an explicit asset-specific return-to-service gate before normal production interpretation is treated as authoritative again.
+
 ## Post-recovery fast-forward handoff
 
 When the configured 50-container production verification completes, the incident is closed and recovery remains visible as the just-completed episode. Any stale fast-forward target/event from the earlier incident is cleared at recovery completion.
@@ -73,6 +83,8 @@ The public route wrappers load those preserved pages and attach the shared-sessi
 - Telemetry != diagnosis.
 - Recommendation != authorization or equipment command.
 - Diagnostic state != maintenance dispatch.
+- Maintenance activity != normal production context.
+- Maintenance completion != verified return to service.
 - Restore recommendation != automatic equipment restore.
 - Historical pattern != current root cause.
 - Verified intermediate state != root-cause proof.
