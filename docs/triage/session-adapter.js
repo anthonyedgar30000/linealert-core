@@ -65,6 +65,7 @@
       trialInProgress,
       lastConfirmedTrial,
       latestTrial:latestTrial(),
+      discipline:window.LineAlertTrialDiscipline?window.LineAlertTrialDiscipline.snapshot():null,
       verification:{
         streak:verificationStreak,
         target:VERIFY_TARGET,
@@ -153,6 +154,8 @@
       fast=!!(saved.fast&&saved.fast.active);
       fastTarget=saved.fast&&Number.isFinite(saved.fast.target)?saved.fast.target:null;
       fastEvent=saved.fast?saved.fast.event:null;
+
+      if(window.LineAlertTrialDiscipline&&saved.discipline)window.LineAlertTrialDiscipline.restore(saved.discipline);
 
       const history=document.getElementById('history');
       if(history&&saved.decisionHistoryHtml)history.innerHTML=saved.decisionHistoryHtml;
