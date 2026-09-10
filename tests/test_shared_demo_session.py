@@ -25,9 +25,13 @@ def test_public_routes_attach_shared_session_adapters():
     assert "plant-canvas-v102.html" in plant_wrapper
     assert "../demo-session.js" in plant_wrapper
     assert "./trial-discipline-adapter.js" in plant_wrapper
+    assert "./maintenance-response-adapter.js" in plant_wrapper
     assert "./session-adapter.js" in plant_wrapper
     assert "./recovery-fast-forward-adapter.js" in plant_wrapper
     assert plant_wrapper.index("./trial-discipline-adapter.js") < plant_wrapper.index(
+        "./maintenance-response-adapter.js"
+    )
+    assert plant_wrapper.index("./maintenance-response-adapter.js") < plant_wrapper.index(
         "./session-adapter.js"
     )
     assert plant_wrapper.index("./session-adapter.js") < plant_wrapper.index(
@@ -69,6 +73,20 @@ def test_shared_session_contract_carries_workflow_and_evidence_state():
     assert "recommendationTitle" in guide_adapter
     assert "latestTrial" in guide_adapter
     assert "productionVerification" in guide_adapter
+
+
+def test_diagnostic_mode_does_not_imply_maintenance_dispatch():
+    adapter = read(DOCS / "triage" / "maintenance-response-adapter.js")
+
+    assert "maintenanceEta=qualifiedAvailabilityEta" in adapter
+    assert "dispatchRecorded:false" in adapter
+    assert "MAINTENANCE SUPPORT" in adapter
+    assert "Not dispatched" in adapter
+    assert "No maintenance dispatch is recorded for this concern" in adapter
+    assert "synthetic_crew_occupancy" in adapter
+    assert "mode==='diagnostic'" not in adapter.split(
+        "maintenanceEta=qualifiedAvailabilityEta"
+    )[0]
 
 
 def test_post_recovery_fast_forward_starts_from_clean_live_projection():
@@ -118,6 +136,7 @@ def test_static_sync_preserves_linealert_boundaries():
         "Browser session snapshot != plant record.",
         "Telemetry != diagnosis.",
         "Recommendation != authorization or equipment command.",
+        "Diagnostic state != maintenance dispatch.",
         "Historical pattern != current root cause.",
         "Five-container response != safe production change.",
     ):
