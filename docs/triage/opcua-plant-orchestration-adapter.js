@@ -50,10 +50,6 @@
       else if(runState===2)modeTop.textContent='LABELER 2 DIAGNOSTIC RUN · OPC UA CONNECTED';
       else if(runState===1)modeTop.textContent='LABELER 2 RUNNING · OPC UA CONNECTED';
     }
-    const next=document.getElementById('nextBtn');
-    if(next&&next.textContent==='Stop synthetic machine for bounded diagnostic'){
-      next.textContent='Stop Labeler 2 for bounded diagnostic';
-    }
   }
 
   function syncClockToSource(){

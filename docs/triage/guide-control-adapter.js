@@ -4,6 +4,7 @@
   const VERIFY_TITLE='Verify guide / spacing against marked reference';
   const INSPECT_TITLE='Inspect guide / spacing against marked reference';
   const RESTORE_TITLE='Restore guide / spacing to approved marked setup reference';
+  const RUNNING_GUIDE_ADJUSTMENT_COMMISSIONED=true;
 
   let installed=false;
   let guideIncidentId=null;
@@ -12,6 +13,8 @@
   let controlPending=false;
   let controlError=null;
   let pendingResumeVerification=null;
+  let restoreSourceSequence=null;
+  let productionVerificationQueued=false;
 
   const priorRenderHero=renderHero;
 
@@ -37,6 +40,16 @@
     return code===0||code===1||code===2?code:null;
   }
 
+  function sourceSequence(){
+    const status=sourceStatus();
+    const sequence=status&&status.sourceSequence;
+    return Number.isFinite(Number(sequence))?Number(sequence):null;
+  }
+
+  function guideActionAllowed(runState){
+    return runState===0||(runState===1&&RUNNING_GUIDE_ADJUSTMENT_COMMISSIONED);
+  }
+
   function syncIncident(){
     const id=currentIncident&&String(currentIncident.id||'').startsWith('OPC-L2-')
       ?currentIncident.id
@@ -47,14 +60,46 @@
       guideObservation=null;
       controlError=null;
       pendingResumeVerification=null;
+      restoreSourceSequence=null;
+      productionVerificationQueued=false;
     }
+  }
+
+  function queueProductionVerification(){
+    if(productionVerificationQueued)return;
+    productionVerificationQueued=true;
+    window.setTimeout(()=>{
+      productionVerificationQueued=false;
+      if(!opcActive()||!guideIncidentId||guideStage!=='effect_observed')return;
+      guideStage='idle';
+      startProductionVerification(false);
+      renderHero();
+    },0);
   }
 
   function syncWorkflowToSource(){
     const runState=sourceRunState();
-    if(runState===0&&guideStage==='awaiting_stop'){
-      if(mode!=='diagnostic')enterDiagnostic();
-      guideStage='verify';
+    if(
+      guideStage==='awaiting_running_effect'
+      &&runState===1
+      &&restoreSourceSequence!==null
+    ){
+      const sequence=sourceSequence();
+      if(sequence!==null&&sequence>restoreSourceSequence){
+        guideStage='effect_observed';
+        restoreSourceSequence=null;
+        appendHistory(
+          'Fresh production observation after guide / spacing restore',
+          'Qualified OPC UA advanced after the recorded restore while Labeler 2 remained in production. Fresh response evidence is now available; intervention followed by improvement is not causal proof.'
+        );
+        appendJournal(
+          'source_evidence',
+          'Fresh Labeler 2 production evidence observed after guide restore',
+          'A new qualified production observation followed the recorded adjustment. Response evidence does not establish mechanism.',
+          'linealert-labeler2-opcua-local'
+        );
+        queueProductionVerification();
+      }
     }
     if(runState===1&&pendingResumeVerification!==null){
       const skippedRecommended=pendingResumeVerification;
@@ -120,25 +165,9 @@
     }
   }
 
-  async function stopForDiagnostic(){
-    if(sourceRunState()!==1)return;
-    try{
-      await demoControl('stop_for_diagnostic');
-      guideStage='awaiting_stop';
-      appendJournal(
-        'simulator_control',
-        'Synthetic Labeler stop requested for bounded diagnostic',
-        'Control was acknowledged; inspection stays blocked until qualified OPC UA reports stopped.',
-        'linealert-labeler2-simulator-control'
-      );
-    }catch(err){
-      controlError=err&&err.message?err.message:'simulator control failed';
-    }
-    renderHero();
-  }
-
   async function inspectGuide(){
-    if(sourceRunState()!==0)return;
+    const runState=sourceRunState();
+    if(!guideActionAllowed(runState))return;
     try{
       const observation=await demoControl('inspect_guide');
       guideObservation=observation;
@@ -161,18 +190,29 @@
   }
 
   async function restoreGuide(){
-    if(sourceRunState()!==0||!guideObservation||guideObservation.within_reference)return;
+    const runState=sourceRunState();
+    if(!guideActionAllowed(runState)||!guideObservation||guideObservation.within_reference)return;
     try{
-      await demoControl('restore_guide',{observation_id:guideObservation.observation_id});
-      guideStage='restored';
+      const receipt=await demoControl(
+        'restore_guide',
+        {observation_id:guideObservation.observation_id}
+      );
+      lastAction='guide';
+      if(runState===1){
+        const sequence=Number(receipt&&receipt.sequence_at_action);
+        restoreSourceSequence=Number.isFinite(sequence)?sequence:sourceSequence();
+        guideStage='awaiting_running_effect';
+      }else{
+        guideStage='restored';
+      }
       appendHistory(
         'Simulator intervention · guide / spacing restored to reference',
-        'The synthetic operator applied one bounded change after an out-of-reference observation. Fresh OPC UA evidence is required before another material change.'
+        'One bounded guide / spacing adjustment was recorded after an out-of-reference observation. Fresh OPC UA evidence is required before judging the effect.'
       );
       appendJournal(
         'operator_intervention',
         'Guide / spacing restored to approved synthetic reference',
-        'Simulator-only intervention after recorded observation. Intervention followed by improvement would not prove mechanism.',
+        'Recorded adjustment after the current guide observation. Intervention followed by improvement would not prove mechanism.',
         'linealert-labeler2-simulator-control'
       );
     }catch(err){
@@ -245,14 +285,7 @@
       return;
     }
     if(controlError){
-      why.textContent='Simulator-only control did not complete: '+controlError+'. No equipment action was taken.';
-    }
-    if(guideStage==='awaiting_stop'){
-      title.textContent=VERIFY_TITLE;
-      why.textContent='Stop request acknowledged. Inspection remains blocked until qualified OPC UA reports run_state_code 0.';
-      next.disabled=true;
-      next.textContent='Waiting for OPC UA stopped state';
-      return;
+      why.textContent='Simulator control did not complete: '+controlError+'.';
     }
     if(guideStage==='awaiting_production'){
       title.textContent='Production resume requested';
@@ -269,25 +302,20 @@
     if(nextStage==='production_verification')return;
     if(recommendation!=='guide')return;
 
-    title.textContent=VERIFY_TITLE;
-
-    if(runState===1){
-      why.textContent='Inspection first. Qualified OPC UA still reports production running, so the guide / spacing check stays blocked until the source reports stopped.';
-      next.disabled=false;
-      next.textContent='Stop Labeler 2 for bounded diagnostic';
-      return;
-    }
-
     if(runState===2){
-      why.textContent='Qualified OPC UA reports a diagnostic run in progress. Wait for the source to return to the stopped diagnostic state before another workflow action.';
+      title.textContent=VERIFY_TITLE;
+      why.textContent='Qualified OPC UA reports a diagnostic run in progress. Wait for the source to return to ordinary production or stopped state before another guide action.';
       next.disabled=true;
       next.textContent='Diagnostic run active · waiting for source state';
       return;
     }
 
     if(guideStage==='verify'){
-      why.textContent='Labeler 2 is stopped. Inspect the visible guide / spacing relationship against the marked reference before considering a material change.';
-      next.disabled=false;
+      title.textContent=INSPECT_TITLE;
+      why.textContent=runState===1
+        ?'Labeler 2 is running. This commissioned demo profile permits the external guide / spacing check while production continues.'
+        :'Labeler 2 is stopped. Inspect the visible guide / spacing relationship against the marked reference.';
+      next.disabled=!guideActionAllowed(runState);
       next.textContent=INSPECT_TITLE;
       return;
     }
@@ -295,15 +323,33 @@
     if(guideStage==='restore_available'&&guideObservation){
       const offset=Math.abs(Number(guideObservation.observed_offset_mm));
       title.textContent='Guide / spacing outside marked reference';
-      why.textContent='Observed: guide / spacing '+offset.toFixed(1)+' mm outside the marked reference. Restore is the next commissioned demo action; the observation itself does not establish why the deviation occurred.';
-      next.disabled=false;
+      why.textContent='Observed: guide / spacing '+offset.toFixed(1)+' mm outside the marked reference. Restore to the marked reference is the next commissioned demo action; the observation itself does not establish why the deviation occurred.';
+      next.disabled=!guideActionAllowed(runState);
       next.textContent=RESTORE_TITLE;
+      return;
+    }
+
+    if(guideStage==='awaiting_running_effect'){
+      title.textContent='Guide / spacing restored to marked reference';
+      why.textContent=runState===1
+        ?'The adjustment is recorded while Labeler 2 remains in production. Waiting for a fresh qualified production observation before judging the effect.'
+        :'The adjustment is recorded. Waiting for ordinary production to resume before judging the effect.';
+      next.disabled=true;
+      next.textContent='Waiting for fresh 5-container production evidence';
+      return;
+    }
+
+    if(guideStage==='effect_observed'){
+      title.textContent='Fresh production evidence captured';
+      why.textContent='A new qualified production observation followed the guide / spacing restore. Production verification is starting; response to the adjustment is not causal proof.';
+      next.disabled=true;
+      next.textContent='Starting production verification…';
       return;
     }
 
     if(guideStage==='restored'){
       title.textContent='Guide / spacing restored to approved reference';
-      why.textContent='One simulator-only material change is recorded. Do not infer success yet; arm a bounded run and let fresh OPC UA observations show what changed.';
+      why.textContent='The adjustment was recorded while Labeler 2 was stopped. Arm a bounded diagnostic run and let fresh OPC UA observations show what changed.';
       next.disabled=false;
       next.textContent='Arm 5-container trial after restore';
       return;
@@ -351,20 +397,16 @@
         if(priorNext)return priorNext.call(this,event);
         return;
       }
-      if(runState===1){
-        await stopForDiagnostic();
-        return;
-      }
-      if(runState!==0)return;
-      if(guideStage==='verify'){
+      if(runState===2)return;
+      if(guideStage==='verify'&&guideActionAllowed(runState)){
         await inspectGuide();
         return;
       }
-      if(guideStage==='restore_available'){
+      if(guideStage==='restore_available'&&guideActionAllowed(runState)){
         await restoreGuide();
         return;
       }
-      if(guideStage==='restored'){
+      if(guideStage==='restored'&&runState===0){
         armTrial('guide');
         renderHero();
       }

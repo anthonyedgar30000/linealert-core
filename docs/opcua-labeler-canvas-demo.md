@@ -116,31 +116,51 @@ recorded roll change != failed roll change
 recent change != current root cause
 ```
 
-## Guide verification / restoration flow
+## Guide inspection / running adjustment flow
 
-The guide path remains verify-first:
+For this synthetic Labeler 2 profile, the commissioned demo assumption is that the guide / spacing
+reference can be visually inspected and restored through an externally accessible adjustment while
+the labeler remains in ordinary production. This is a **demo-specific authority and access
+assumption**, not a general statement about bottle labelers or permission for real equipment.
+
+The default guide path is therefore:
 
 ```text
-OPC UA concern evidence
-→ Stop Labeler 2 for bounded diagnostic
-→ wait for qualified OPC UA to report Labeler 2 stopped
-→ Verify guide / spacing against approved setup reference
-→ simulated operator observation recorded with its own source identity
+OPC UA concern evidence while Labeler 2 is running
+→ inspect guide / spacing against the marked reference while production continues
+→ record the simulated human observation with its own source identity
 → if within reference: do not offer a guide correction
-→ if outside reference and demo authority permits: restore to approved reference
-→ arm diagnostic trial
-→ simulator emits the test result through OPC UA
-→ LineAlert evaluates fresh evidence
+→ if outside reference and the commissioned demo profile permits: restore to marked reference
+→ keep Labeler 2 in production
+→ wait for a fresh qualified 5-container production observation from OPC UA
+→ begin production verification from later qualified source observations
+→ close the concern only after the configured healthy production streak is observed
 ```
 
 The running emulator carries a private synthetic guide-offset state. That mechanism variable is
 **not** an OPC UA node. The operator only learns the guide/reference relationship by performing the
-simulated verification action.
+simulated inspection action.
 
 After restoration, LineAlert does not directly set presentation variability, camera alignment, or
-quality values. The emulator changes its own state and subsequent observations arrive through OPC
-UA. Improvement after the intervention supports the tested action under the synthetic conditions;
-it does not prove the mechanism.
+quality values. The emulator changes its own private synthetic state and subsequent observations
+arrive through OPC UA. The first source sequence after the restore establishes that fresh response
+evidence exists; later qualifying production observations drive the existing production-verification
+streak.
+
+If the machine is already stopped, the same guide inspection / restoration can still be performed.
+The existing stopped diagnostic-batch path remains available as a fallback demo workflow. The
+running path does **not** stop the source merely to perform the guide action.
+
+For any real machine, a commissioned machine-specific procedure, safeguarding design, site rules,
+operator authority, OEM requirements, and qualified human judgment determine whether inspection or
+adjustment is allowed while running. This synthetic profile does not establish those facts.
+
+```text
+commissioned_demo_permission != real_machine_permission
+human_observation != OPC_UA_machine_state
+recorded_adjustment != verified_effect
+intervention_followed_by_improvement != proof_of_mechanism
+```
 
 ## What changes in OPC UA mode
 
@@ -151,9 +171,11 @@ Once a qualified Labeler 2 source has been admitted:
 - emulator-owned roll-change / CMMS-style records are ingested into the shared Event Log;
 - recent-recorded-context for an OPC concern prefers the source-owned roll-change record;
 - concern opening is driven by the admitted presentation/camera evidence gate;
-- guide verification is a simulated human observation separate from OPC UA evidence;
+- guide inspection is a simulated human observation separate from OPC UA evidence;
+- the demo profile permits the guide / spacing inspection and restoration during ordinary production;
 - guide restoration is unavailable until a current out-of-reference observation exists;
-- diagnostic test results return through OPC UA instead of being manufactured in the browser;
+- a running restore waits for fresh production evidence rather than forcing a diagnostic stop;
+- stopped diagnostic test results, when used, still return through OPC UA instead of being manufactured in the browser;
 - production verification counts qualifying source batches;
 - source disconnect fails closed without browser machine-evidence fallback.
 
@@ -267,7 +289,8 @@ work_record != causal_proof
 historical_pattern != current_root_cause
 control_acknowledgment != verified_source_state
 simulated_human_observation != verified_physical_state
-verification_only != authorization_to_adjust
+commissioned_demo_permission != real_machine_permission
+recorded_adjustment != verified_effect
 simulator_control != equipment_control
 browser_workflow_state != machine_state
 connection_state != evidence_admission_state

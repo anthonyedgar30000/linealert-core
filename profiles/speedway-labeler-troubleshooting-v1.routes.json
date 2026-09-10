@@ -1,7 +1,7 @@
 {
   "schema_version": "linealert.troubleshooting-route-profile.v1",
   "profile_id": "speedway-labeler-troubleshooting-v1",
-  "profile_version": 3,
+  "profile_version": 4,
   "guide_path": "/troubleshooting-guide.html",
   "allowed_finding_scope": "synthetic_demo",
   "demo_authority_assumption": {
@@ -21,7 +21,7 @@
         "scenario_id": "labeler-roll-change-stability-v1",
         "match_strength": "strong",
         "basis": "Current alignment evidence and strong similar CMMS history make guide / presentation verification a high-information first check in the synthetic demo. Historical similarity does not establish that the current guide is out of reference.",
-        "verification": "Verify first. Only if the current observation is out of reference may the commissioned demo actor restore that one bounded setup reference, then run the 5-container synthetic verification trial before any additional material change."
+        "verification": "Verify first. Only if the current observation is out of reference may the commissioned demo actor restore that one bounded setup reference. In the current synthetic profile the external guide action may occur during ordinary production; fresh qualified production evidence must then verify the effect before any additional material change or production conclusion."
       }
     },
     "LINEALERT.DEMO.LABEL_FOLDS": {

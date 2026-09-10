@@ -98,7 +98,8 @@ def test_source_orchestration_owns_fast_forward_and_source_event_ingestion():
     assert "sourceSequence" in script
     assert "source_owned_plant_event" not in script  # supplied by source event fields
     assert "clockQuality:'deterministic_simulator_sequence'" in script
-    assert "Stop Labeler 2 for bounded diagnostic" in script
+    assert "Stop synthetic machine for bounded diagnostic" not in script
+    assert "Stop Labeler 2 for bounded diagnostic" not in script
     assert "LABELER 2 STOPPED · OPC UA CONNECTED" in script
 
 
@@ -141,7 +142,7 @@ def test_guide_control_adapter_verifies_before_restore_and_uses_simulator_contro
     assert "Verify guide / spacing against marked reference" in script
     assert "Inspect guide / spacing against marked reference" in script
     assert "fetch('/api/demo-control'" in script
-    assert "stop_for_diagnostic" in script
+    assert "stop_for_diagnostic" not in script
     assert "inspect_guide" in script
     assert "restore_guide" in script
     assert "observation_id:guideObservation.observation_id" in script
@@ -150,7 +151,7 @@ def test_guide_control_adapter_verifies_before_restore_and_uses_simulator_contro
     assert "synthetic_human_observation" not in script  # classification comes from control result
     assert "Observed: guide / spacing" in script
     assert "No guide correction indicated" in script
-    assert "fresh OPC UA observations" in script
+    assert "Fresh OPC UA evidence is required before judging the effect" in script
 
 
 def test_guide_inspection_action_names_physical_check_and_reports_observed_relation():
@@ -159,7 +160,7 @@ def test_guide_inspection_action_names_physical_check_and_reports_observed_relat
     )
 
     assert "next.textContent=INSPECT_TITLE" in script
-    assert "Stop Labeler 2 for bounded diagnostic" in script
+    assert "commissioned demo profile permits the external guide / spacing check" in script
     assert "function observedRelation(observation)" in script
     assert "guide / spacing matches the marked reference" in script
     assert (
@@ -169,22 +170,25 @@ def test_guide_inspection_action_names_physical_check_and_reports_observed_relat
     assert "Observed: '+relation" in script
 
 
-def test_guide_workflow_is_gated_by_qualified_opcua_run_state_not_browser_mode():
+def test_running_guide_workflow_uses_source_state_and_fresh_production_evidence():
     script = (ROOT / "docs" / "triage" / "guide-control-adapter.js").read_text(
         encoding="utf-8"
     )
 
+    assert "RUNNING_GUIDE_ADJUSTMENT_COMMISSIONED=true" in script
     assert "function sourceRunState()" in script
+    assert "function sourceSequence()" in script
     assert "runStateCode" in script
-    assert "if(sourceRunState()!==1)return;" in script
-    assert "if(sourceRunState()!==0)return;" in script
-    assert "if(runState===1)" in script
-    assert "if(runState!==0)return;" in script
-    assert "Waiting for OPC UA stopped state" in script
-    assert "Inspection remains blocked until qualified OPC UA reports run_state_code 0" in script
+    assert "sourceSequence" in script
+    assert "runState===0||(runState===1&&RUNNING_GUIDE_ADJUSTMENT_COMMISSIONED)" in script
+    assert "guideStage==='awaiting_running_effect'" in script
+    assert "sequence>restoreSourceSequence" in script
+    assert "Waiting for fresh 5-container production evidence" in script
+    assert "startProductionVerification(false)" in script
+    assert "Waiting for OPC UA stopped state" not in script
     assert (
-        "Production verification starts only after qualified OPC UA reports production running"
-        in script
+        "Inspection remains blocked until qualified OPC UA reports run_state_code 0"
+        not in script
     )
     assert "if(mode==='production')" not in script
     assert "if(mode!=='diagnostic'||trialInProgress" not in script

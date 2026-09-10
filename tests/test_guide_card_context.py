@@ -25,6 +25,7 @@ def test_guide_card_context_preserves_observation_restore_and_effect_state():
     assert "appendFact(box,'OBSERVED',facts.observation)" in script
     assert "appendFact(box,'ACTION','Guide / spacing restored to marked reference')" in script
     assert "appendFact(box,'VERIFY EFFECT',effectState())" in script
+    assert "Awaiting fresh 5-container production observation" in script
     assert "Awaiting 5-container trial" in script
     assert "Production verification active" in script
 

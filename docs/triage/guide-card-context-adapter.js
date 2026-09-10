@@ -47,12 +47,22 @@
     return{observation,restored};
   }
 
+  function sourceRunState(){
+    try{
+      const status=window.LineAlertOpcuaSource&&window.LineAlertOpcuaSource.status
+        ?window.LineAlertOpcuaSource.status()
+        :null;
+      return status?Number(status.runStateCode):null;
+    }catch(_){return null;}
+  }
+
   function effectState(){
     try{
       if(productionVerification)return'Production verification active';
       if(trialInProgress)return'5-container trial active';
       if(lastConfirmedTrial)return'Bounded trial captured';
     }catch(_){}
+    if(sourceRunState()===1)return'Awaiting fresh 5-container production observation';
     return'Awaiting 5-container trial';
   }
 
