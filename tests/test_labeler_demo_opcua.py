@@ -112,6 +112,39 @@ def test_guide_inspection_requires_stopped_diagnostic_state():
         state.inspect_guide()
 
 
+def test_runtime_scenario_sequence_freezes_while_stopped_and_advances_for_diagnostic_run():
+    state = LabelerDemoState()
+    state.observation(70)
+    state.stop_for_diagnostic()
+
+    first_stopped = state.next_observation()
+    second_stopped = state.next_observation()
+
+    assert first_stopped.sequence == second_stopped.sequence == 70
+    assert first_stopped.run_state_code == second_stopped.run_state_code == 0
+    assert first_stopped.roll_change_recent is True
+    assert second_stopped.roll_change_recent is True
+
+    state.run_diagnostic_batch()
+    diagnostic = state.next_observation()
+
+    assert diagnostic.sequence == 71
+    assert diagnostic.run_state_code == 2
+
+
+def test_runtime_scenario_sequence_advances_again_after_resume():
+    state = LabelerDemoState()
+    state.observation(70)
+    state.stop_for_diagnostic()
+    state.next_observation()
+    state.resume_production()
+
+    resumed = state.next_observation()
+
+    assert resumed.sequence == 71
+    assert resumed.run_state_code == 1
+
+
 def test_labeler_emulator_outputs_finite_numeric_evidence():
     for sequence in range(0, 320, 7):
         observation = observable_for_sequence(sequence)
