@@ -30,6 +30,7 @@ def test_public_routes_attach_shared_session_adapters():
     assert "./session-adapter.js" in plant_wrapper
     assert "./maintenance-session-adapter.js" in plant_wrapper
     assert "./recovery-fast-forward-adapter.js" in plant_wrapper
+    assert "./maintenance-fast-forward-adapter.js" in plant_wrapper
     assert plant_wrapper.index("./trial-discipline-adapter.js") < plant_wrapper.index(
         "./maintenance-response-adapter.js"
     )
@@ -44,6 +45,9 @@ def test_public_routes_attach_shared_session_adapters():
     )
     assert plant_wrapper.index("./maintenance-session-adapter.js") < plant_wrapper.index(
         "./recovery-fast-forward-adapter.js"
+    )
+    assert plant_wrapper.index("./recovery-fast-forward-adapter.js") < plant_wrapper.index(
+        "./maintenance-fast-forward-adapter.js"
     )
 
     assert "troubleshooting-guide-reference-v102.html" in guide_wrapper
@@ -120,6 +124,19 @@ def test_asset_maintenance_has_reachable_quiet_lifecycle():
     assert "handledIncidentIds.clear" not in adapter
 
 
+def test_normal_fast_forward_stops_at_maintenance_before_later_incident():
+    adapter = read(DOCS / "triage" / "maintenance-fast-forward-adapter.js")
+
+    assert "function nextMaintenance" in adapter
+    assert "function maintenanceComesFirst" in adapter
+    assert "job.asset===TARGET_ASSET&&job.start>afterAbs" in adapter
+    assert "incidentCandidate.time-PREVIEW_LEAD" in adapter
+    assert "Speed up to next plant event" in adapter
+    assert "fastTarget=work.start" in adapter
+    assert "automatic handoff at "+"'+work.id+'" in adapter
+    assert "LineAlertRecoveryFastForward.leaveRecoveredEpisodeForAdvance" in adapter
+
+
 def test_shared_views_suppress_stale_troubleshooting_during_maintenance():
     session_adapter = read(DOCS / "triage" / "maintenance-session-adapter.js")
     guide_adapter = read(DOCS / "maintenance-guide-adapter.js")
@@ -138,6 +155,9 @@ def test_shared_views_suppress_stale_troubleshooting_during_maintenance():
         in guide_adapter
     )
     assert "Observation != return-to-service authorization" in guide_adapter
+    assert "data-linealert-maintenance-view" in guide_adapter
+    assert "hasOverlay(match,'active')" in guide_adapter
+    assert "match.dataset.maintenanceOverlay" not in guide_adapter
 
 
 def test_post_recovery_fast_forward_starts_from_clean_live_projection():
