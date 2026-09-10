@@ -1,0 +1,81 @@
+{
+  "schema_version": "linealert.synthetic-investigation-playbook.v1",
+  "profile_id": "synthetic-labeler2-investigation-v1",
+  "classification": "synthetic_demo_only",
+  "asset": "Labeler 2",
+  "incident_kind": "guide",
+  "design_intent": "Keep multiple working explanations visible while choosing bounded next steps from admitted evidence. The set guides investigation; it is not a terminal causal verdict.",
+  "standing_vocabulary": [
+    "most_supported",
+    "plausible",
+    "lower_priority",
+    "less_supported",
+    "needs_more_evidence"
+  ],
+  "working_hypotheses": [
+    {
+      "id": "roll_web_path",
+      "label": "Roll / web-path condition",
+      "initial_standing": "plausible",
+      "supports": [
+        "A recorded roll change can be recent context for this synthetic episode.",
+        "A coupled roll/web machine-behavior signature can make this path more informative when present."
+      ],
+      "against": [],
+      "missing": [
+        "Compare roll seating and visible web path with the approved changeover reference."
+      ]
+    },
+    {
+      "id": "guide_spacing",
+      "label": "Guide / spacing condition",
+      "initial_standing": "plausible",
+      "supports": [
+        "Presentation instability is compatible with a local guide / spacing mismatch.",
+        "Matched synthetic history has previously made this path useful to inspect."
+      ],
+      "against": [],
+      "missing": [
+        "Compare the visible guide / spacing relationship with the commissioned marked reference."
+      ]
+    },
+    {
+      "id": "timing_controls",
+      "label": "Timing / controls relationship",
+      "initial_standing": "lower_priority",
+      "supports": [
+        "Timing or control behavior can produce presentation consequences."
+      ],
+      "against": [
+        "Current synthetic label-feed timing evidence remains inside its supplied healthy band."
+      ],
+      "missing": [
+        "Fresh timing evidence outside the commissioned envelope would raise this path's investigation priority."
+      ]
+    }
+  ],
+  "action_hypothesis_map": {
+    "guide": "guide_spacing",
+    "delay": "timing_controls",
+    "speed": "timing_controls",
+    "peel": "roll_web_path",
+    "hold": "guide_spacing",
+    "repeat": null
+  },
+  "next_step_principle": "Prefer observation-only, reversible, low-disturbance and high-information checks before changing a setting that can mask the condition or introduce another variable.",
+  "episode_dispositions": {
+    "active": "Investigation active",
+    "verification": "Operating response under bounded verification",
+    "recovered": "Operating behavior stable under observed conditions",
+    "unresolved": "Escalated with unresolved working explanations"
+  },
+  "boundaries": [
+    "working explanation != diagnosis",
+    "investigation priority != causal probability",
+    "test response != causal proof",
+    "intervention followed by improvement != proof of mechanism",
+    "episode closure = bounded operating disposition, not causal certainty",
+    "recommendation != authorized action",
+    "synthetic demo evidence != physical machine evidence"
+  ]
+}
