@@ -37,12 +37,32 @@
     card.innerHTML='<span style="display:block;font-size:.6rem;font-weight:900;letter-spacing:.1em;color:#69756f">RECENT RECORDED CONTEXT</span><b id="recentContextTitle" style="display:block;margin:5px 0 3px"></b><small id="recentContextMeta" style="display:block;color:#69756f;line-height:1.35"></small><a id="recentContextLink" href="../event-log.html" style="display:inline-block;margin-top:7px;font-size:.72rem;font-weight:850;color:#17211c">Open in Event Log →</a>';
     summary.insertAdjacentElement('afterend',card);return card;
   }
+
+  function sourceOwnedContext(inc){
+    try{
+      if(!inc||!String(inc.id||'').startsWith('OPC-L2-'))return null;
+      const source=window.LineAlertOpcuaSource;
+      const orchestration=window.LineAlertOpcuaPlantOrchestration;
+      if(!source||!source.status||!orchestration||!orchestration.latestRollChangeBefore)return null;
+      const status=source.status();
+      const evt=orchestration.latestRollChangeBefore(status.sourceSequence);
+      if(!evt)return null;
+      return {
+        time:evt.time,
+        source:evt.source,
+        eventId:'SIM-EVT-'+String(evt.source_event_sequence),
+        message:evt.message
+      };
+    }catch(_){return null;}
+  }
+
   function renderContext(){
     normalizeIncidentVocabulary();
     const card=ensureCard();if(!card)return;
     let inc=null;try{inc=typeof currentIncident!=='undefined'?currentIncident:null;}catch(_){}
     if(!inc||inc.kind!=='guide'||!Number.isFinite(inc.time)){card.classList.add('hidden');return;}
-    const evt=model.precedingContext(inc);if(!evt){card.classList.add('hidden');return;}
+    const evt=sourceOwnedContext(inc)||model.precedingContext(inc);
+    if(!evt){card.classList.add('hidden');return;}
     const delta=Math.max(0,Math.round((inc.time-evt.time)/60));
     document.getElementById('recentContextTitle').textContent=model.fmt(evt.time,false)+' · '+evt.message;
     document.getElementById('recentContextMeta').textContent=evt.source+' · '+evt.eventId+' · '+delta+' min before concern · preceded by change ≠ caused by change';

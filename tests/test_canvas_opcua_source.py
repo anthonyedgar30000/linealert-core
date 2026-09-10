@@ -3,14 +3,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_canvas_loads_opcua_source_adapter_after_shared_journal():
+def test_canvas_loads_opcua_orchestration_after_shared_journal_and_source_adapter():
     index = (ROOT / "docs" / "triage" / "index.html").read_text(encoding="utf-8")
 
     journal = index.index("../event-journal.js")
     source_adapter = index.index("./opcua-source-adapter.js")
+    orchestration = index.index("./opcua-plant-orchestration-adapter.js")
     guide_adapter = index.index("./guide-control-adapter.js")
 
-    assert journal < source_adapter < guide_adapter
+    assert journal < source_adapter < orchestration < guide_adapter
 
 
 def test_canvas_opcua_adapter_requires_qualified_read_only_labeler_source():
@@ -49,6 +50,45 @@ def test_opcua_source_status_exposes_qualified_run_state_to_workflow_adapters():
 
     assert "runStateCode:latest?numeric(latest,'run_state_code'):null" in script
     assert "sourceSequence:latest?numeric(latest,'emulator_sequence'):null" in script
+
+
+def test_source_orchestration_owns_fast_forward_and_source_event_ingestion():
+    script = (ROOT / "docs" / "triage" / "opcua-plant-orchestration-adapter.js").read_text(
+        encoding="utf-8"
+    )
+
+    assert "fetch('/api/plant-events?after='" in script
+    assert "fast_forward_to_next_concern" in script
+    assert "Fast-forward to next concern precursor" in script
+    assert "pendingTarget" in script
+    assert "sourceSequence" in script
+    assert "source_owned_plant_event" not in script  # supplied by source event fields
+    assert "clockQuality:'deterministic_simulator_sequence'" in script
+    assert "Stop Labeler 2 for bounded diagnostic" in script
+    assert "LABELER 2 STOPPED · OPC UA CONNECTED" in script
+
+
+def test_source_event_context_can_replace_browser_generated_roll_change_context():
+    script = (ROOT / "docs" / "triage" / "event-context-adapter.js").read_text(encoding="utf-8")
+
+    assert "LineAlertOpcuaPlantOrchestration" in script
+    assert "latestRollChangeBefore" in script
+    assert "sourceOwnedContext(inc)||model.precedingContext(inc)" in script
+    assert "preceded by change ≠ caused by change" in script
+
+
+def test_event_journal_can_preserve_source_clock_quality():
+    script = (ROOT / "docs" / "event-journal.js").read_text(encoding="utf-8")
+
+    assert "clockQuality:input.clockQuality||'synthetic_session_clock'" in script
+    assert "classification:input.classification||'synthetic_demo_only'" in script
+
+
+def test_local_event_log_suppresses_browser_labeler_machine_events_when_source_events_exist():
+    script = (ROOT / "docs" / "event-log-view.js").read_text(encoding="utf-8")
+
+    assert "source_owned_plant_event===true" in script
+    assert "browserLabelerMachineEvent" in script
 
 
 def test_guide_control_adapter_verifies_before_restore_and_uses_simulator_control_channel():

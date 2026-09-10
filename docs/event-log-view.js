@@ -4,8 +4,12 @@
   const $=id=>document.getElementById(id);let selectedId=null;
   function fallbackAbs(){const n=new Date();return Date.UTC(n.getFullYear(),n.getMonth(),n.getDate())/1000+14*model.H;}
   function state(){const saved=store&&store.load?store.load():null;const asOf=saved&&Number.isFinite(saved.simAbs)?saved.simAbs:fallbackAbs();return{saved,asOf};}
+  function browserLabelerMachineEvent(e){return e.asset==='Labeler 2'||(e.source==='synthetic-hmi/packaging-line-1'&&e.fields&&e.fields.relatedIncidentId);}
   function mergedEvents(asOf,lookback){
-    const generated=model.generatedEvents(asOf,lookback,0);const extra=journal&&journal.list?journal.list().filter(e=>e.time>=asOf-lookback&&e.time<=asOf):[];
+    const extra=journal&&journal.list?journal.list().filter(e=>e.time>=asOf-lookback&&e.time<=asOf):[];
+    const sourceOwned=extra.some(e=>e.fields&&e.fields.source_owned_plant_event===true);
+    let generated=model.generatedEvents(asOf,lookback,0);
+    if(sourceOwned)generated=generated.filter(e=>!browserLabelerMachineEvent(e));
     const map=new Map();[...generated,...extra].forEach(e=>map.set(e.eventId,e));return Array.from(map.values()).sort((a,b)=>b.time-a.time);
   }
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}

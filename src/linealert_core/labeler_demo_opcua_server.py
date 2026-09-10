@@ -16,6 +16,20 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
+from urllib.parse import parse_qs, urlparse
+
+from .labeler_demo_plant_events import (
+    CONCERN_PHASE,
+    ROLL_CHANGE_CORRECTION_PHASE,
+    ROLL_CHANGE_PHASE,
+    ROLL_CHANGE_RESUME_PHASE,
+    ROLL_CHANGE_STOP_PHASE,
+    SCENARIO_LENGTH,
+    SIM_SECONDS_PER_SEQUENCE,
+    fast_forward_target,
+    public_events_at_sequence,
+    roll_change_outcome,
+)
 
 NAMESPACE_URI = "urn:linealert:emulator:labeler2"
 PROFILE_ID = "linealert-labeler2-observable-v1"
@@ -77,7 +91,7 @@ class ControlRejected(ValueError):
 
 
 class LabelerDemoState:
-    """Private demo state; none of these mechanism variables are exported as OPC UA nodes."""
+    """Private demo state; mechanism variables never cross the OPC UA evidence boundary."""
 
     def __init__(self) -> None:
         self._lock = threading.RLock()
@@ -85,40 +99,73 @@ class LabelerDemoState:
         self._sequence = 0
         self._guide_offset_mm = GUIDE_REFERENCE_MM
         self._roll_change_applied = False
+        self._private_roll_outcome = "clean"
         self._production_enabled = True
         self._diagnostic_batches_remaining = 0
         self._inspection_counter = 0
         self._last_inspection_id: str | None = None
         self._last_inspection_cycle: int | None = None
         self._last_inspection_outside = False
+        self._plant_events: dict[int, dict[str, Any]] = {}
+
+    def _reset_cycle_locked(self, cycle: int) -> None:
+        self._cycle = cycle
+        self._guide_offset_mm = GUIDE_REFERENCE_MM
+        self._roll_change_applied = False
+        self._private_roll_outcome = roll_change_outcome(cycle)
+        self._production_enabled = True
+        self._diagnostic_batches_remaining = 0
+        self._last_inspection_id = None
+        self._last_inspection_cycle = None
+        self._last_inspection_outside = False
 
     def _prepare_locked(self, sequence: int) -> None:
         if sequence < 0:
             raise ValueError("sequence must be non-negative")
-        cycle = sequence // 160
-        phase = sequence % 160
+        cycle = sequence // SCENARIO_LENGTH
+        phase = sequence % SCENARIO_LENGTH
         if cycle != self._cycle:
-            self._cycle = cycle
-            self._guide_offset_mm = GUIDE_REFERENCE_MM
-            self._roll_change_applied = False
-            self._production_enabled = True
-            self._diagnostic_batches_remaining = 0
-            self._last_inspection_id = None
-            self._last_inspection_cycle = None
-            self._last_inspection_outside = False
-        if phase >= 40 and not self._roll_change_applied:
-            self._guide_offset_mm = DISTURBED_GUIDE_OFFSET_MM
+            self._reset_cycle_locked(cycle)
+        if phase >= ROLL_CHANGE_PHASE and not self._roll_change_applied:
+            self._guide_offset_mm = (
+                DISTURBED_GUIDE_OFFSET_MM
+                if self._private_roll_outcome in {"caught", "escaped"}
+                else GUIDE_REFERENCE_MM
+            )
             self._roll_change_applied = True
+        if (
+            self._private_roll_outcome == "caught"
+            and self._roll_change_applied
+            and phase >= ROLL_CHANGE_CORRECTION_PHASE
+        ):
+            self._guide_offset_mm = GUIDE_REFERENCE_MM
         self._sequence = sequence
 
+    def _record_events_at_locked(self, sequence: int) -> None:
+        for event in public_events_at_sequence(sequence):
+            payload = event.as_dict()
+            self._plant_events[event.source_event_sequence] = payload
+
+    def _record_events_through_locked(self, start: int, end: int) -> None:
+        if end < start:
+            return
+        for sequence in range(start, end + 1):
+            self._record_events_at_locked(sequence)
+
+    def _run_state_locked(self) -> int:
+        if self._diagnostic_batches_remaining > 0:
+            return 2
+        if not self._production_enabled:
+            return 0
+        phase = self._sequence % SCENARIO_LENGTH
+        if ROLL_CHANGE_STOP_PHASE <= phase < ROLL_CHANGE_RESUME_PHASE:
+            return 0
+        return 1
+
     def _observation_locked(self) -> LabelerObservable:
+        run_state_code = self._run_state_locked()
         if self._diagnostic_batches_remaining > 0:
             self._diagnostic_batches_remaining -= 1
-            run_state_code = 2
-        elif self._production_enabled:
-            run_state_code = 1
-        else:
-            run_state_code = 0
         return observable_for_sequence(
             self._sequence,
             guide_offset_mm=self._guide_offset_mm,
@@ -133,14 +180,56 @@ class LabelerDemoState:
             return self._observation_locked()
 
     def next_observation(self) -> LabelerObservable:
-        """Advance scenario progression only while production or a diagnostic batch is moving."""
+        """Advance production/scenario progression.
+
+        Explicit diagnostic stops remain frozen.
+        """
 
         with self._lock:
             if self._cycle < 0:
                 self._prepare_locked(0)
+                self._record_events_at_locked(0)
             elif self._production_enabled or self._diagnostic_batches_remaining > 0:
-                self._prepare_locked(self._sequence + 1)
+                next_sequence = self._sequence + 1
+                self._record_events_at_locked(next_sequence)
+                self._prepare_locked(next_sequence)
             return self._observation_locked()
+
+    def plant_events_after(self, after: int) -> list[dict[str, Any]]:
+        """Return source-owned public plant events after the supplied event sequence."""
+
+        if after < 0:
+            raise ControlRejected("after must be non-negative")
+        with self._lock:
+            return [
+                dict(self._plant_events[key])
+                for key in sorted(self._plant_events)
+                if key > after
+            ]
+
+    def fast_forward_to_next_concern(self) -> dict[str, Any]:
+        """Advance source simulation time to just before a future escaped-changeover concern."""
+
+        with self._lock:
+            if self._cycle < 0:
+                self._prepare_locked(0)
+            if not self._production_enabled or self._diagnostic_batches_remaining:
+                raise ControlRejected("fast-forward requires ordinary production progression")
+            from_sequence = self._sequence
+            target_sequence, target_kind = fast_forward_target(from_sequence)
+            if target_sequence > from_sequence:
+                self._record_events_through_locked(from_sequence + 1, target_sequence)
+                self._prepare_locked(target_sequence)
+            advanced = target_sequence - from_sequence
+            return self._receipt(
+                "fast_forward_to_next_concern",
+                "source_advanced_to_concern_precursor",
+                from_sequence=from_sequence,
+                target_sequence=target_sequence,
+                advanced_sequences=advanced,
+                advanced_simulated_seconds=advanced * SIM_SECONDS_PER_SEQUENCE,
+                target_kind=target_kind,
+            )
 
     def stop_for_diagnostic(self) -> dict[str, Any]:
         with self._lock:
@@ -209,7 +298,7 @@ class LabelerDemoState:
             self._production_enabled = True
             return self._receipt("resume_production", "production_resumed_in_simulator")
 
-    def _receipt(self, action: str, result: str) -> dict[str, Any]:
+    def _receipt(self, action: str, result: str, **extra: Any) -> dict[str, Any]:
         return {
             "schema_version": "linealert.simulator-control-result.v1",
             "classification": "simulator_control_only",
@@ -224,6 +313,7 @@ class LabelerDemoState:
             "boundary": (
                 "Simulator control changes synthetic state only; it is not equipment control."
             ),
+            **extra,
         }
 
 
@@ -246,9 +336,13 @@ def observable_for_sequence(
     if sequence < 0:
         raise ValueError("sequence must be non-negative")
 
-    phase = sequence % 160
+    phase = sequence % SCENARIO_LENGTH
     if guide_offset_mm is None:
-        guide_offset_mm = DISTURBED_GUIDE_OFFSET_MM if phase >= 40 else GUIDE_REFERENCE_MM
+        guide_offset_mm = (
+            DISTURBED_GUIDE_OFFSET_MM
+            if phase >= ROLL_CHANGE_PHASE
+            else GUIDE_REFERENCE_MM
+        )
     if run_state_code is None:
         if 100 <= phase < 110:
             run_state_code = 0
@@ -260,7 +354,7 @@ def observable_for_sequence(
         raise ValueError("run_state_code must be 0, 1, or 2")
 
     guide_outside = abs(guide_offset_mm - GUIDE_REFERENCE_MM) > GUIDE_REFERENCE_TOLERANCE_MM
-    roll_recent = 40 <= phase < 120
+    roll_recent = ROLL_CHANGE_PHASE <= phase < 120
 
     if run_state_code == 0:
         presentation = 21.0 if guide_outside else 9.4
@@ -301,7 +395,7 @@ def observable_for_sequence(
             roll_change_recent=roll_recent,
         )
 
-    if phase < 40:
+    if phase < ROLL_CHANGE_PHASE:
         return LabelerObservable(
             sequence=sequence,
             run_state_code=1,
@@ -316,8 +410,8 @@ def observable_for_sequence(
             roll_change_recent=False,
         )
 
-    if guide_outside and phase < 60:
-        progress = (phase - 40) / 19
+    if guide_outside and phase < CONCERN_PHASE:
+        progress = (phase - ROLL_CHANGE_PHASE) / (CONCERN_PHASE - ROLL_CHANGE_PHASE - 1)
         presentation = 9.0 + progress * 5.0
         aligned = 5 if phase < 52 else 4
         return LabelerObservable(
@@ -395,7 +489,8 @@ def control_handler_for(state: LabelerDemoState) -> type[BaseHTTPRequestHandler]
             return payload
 
         def do_GET(self) -> None:  # noqa: N802
-            if self.path == "/health":
+            request = urlparse(self.path)
+            if request.path == "/health":
                 self._send_json(
                     200,
                     {
@@ -404,6 +499,26 @@ def control_handler_for(state: LabelerDemoState) -> type[BaseHTTPRequestHandler]
                         "source_scope": CONTROL_SCOPE,
                         "asset_id": ASSET_ID,
                         "equipment_control": False,
+                        "plant_event_orchestration": True,
+                    },
+                )
+                return
+            if request.path == "/events":
+                try:
+                    raw_after = parse_qs(request.query).get("after", ["0"])[0]
+                    after = int(raw_after)
+                    events = state.plant_events_after(after)
+                except (TypeError, ValueError, ControlRejected) as exc:
+                    self._send_json(400, {"error": str(exc)})
+                    return
+                self._send_json(
+                    200,
+                    {
+                        "schema_version": "linealert.simulator-plant-events.v1",
+                        "source_scope": CONTROL_SCOPE,
+                        "asset_id": ASSET_ID,
+                        "sim_seconds_per_sequence": SIM_SECONDS_PER_SEQUENCE,
+                        "events": events,
                     },
                 )
                 return
@@ -422,6 +537,8 @@ def control_handler_for(state: LabelerDemoState) -> type[BaseHTTPRequestHandler]
                     result = state.run_diagnostic_batch()
                 elif self.path == "/control/resume-production":
                     result = state.resume_production()
+                elif self.path == "/control/fast-forward-next-concern":
+                    result = state.fast_forward_to_next_concern()
                 else:
                     self._send_json(404, {"error": "not_found"})
                     return
@@ -498,6 +615,7 @@ async def serve_emulator(
             "read_only_opcua": True,
             "simulator_control": f"http://{control_host}:{control_port}",
             "simulator_control_scope": CONTROL_SCOPE,
+            "plant_event_orchestration": True,
         }
     )
 
@@ -507,7 +625,7 @@ async def serve_emulator(
                 observation = state.next_observation()
                 for node_id, value in observation.opcua_nodes().items():
                     await variables[node_id].write_value(value)
-                if not loop and observation.sequence >= 159:
+                if not loop and observation.sequence >= SCENARIO_LENGTH - 1:
                     return
                 await asyncio.sleep(publish_interval_seconds)
     finally:

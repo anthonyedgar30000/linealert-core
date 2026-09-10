@@ -13,6 +13,8 @@ from linealert_core.labeler_demo_opcua_server import (
     observable_for_sequence,
 )
 
+ESCAPED_CONCERN_SEQUENCE = 2 * 160 + 70
+
 
 def test_labeler_emulator_contract_is_deterministic_and_observable_only():
     first = observable_for_sequence(67)
@@ -65,7 +67,7 @@ def test_labeler_emulator_episode_moves_through_observable_states():
 
 def test_stateful_guide_verification_must_precede_restore_and_changes_future_evidence():
     state = LabelerDemoState()
-    concern = state.observation(70)
+    concern = state.observation(ESCAPED_CONCERN_SEQUENCE)
     assert concern.presentation_interval_stddev_ms >= 20
     assert concern.camera_aligned_containers == 3
 
@@ -84,7 +86,7 @@ def test_stateful_guide_verification_must_precede_restore_and_changes_future_evi
     assert receipt["result"] == "restored_to_approved_reference"
 
     state.run_diagnostic_batch()
-    diagnostic = state.observation(71)
+    diagnostic = state.observation(ESCAPED_CONCERN_SEQUENCE + 1)
     assert diagnostic.run_state_code == 2
     assert diagnostic.presentation_interval_stddev_ms < 11
     assert diagnostic.camera_aligned_containers == diagnostic.camera_observed_containers == 5
@@ -93,11 +95,11 @@ def test_stateful_guide_verification_must_precede_restore_and_changes_future_evi
 
 def test_stateful_diagnostic_batch_remains_bad_without_restore():
     state = LabelerDemoState()
-    state.observation(70)
+    state.observation(ESCAPED_CONCERN_SEQUENCE)
     state.stop_for_diagnostic()
     state.run_diagnostic_batch()
 
-    diagnostic = state.observation(71)
+    diagnostic = state.observation(ESCAPED_CONCERN_SEQUENCE + 1)
     assert diagnostic.run_state_code == 2
     assert diagnostic.presentation_interval_stddev_ms >= 19
     assert diagnostic.camera_aligned_containers == 3
@@ -106,7 +108,7 @@ def test_stateful_diagnostic_batch_remains_bad_without_restore():
 
 def test_guide_inspection_requires_stopped_diagnostic_state():
     state = LabelerDemoState()
-    state.observation(70)
+    state.observation(ESCAPED_CONCERN_SEQUENCE)
 
     with pytest.raises(ControlRejected, match="stopped diagnostic state"):
         state.inspect_guide()
@@ -114,13 +116,13 @@ def test_guide_inspection_requires_stopped_diagnostic_state():
 
 def test_runtime_scenario_sequence_freezes_while_stopped_and_advances_for_diagnostic_run():
     state = LabelerDemoState()
-    state.observation(70)
+    state.observation(ESCAPED_CONCERN_SEQUENCE)
     state.stop_for_diagnostic()
 
     first_stopped = state.next_observation()
     second_stopped = state.next_observation()
 
-    assert first_stopped.sequence == second_stopped.sequence == 70
+    assert first_stopped.sequence == second_stopped.sequence == ESCAPED_CONCERN_SEQUENCE
     assert first_stopped.run_state_code == second_stopped.run_state_code == 0
     assert first_stopped.roll_change_recent is True
     assert second_stopped.roll_change_recent is True
@@ -128,20 +130,20 @@ def test_runtime_scenario_sequence_freezes_while_stopped_and_advances_for_diagno
     state.run_diagnostic_batch()
     diagnostic = state.next_observation()
 
-    assert diagnostic.sequence == 71
+    assert diagnostic.sequence == ESCAPED_CONCERN_SEQUENCE + 1
     assert diagnostic.run_state_code == 2
 
 
 def test_runtime_scenario_sequence_advances_again_after_resume():
     state = LabelerDemoState()
-    state.observation(70)
+    state.observation(ESCAPED_CONCERN_SEQUENCE)
     state.stop_for_diagnostic()
     state.next_observation()
     state.resume_production()
 
     resumed = state.next_observation()
 
-    assert resumed.sequence == 71
+    assert resumed.sequence == ESCAPED_CONCERN_SEQUENCE + 1
     assert resumed.run_state_code == 1
 
 
