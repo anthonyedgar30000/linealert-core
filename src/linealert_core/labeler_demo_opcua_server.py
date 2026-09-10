@@ -180,7 +180,10 @@ class LabelerDemoState:
             return self._observation_locked()
 
     def next_observation(self) -> LabelerObservable:
-        """Advance production/scenario progression while keeping explicit diagnostic stops frozen."""
+        """Advance production/scenario progression.
+
+        Explicit diagnostic stops remain frozen.
+        """
 
         with self._lock:
             if self._cycle < 0:
@@ -307,7 +310,9 @@ class LabelerDemoState:
             "sequence_at_action": self._sequence,
             "recorded_at": datetime.now(UTC).isoformat(),
             "equipment_effect": "none_physical_simulator_only",
-            "boundary": "Simulator control changes synthetic state only; it is not equipment control.",
+            "boundary": (
+                "Simulator control changes synthetic state only; it is not equipment control."
+            ),
             **extra,
         }
 
@@ -333,7 +338,11 @@ def observable_for_sequence(
 
     phase = sequence % SCENARIO_LENGTH
     if guide_offset_mm is None:
-        guide_offset_mm = DISTURBED_GUIDE_OFFSET_MM if phase >= ROLL_CHANGE_PHASE else GUIDE_REFERENCE_MM
+        guide_offset_mm = (
+            DISTURBED_GUIDE_OFFSET_MM
+            if phase >= ROLL_CHANGE_PHASE
+            else GUIDE_REFERENCE_MM
+        )
     if run_state_code is None:
         if 100 <= phase < 110:
             run_state_code = 0
