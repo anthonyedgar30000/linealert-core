@@ -186,7 +186,10 @@ def test_running_guide_workflow_uses_source_state_and_fresh_production_evidence(
     assert "Waiting for fresh 5-container production evidence" in script
     assert "startProductionVerification(false)" in script
     assert "Waiting for OPC UA stopped state" not in script
-    assert "Inspection remains blocked until qualified OPC UA reports run_state_code 0" not in script
+    assert (
+        "Inspection remains blocked until qualified OPC UA reports run_state_code 0"
+        not in script
+    )
     assert "if(mode==='production')" not in script
     assert "if(mode!=='diagnostic'||trialInProgress" not in script
 
