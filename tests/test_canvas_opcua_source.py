@@ -138,7 +138,8 @@ def test_guide_control_adapter_verifies_before_restore_and_uses_simulator_contro
         encoding="utf-8"
     )
 
-    assert "Verify guide / spacing against approved setup reference" in script
+    assert "Verify guide / spacing against marked reference" in script
+    assert "Inspect guide / spacing against marked reference" in script
     assert "fetch('/api/demo-control'" in script
     assert "stop_for_diagnostic" in script
     assert "inspect_guide" in script
@@ -147,8 +148,25 @@ def test_guide_control_adapter_verifies_before_restore_and_uses_simulator_contro
     assert "run_diagnostic_batch" in script
     assert "resume_production" in script
     assert "synthetic_human_observation" not in script  # classification comes from control result
+    assert "Observed: guide / spacing" in script
     assert "No guide correction indicated" in script
     assert "fresh OPC UA observations" in script
+
+
+def test_guide_inspection_action_names_physical_check_and_reports_observed_relation():
+    script = (ROOT / "docs" / "triage" / "guide-control-adapter.js").read_text(
+        encoding="utf-8"
+    )
+
+    assert "next.textContent=INSPECT_TITLE" in script
+    assert "Stop Labeler 2 for bounded diagnostic" in script
+    assert "function observedRelation(observation)" in script
+    assert "guide / spacing matches the marked reference" in script
+    assert (
+        "guide / spacing '+Math.abs(offset).toFixed(1)+' mm outside the marked reference"
+        in script
+    )
+    assert "Observed: '+relation" in script
 
 
 def test_guide_workflow_is_gated_by_qualified_opcua_run_state_not_browser_mode():

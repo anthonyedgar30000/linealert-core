@@ -1,7 +1,8 @@
 (function(){
   'use strict';
 
-  const VERIFY_TITLE='Verify guide / spacing against approved setup reference';
+  const VERIFY_TITLE='Verify guide / spacing against marked reference';
+  const INSPECT_TITLE='Inspect guide / spacing against marked reference';
   const RESTORE_TITLE='Restore guide / spacing to approved marked setup reference';
 
   let installed=false;
@@ -85,6 +86,17 @@
     }catch(_){}
   }
 
+  function observedRelation(observation){
+    const offset=Number(observation&&observation.observed_offset_mm);
+    if(observation&&observation.within_reference){
+      return 'guide / spacing matches the marked reference';
+    }
+    if(Number.isFinite(offset)){
+      return 'guide / spacing '+Math.abs(offset).toFixed(1)+' mm outside the marked reference';
+    }
+    return 'guide / spacing outside the marked reference';
+  }
+
   async function demoControl(action,extra){
     controlPending=true;
     controlError=null;
@@ -131,19 +143,15 @@
       const observation=await demoControl('inspect_guide');
       guideObservation=observation;
       guideStage=observation.within_reference?'within_reference':'restore_available';
-      const offset=Number(observation.observed_offset_mm);
-      const offsetText=Number.isFinite(offset)?Math.abs(offset).toFixed(1)+' mm':'an observed amount';
-      const relation=observation.within_reference
-        ?'matches the approved synthetic reference'
-        :'is '+offsetText+' outside the approved synthetic reference';
+      const relation=observedRelation(observation);
       appendHistory(
-        'Simulated operator observation · guide / spacing checked',
-        relation+'. Human observation is evidence with source identity; it is not OPC UA machine truth or causal proof.'
+        'Guide / spacing inspection',
+        'Observed: '+relation+'. Human observation is evidence with source identity; it is not OPC UA machine truth or causal proof.'
       );
       appendJournal(
         'human_observation',
         'Guide / spacing reference observation recorded',
-        relation+'. Classification: synthetic human observation.',
+        'Observed: '+relation+'. Classification: synthetic human observation.',
         'simulated-operator'
       );
     }catch(err){
@@ -264,9 +272,9 @@
     title.textContent=VERIFY_TITLE;
 
     if(runState===1){
-      why.textContent='Inspection first. Qualified OPC UA still reports production running, so the simulated guide observation is blocked until the source reports stopped.';
+      why.textContent='Inspection first. Qualified OPC UA still reports production running, so the guide / spacing check stays blocked until the source reports stopped.';
       next.disabled=false;
-      next.textContent='Stop synthetic machine for bounded diagnostic';
+      next.textContent='Stop Labeler 2 for bounded diagnostic';
       return;
     }
 
@@ -278,16 +286,16 @@
     }
 
     if(guideStage==='verify'){
-      why.textContent='Qualified OPC UA reports the synthetic Labeler stopped. Compare the visible guide / spacing relationship with the approved synthetic reference before considering any material change.';
+      why.textContent='Labeler 2 is stopped. Inspect the visible guide / spacing relationship against the marked reference before considering a material change.';
       next.disabled=false;
-      next.textContent='Record simulated guide / spacing observation';
+      next.textContent=INSPECT_TITLE;
       return;
     }
 
     if(guideStage==='restore_available'&&guideObservation){
       const offset=Math.abs(Number(guideObservation.observed_offset_mm));
-      title.textContent='Guide / spacing appears outside approved reference';
-      why.textContent='Simulated operator observation: '+offset.toFixed(1)+' mm outside reference. In this demo the operator is commissioned to restore this bounded setup reference. Observation ≠ diagnosis; recommendation ≠ universal authority.';
+      title.textContent='Guide / spacing outside marked reference';
+      why.textContent='Observed: guide / spacing '+offset.toFixed(1)+' mm outside the marked reference. Restore is the next commissioned demo action; the observation itself does not establish why the deviation occurred.';
       next.disabled=false;
       next.textContent=RESTORE_TITLE;
       return;
@@ -302,8 +310,8 @@
     }
 
     if(guideStage==='within_reference'){
-      title.textContent='Guide / spacing matches approved reference';
-      why.textContent='No guide correction is indicated from this observation. Matching the reference does not prove the guide path healthy; record the result and choose another commissioned check or escalate.';
+      title.textContent='Guide / spacing matches marked reference';
+      why.textContent='Observed: guide / spacing matches the marked reference. No guide correction is indicated from this observation; choose another commissioned check or escalate.';
       next.disabled=true;
       next.textContent='No guide correction indicated';
     }
