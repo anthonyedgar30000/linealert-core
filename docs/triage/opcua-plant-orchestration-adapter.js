@@ -40,6 +40,21 @@
     return clockAnchor+Number(plantSequence)*SIM_SECONDS_PER_SEQUENCE;
   }
 
+  function renderAssetSourceState(status){
+    if(!status||!status.active)return;
+    const runState=Number(status.runStateCode);
+    const modeTop=document.getElementById('modeTop');
+    if(modeTop){
+      if(runState===0)modeTop.textContent='LABELER 2 STOPPED · OPC UA CONNECTED';
+      else if(runState===2)modeTop.textContent='LABELER 2 DIAGNOSTIC RUN · OPC UA CONNECTED';
+      else if(runState===1)modeTop.textContent='LABELER 2 RUNNING · OPC UA CONNECTED';
+    }
+    const next=document.getElementById('nextBtn');
+    if(next&&next.textContent==='Stop synthetic machine for bounded diagnostic'){
+      next.textContent='Stop Labeler 2 for bounded diagnostic';
+    }
+  }
+
   function syncClockToSource(){
     const status=sourceStatus();
     if(!status||!status.active||!Number.isFinite(Number(status.sourceSequence)))return;
@@ -56,6 +71,8 @@
       if(desired>simAbs){
         simAbs=desired;
         try{clock();renderTicketHistory();}catch(_){}
+      }else if(simAbs-desired>SIM_SECONDS_PER_SEQUENCE){
+        clockAnchor=simAbs-sequence*SIM_SECONDS_PER_SEQUENCE;
       }
     }
     lastClockSequence=sequence;
@@ -66,6 +83,7 @@
       controlError=null;
       updateSpeedControl();
     }
+    renderAssetSourceState(status);
   }
 
   function normalizeEvent(event){
@@ -165,6 +183,7 @@
     if(!status||!status.everActivated)return false;
     priorUpdateSpeedControl();
     if(!status.active||status.suspended)return true;
+    renderAssetSourceState(status);
 
     if(controlPending||pendingTarget!==null){
       button.disabled=true;
@@ -189,7 +208,7 @@
       }else if(activeEpisode()){
         note.textContent='Active workflow · source fast-forward is paused until the episode is resolved.';
       }else if(runState===0){
-        note.textContent='Labeler 2 is stopped; source time continues only for scheduled changeover progression.';
+        note.textContent='Labeler 2 changeover or stop is in progress; source pacing is temporarily unavailable.';
       }else if(runState===2){
         note.textContent='Diagnostic run in progress; source fast-forward is unavailable.';
       }else{
