@@ -26,12 +26,16 @@ def test_public_routes_attach_shared_session_adapters():
     assert "../demo-session.js" in plant_wrapper
     assert "./trial-discipline-adapter.js" in plant_wrapper
     assert "./maintenance-response-adapter.js" in plant_wrapper
+    assert "./maintenance-observe-adapter.js" in plant_wrapper
     assert "./session-adapter.js" in plant_wrapper
     assert "./recovery-fast-forward-adapter.js" in plant_wrapper
     assert plant_wrapper.index("./trial-discipline-adapter.js") < plant_wrapper.index(
         "./maintenance-response-adapter.js"
     )
     assert plant_wrapper.index("./maintenance-response-adapter.js") < plant_wrapper.index(
+        "./maintenance-observe-adapter.js"
+    )
+    assert plant_wrapper.index("./maintenance-observe-adapter.js") < plant_wrapper.index(
         "./session-adapter.js"
     )
     assert plant_wrapper.index("./session-adapter.js") < plant_wrapper.index(
@@ -87,6 +91,21 @@ def test_diagnostic_mode_does_not_imply_maintenance_dispatch():
     assert "if(mode==='diagnostic')return 0" not in adapter
 
 
+def test_asset_maintenance_suspends_normal_linealert_interpretation():
+    adapter = read(DOCS / "triage" / "maintenance-observe-adapter.js")
+
+    assert "job.asset===TARGET_ASSET" in adapter
+    assert "if(maintenanceActive())return;" in adapter
+    assert "productionVerification=false" in adapter
+    assert "MAINTENANCE · OBSERVE ONLY" in adapter
+    assert "NORMAL INTERPRETATION PAUSED" in adapter
+    assert "normal production findings" in adapter
+    assert "Telemetry and event capture continue" in adapter
+    assert "normal production interpretation is suspended" in adapter
+    assert "LineAlertMaintenanceObserve" in adapter
+    assert "handledIncidentIds.clear" not in adapter
+
+
 def test_post_recovery_fast_forward_starts_from_clean_live_projection():
     adapter = read(DOCS / "triage" / "recovery-fast-forward-adapter.js")
 
@@ -135,6 +154,7 @@ def test_static_sync_preserves_linealert_boundaries():
         "Telemetry != diagnosis.",
         "Recommendation != authorization or equipment command.",
         "Diagnostic state != maintenance dispatch.",
+        "Maintenance activity != normal production context.",
         "Historical pattern != current root cause.",
         "Five-container response != safe production change.",
     ):
