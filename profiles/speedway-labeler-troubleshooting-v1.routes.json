@@ -1,7 +1,7 @@
 {
   "schema_version": "linealert.troubleshooting-route-profile.v1",
   "profile_id": "speedway-labeler-troubleshooting-v1",
-  "profile_version": 3,
+  "profile_version": 4,
   "guide_path": "/troubleshooting-guide.html",
   "allowed_finding_scope": "synthetic_demo",
   "demo_authority_assumption": {
