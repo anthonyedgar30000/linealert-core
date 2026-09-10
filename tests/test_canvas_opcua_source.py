@@ -81,8 +81,10 @@ def test_guide_workflow_is_gated_by_qualified_opcua_run_state_not_browser_mode()
     assert "if(runState===1)" in script
     assert "if(runState!==0)return;" in script
     assert "Waiting for OPC UA stopped state" in script
-    assert "mode==='production'" not in script
-    assert "mode!=='diagnostic'" not in script
+    assert "Inspection remains blocked until qualified OPC UA reports run_state_code 0" in script
+    assert "Production verification starts only after qualified OPC UA reports production running" in script
+    assert "if(mode==='production')" not in script
+    assert "if(mode!=='diagnostic'||trialInProgress" not in script
 
 
 def test_public_home_labels_browser_build_as_scenario_preview():
