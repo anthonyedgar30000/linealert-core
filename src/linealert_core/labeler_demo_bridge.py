@@ -1,4 +1,4 @@
-"""Bridge the read-only Labeler 2 OPC UA emulator into the local Plant Canvas."""
+"""Bridge Labeler 2 OPC UA evidence and bounded simulator-only demo controls to Plant Canvas."""
 
 from __future__ import annotations
 
@@ -10,15 +10,25 @@ import threading
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from http.server import ThreadingHTTPServer
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlparse
+from urllib.request import Request, urlopen
 
 from .labeler_demo_opcua_server import ASSET_ID, NAMESPACE_URI, NODE_IDS, PROFILE_ID
 from .opcua_adapter import classify_status
-from .opcua_bridge import JsonlRecorder, ObservationHistory, handler_for
+from .opcua_bridge import JsonlRecorder, ObservationHistory
 
 SOURCE_ID = "linealert-labeler2-opcua-local"
+ALLOWED_DEMO_CONTROLS = {
+    "stop_for_diagnostic": "/control/stop-for-diagnostic",
+    "inspect_guide": "/control/inspect-guide",
+    "restore_guide": "/control/restore-guide",
+    "run_diagnostic_batch": "/control/run-diagnostic-batch",
+    "resume_production": "/control/resume-production",
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -330,6 +340,126 @@ async def poll_labeler_opcua(
             await asyncio.sleep(1.0)
 
 
+def _control_target_url(base_url: str, action: str) -> str:
+    path = ALLOWED_DEMO_CONTROLS.get(action)
+    if path is None:
+        raise ValueError("unknown simulator control action")
+    parsed = urlparse(base_url)
+    if parsed.scheme != "http" or parsed.hostname not in {"127.0.0.1", "localhost", "::1"}:
+        raise ValueError("simulator control endpoint must be loopback HTTP")
+    return base_url.rstrip("/") + path
+
+
+def forward_demo_control(
+    base_url: str,
+    action: str,
+    payload: dict[str, Any] | None = None,
+) -> tuple[int, dict[str, Any]]:
+    """Forward one allow-listed simulator-only control without touching OPC UA."""
+
+    target = _control_target_url(base_url, action)
+    body = json.dumps(payload or {}, separators=(",", ":")).encode()
+    request = Request(
+        target,
+        data=body,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urlopen(request, timeout=2.0) as response:  # noqa: S310 - validated loopback URL
+            data = json.loads(response.read().decode())
+            return int(response.status), data
+    except HTTPError as exc:
+        try:
+            data = json.loads(exc.read().decode())
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            data = {"accepted": False, "reason": "simulator control rejected"}
+        return int(exc.code), data
+    except (URLError, TimeoutError, OSError) as exc:
+        return 502, {
+            "schema_version": "linealert.simulator-control-result.v1",
+            "accepted": False,
+            "source_scope": "simulator_only",
+            "asset_id": ASSET_ID,
+            "reason": "simulator_control_unavailable",
+            "error": type(exc).__name__,
+            "equipment_effect": "none",
+        }
+
+
+def labeler_handler_for(
+    docs: Path,
+    snapshot: LabelerSnapshot,
+    history: ObservationHistory,
+    *,
+    control_base_url: str,
+) -> type[SimpleHTTPRequestHandler]:
+    class Handler(SimpleHTTPRequestHandler):
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            super().__init__(*args, directory=str(docs), **kwargs)
+
+        def _send_json(self, status: int, payload: dict[str, Any]) -> None:
+            body = json.dumps(payload, separators=(",", ":")).encode()
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def _json_body(self) -> dict[str, Any]:
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+            except ValueError:
+                length = 0
+            if length < 0 or length > 8192:
+                raise ValueError("invalid request length")
+            if length == 0:
+                return {}
+            payload = json.loads(self.rfile.read(length))
+            if not isinstance(payload, dict):
+                raise ValueError("request body must be a JSON object")
+            return payload
+
+        def do_GET(self) -> None:  # noqa: N802
+            request = urlparse(self.path)
+            if request.path == "/api/telemetry":
+                self._send_json(200, snapshot.get())
+                return
+            if request.path == "/api/history":
+                self._send_json(200, history.get(limit=240))
+                return
+            return super().do_GET()
+
+        def do_POST(self) -> None:  # noqa: N802
+            request = urlparse(self.path)
+            if request.path != "/api/demo-control":
+                self._send_json(404, {"accepted": False, "reason": "not_found"})
+                return
+            try:
+                body = self._json_body()
+                action = body.pop("action", None)
+                if not isinstance(action, str):
+                    raise ValueError("action is required")
+                status, result = forward_demo_control(control_base_url, action, body)
+            except (ValueError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+                self._send_json(
+                    400,
+                    {
+                        "schema_version": "linealert.simulator-control-result.v1",
+                        "accepted": False,
+                        "source_scope": "simulator_only",
+                        "asset_id": ASSET_ID,
+                        "reason": str(exc),
+                        "equipment_effect": "none",
+                    },
+                )
+                return
+            self._send_json(status, result)
+
+    return Handler
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -341,11 +471,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--poll-seconds", type=float, default=0.5)
     parser.add_argument("--capture-jsonl", type=Path)
     parser.add_argument("--history-size", type=int, default=7200)
+    parser.add_argument("--sim-control-url", default="http://127.0.0.1:4842")
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    _control_target_url(args.sim_control_url, "inspect_guide")
     docs = Path(__file__).resolve().parents[2] / "docs"
     snapshot = LabelerSnapshot()
     history = ObservationHistory(maxlen=args.history_size, persistence="memory_only")
@@ -367,11 +499,17 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     server = ThreadingHTTPServer(
         (args.host, args.port),
-        handler_for(docs, snapshot, history),
+        labeler_handler_for(
+            docs,
+            snapshot,
+            history,
+            control_base_url=args.sim_control_url,
+        ),
     )
     print(f"LineAlert Labeler Canvas: http://{args.host}:{args.port}/triage/")
     print(f"Qualified telemetry: http://{args.host}:{args.port}/api/telemetry")
-    print("Source mode: simulator_only · read_only · no equipment control")
+    print(f"Simulator-only controls: {args.sim_control_url} via /api/demo-control")
+    print("OPC UA source: read_only · simulator control: localhost_only · no equipment control")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

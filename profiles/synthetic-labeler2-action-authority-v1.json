@@ -25,6 +25,15 @@
       "verification_requirement": "if an out-of-reference condition is observed, rerank before any correction",
       "rollback": "not_applicable_verification_only"
     },
+    "restore-guide-spacing-to-reference": {
+      "eligible_roles": ["operator", "maintenance"],
+      "authorization": "standing_operator_authority",
+      "change_class": "bounded_material_change",
+      "operator_scope": "Only after a current out-of-reference observation, restore guide / spacing to the positively identified approved marked reference. Do not guess a reference or stack another material change before fresh evidence.",
+      "machine_state_requirement": "approved stopped diagnostic state",
+      "verification_requirement": "fresh bounded machine evidence required after restoration before another material change or production conclusion",
+      "rollback": "stop and escalate if the approved reference cannot be positively identified or the bounded restoration cannot be completed as commissioned"
+    },
     "repeat-like-for-like": {
       "eligible_roles": ["operator", "shift-supervisor"],
       "authorization": "shift_supervisor_run_release_required",
@@ -57,6 +66,7 @@
     "recommendation != authorized_action",
     "role_eligibility != current_authorization",
     "standing_authority != unrestricted_discretion",
+    "verification_only != authorization_to_adjust",
     "operator_authorized != universally_operator_authorized",
     "successful_test != safe_production_change"
   ],

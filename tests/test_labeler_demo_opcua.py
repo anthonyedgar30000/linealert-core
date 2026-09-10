@@ -4,8 +4,12 @@ import pytest
 
 from linealert_core.labeler_demo_opcua_server import (
     ASSET_ID,
+    DISTURBED_GUIDE_OFFSET_MM,
+    GUIDE_REFERENCE_TOLERANCE_MM,
     NODE_IDS,
     PROFILE_ID,
+    ControlRejected,
+    LabelerDemoState,
     observable_for_sequence,
 )
 
@@ -18,9 +22,10 @@ def test_labeler_emulator_contract_is_deterministic_and_observable_only():
     assert ASSET_ID == "Labeler 2"
     assert PROFILE_ID == "linealert-labeler2-observable-v1"
     assert set(first.opcua_nodes()) == set(NODE_IDS.values())
+    exported = " ".join(first.opcua_nodes()).lower()
     assert all(
-        forbidden not in " ".join(first.opcua_nodes()).lower()
-        for forbidden in ("root_cause", "fault_truth", "hidden_mechanism")
+        forbidden not in exported
+        for forbidden in ("root_cause", "fault_truth", "hidden_mechanism", "guideoffset")
     )
 
 
@@ -30,7 +35,7 @@ def test_labeler_emulator_episode_moves_through_observable_states():
     concern = observable_for_sequence(70)
     stopped = observable_for_sequence(104)
     diagnostic = observable_for_sequence(114)
-    recovered = observable_for_sequence(135)
+    late_production = observable_for_sequence(135)
 
     assert baseline.run_state_code == 1
     assert baseline.presentation_interval_stddev_ms < 10
@@ -49,13 +54,62 @@ def test_labeler_emulator_episode_moves_through_observable_states():
 
     assert diagnostic.run_state_code == 2
     assert diagnostic.camera_observed_containers == 5
-    assert diagnostic.camera_aligned_containers == 5
-    assert diagnostic.presentation_interval_stddev_ms < 11
+    assert diagnostic.camera_aligned_containers == 3
+    assert diagnostic.presentation_interval_stddev_ms >= 19
 
-    assert recovered.run_state_code == 1
-    assert recovered.roll_change_recent is False
-    assert recovered.camera_aligned_containers == recovered.camera_observed_containers
-    assert recovered.accepted_containers == recovered.camera_observed_containers
+    assert late_production.run_state_code == 1
+    assert late_production.roll_change_recent is False
+    assert late_production.camera_aligned_containers == 3
+    assert late_production.reject_candidates == 2
+
+
+def test_stateful_guide_verification_must_precede_restore_and_changes_future_evidence():
+    state = LabelerDemoState()
+    concern = state.observation(70)
+    assert concern.presentation_interval_stddev_ms >= 20
+    assert concern.camera_aligned_containers == 3
+
+    state.stop_for_diagnostic()
+    with pytest.raises(ControlRejected, match="latest matching guide observation"):
+        state.restore_guide("missing")
+
+    observation = state.inspect_guide()
+    assert observation["classification"] == "synthetic_human_observation"
+    assert observation["within_reference"] is False
+    assert observation["observed_offset_mm"] == pytest.approx(DISTURBED_GUIDE_OFFSET_MM)
+    assert observation["reference_tolerance_mm"] == GUIDE_REFERENCE_TOLERANCE_MM
+
+    receipt = state.restore_guide(observation["observation_id"])
+    assert receipt["classification"] == "simulator_control_only"
+    assert receipt["result"] == "restored_to_approved_reference"
+
+    state.run_diagnostic_batch()
+    diagnostic = state.observation(71)
+    assert diagnostic.run_state_code == 2
+    assert diagnostic.presentation_interval_stddev_ms < 11
+    assert diagnostic.camera_aligned_containers == diagnostic.camera_observed_containers == 5
+    assert diagnostic.accepted_containers == diagnostic.camera_observed_containers
+
+
+def test_stateful_diagnostic_batch_remains_bad_without_restore():
+    state = LabelerDemoState()
+    state.observation(70)
+    state.stop_for_diagnostic()
+    state.run_diagnostic_batch()
+
+    diagnostic = state.observation(71)
+    assert diagnostic.run_state_code == 2
+    assert diagnostic.presentation_interval_stddev_ms >= 19
+    assert diagnostic.camera_aligned_containers == 3
+    assert diagnostic.reject_candidates == 2
+
+
+def test_guide_inspection_requires_stopped_diagnostic_state():
+    state = LabelerDemoState()
+    state.observation(70)
+
+    with pytest.raises(ControlRejected, match="stopped diagnostic state"):
+        state.inspect_guide()
 
 
 def test_labeler_emulator_outputs_finite_numeric_evidence():

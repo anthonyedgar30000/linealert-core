@@ -1,11 +1,15 @@
 from datetime import UTC, datetime
 from types import SimpleNamespace
 
+import pytest
+
 from linealert_core.labeler_demo_bridge import (
+    ALLOWED_DEMO_CONTROLS,
     LABELER_NODE_MAPPINGS,
     PROFILE_ID,
     SOURCE_ID,
     LabelerSnapshot,
+    _control_target_url,
     _qualified_signal,
 )
 
@@ -43,6 +47,7 @@ def test_labeler_bridge_uses_explicit_read_only_allowlist():
         "accepted_containers",
         "roll_change_recent",
     }
+    assert all("GuideOffset" not in node_id for node_id in node_ids)
 
 
 def test_labeler_bridge_qualifies_declared_types_and_preserves_timestamp():
@@ -119,3 +124,20 @@ def test_labeler_bridge_rejects_wrong_declared_value_type():
     assert result["quality"] == "bad"
     assert result["value"] is None
     assert result["reason_code"] == "EVIDENCE.OPCUA_VALUE_TYPE_MISMATCH"
+
+
+def test_demo_control_proxy_is_explicit_and_loopback_only():
+    assert set(ALLOWED_DEMO_CONTROLS) == {
+        "stop_for_diagnostic",
+        "inspect_guide",
+        "restore_guide",
+        "run_diagnostic_batch",
+        "resume_production",
+    }
+    assert _control_target_url("http://127.0.0.1:4842", "inspect_guide") == (
+        "http://127.0.0.1:4842/control/inspect-guide"
+    )
+    with pytest.raises(ValueError, match="unknown simulator control action"):
+        _control_target_url("http://127.0.0.1:4842", "set_anything")
+    with pytest.raises(ValueError, match="loopback HTTP"):
+        _control_target_url("https://example.com", "inspect_guide")
