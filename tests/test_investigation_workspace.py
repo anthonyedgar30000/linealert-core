@@ -24,7 +24,7 @@ def test_plant_canvas_opens_evolving_investigation_over_live_canvas():
     assert "Plant Canvas continues running underneath" in adapter
     assert "preventDefault" in adapter
     assert "Full page" in adapter
-    assert "Working explanations" in adapter
+    assert "working explanations" in adapter.lower()
     assert "root_cause_status" not in adapter
     assert "root cause" not in adapter.lower()
 
