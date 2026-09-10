@@ -8,10 +8,11 @@ def test_canvas_loads_opcua_orchestration_after_shared_journal_and_source_adapte
 
     journal = index.index("../event-journal.js")
     source_adapter = index.index("./opcua-source-adapter.js")
+    render_ownership = index.index("./opcua-render-ownership-adapter.js")
     orchestration = index.index("./opcua-plant-orchestration-adapter.js")
     guide_adapter = index.index("./guide-control-adapter.js")
 
-    assert journal < source_adapter < orchestration < guide_adapter
+    assert journal < source_adapter < render_ownership < orchestration < guide_adapter
 
 
 def test_canvas_opcua_adapter_requires_qualified_read_only_labeler_source():
@@ -53,6 +54,23 @@ def test_canvas_distinguishes_connection_from_evidence_admission_and_bridge_stat
     assert "admitted:availabilityState==='qualified'" in script
 
 
+def test_opcua_render_ownership_reapplies_source_machine_labels_after_baseline_renderer():
+    script = (
+        ROOT / "docs" / "triage" / "opcua-render-ownership-adapter.js"
+    ).read_text(encoding="utf-8")
+
+    assert "const browserUpdateModeLabels=updateModeLabels" in script
+    assert "const result=browserUpdateModeLabels()" in script
+    assert "if(!status||!status.everActivated)return result" in script
+    assert "if(status.availabilityState==='qualified')applyQualifiedMachineLabels(status)" in script
+    assert "Context · no mapped OPC UA signal" in script
+    assert "Source reports production" in script
+    assert "LABELER 2 RUNNING · OPC UA CONNECTED" in script
+    assert "EVIDENCE UNQUALIFIED · INTERPRETATION PAUSED" in script
+    assert "SOURCE DISCONNECTED · FAIL CLOSED" in script
+    assert "BRIDGE UNAVAILABLE · FAIL CLOSED" in script
+
+
 def test_canvas_opcua_trial_waits_for_external_source_evidence():
     script = (ROOT / "docs" / "triage" / "opcua-source-adapter.js").read_text(encoding="utf-8")
 
@@ -91,6 +109,14 @@ def test_source_event_context_can_replace_browser_generated_roll_change_context(
     assert "latestRollChangeBefore" in script
     assert "sourceOwnedContext(inc)||model.precedingContext(inc)" in script
     assert "preceded by change ≠ caused by change" in script
+
+
+def test_event_context_does_not_overwrite_recovered_headline():
+    script = (ROOT / "docs" / "triage" / "event-context-adapter.js").read_text(encoding="utf-8")
+
+    assert "function activeGuideIncident()" in script
+    assert "&&incident===true" in script
+    assert "if(activeGuideIncident())" in script
 
 
 def test_event_journal_can_preserve_source_clock_quality():

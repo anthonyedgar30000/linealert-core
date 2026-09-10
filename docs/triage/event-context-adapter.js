@@ -3,6 +3,16 @@
   const model=window.LineAlertPlantEventModel;
   if(!model)return;
 
+  function activeGuideIncident(){
+    try{
+      return typeof currentIncident!=='undefined'
+        &&currentIncident
+        &&currentIncident.kind==='guide'
+        &&typeof incident!=='undefined'
+        &&incident===true;
+    }catch(_){return false;}
+  }
+
   function normalizeIncidentVocabulary(){
     try{
       if(typeof incidentTypes!=='undefined'&&incidentTypes.guide){
@@ -19,7 +29,7 @@
       }
       const headline=document.getElementById('assetHeadline');
       const summary=document.getElementById('assetSummary');
-      if(typeof currentIncident!=='undefined'&&currentIncident&&currentIncident.kind==='guide'){
+      if(activeGuideIncident()){
         if(headline)headline.textContent=currentIncident.title;
         if(summary)summary.textContent=currentIncident.summary;
       }
