@@ -20,9 +20,25 @@ The v1 signature becomes distinguishable only when all configured conditions are
 
 That signature event is supporting evidence. It is not a diagnosis, proof that the roll change caused the later concern, or proof of physical state.
 
+## Primary product use: investigation weighting
+
+The physics signature is primarily a behind-the-scenes evidence layer, not a prime operator dashboard. The operator-facing view should not lead with RPM, vibration, tension and current calculations merely because LineAlert used them internally.
+
+For the roll-change demo, a deterministic ordered sequence can promote the recorded roll change to a **STRONG investigation anchor**:
+
+1. a label-roll change is recorded;
+2. production restarts;
+3. the coupled synthetic signal signature becomes distinguishable;
+4. presentation variability deviates later;
+5. the LineAlert concern threshold crosses.
+
+When that sequence exists, LineAlert weights the recent changeover as the best place to begin investigation. This is investigation priority, not causal probability. The raw calculated values remain available under analyst/evidence drill-down and in the Event Log.
+
+The operator-facing next move is deliberately mundane: **check roll loading and the web path against the approved changeover reference.** The demo prompts inspection of whether the roll is seated/centered, whether the web follows the approved thread path, whether guide/spacing matches the marked setup reference, and whether the web tracks without obvious drag or sideways pull. These are illustrative generic demo prompts only; a real deployment must replace them with client/OEM instructions and commissioned visual references. Observe first; correct only a confirmed mismatch under an authorized procedure.
+
 ## Demo chronology
 
-For a calendar-seeded alignment incident, the Event Log can now show a sequence such as:
+For a calendar-seeded alignment incident, the Event Log can show a sequence such as:
 
 - roll-change record completed
 - production resumed
@@ -36,4 +52,4 @@ The exact synthetic values and elapsed times vary deterministically by incident 
 
 A real deployment would replace or calibrate demo coefficients and thresholds from available OEM/equipment documentation, actual geometry and drive information, sensor identity and calibration, operating mode/SKU/speed, known-good runs, historical episodes, controlled tests where authorized, and qualified expert review. Only commissioned relationships should become authoritative operating evidence.
 
-Canonical boundaries remain in force: model match != proof; historical pattern != current root cause; sensor value != verified physical state; recommendation != authorized action; successful test != safe production change.
+Canonical boundaries remain in force: model match != proof; investigation priority != causal probability; historical pattern != current root cause; sensor value != verified physical state; recommendation != authorized action; successful test != safe production change.
