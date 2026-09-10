@@ -14,7 +14,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 from urllib.request import Request, urlopen
 
 from .labeler_demo_opcua_server import ASSET_ID, NAMESPACE_URI, NODE_IDS, PROFILE_ID
@@ -28,6 +28,7 @@ ALLOWED_DEMO_CONTROLS = {
     "restore_guide": "/control/restore-guide",
     "run_diagnostic_batch": "/control/run-diagnostic-batch",
     "resume_production": "/control/resume-production",
+    "fast_forward_to_next_concern": "/control/fast-forward-next-concern",
 }
 
 
@@ -340,14 +341,18 @@ async def poll_labeler_opcua(
             await asyncio.sleep(1.0)
 
 
-def _control_target_url(base_url: str, action: str) -> str:
-    path = ALLOWED_DEMO_CONTROLS.get(action)
-    if path is None:
-        raise ValueError("unknown simulator control action")
+def _simulator_target_url(base_url: str, path: str) -> str:
     parsed = urlparse(base_url)
     if parsed.scheme != "http" or parsed.hostname not in {"127.0.0.1", "localhost", "::1"}:
         raise ValueError("simulator control endpoint must be loopback HTTP")
     return base_url.rstrip("/") + path
+
+
+def _control_target_url(base_url: str, action: str) -> str:
+    path = ALLOWED_DEMO_CONTROLS.get(action)
+    if path is None:
+        raise ValueError("unknown simulator control action")
+    return _simulator_target_url(base_url, path)
 
 
 def forward_demo_control(
@@ -384,6 +389,34 @@ def forward_demo_control(
             "reason": "simulator_control_unavailable",
             "error": type(exc).__name__,
             "equipment_effect": "none",
+        }
+
+
+def fetch_demo_plant_events(base_url: str, after: int) -> tuple[int, dict[str, Any]]:
+    """Fetch source-owned public simulator events over the validated loopback channel."""
+
+    if after < 0:
+        raise ValueError("after must be non-negative")
+    target = _simulator_target_url(base_url, f"/events?after={after}")
+    request = Request(target, method="GET")
+    try:
+        with urlopen(request, timeout=2.0) as response:  # noqa: S310 - validated loopback URL
+            data = json.loads(response.read().decode())
+            return int(response.status), data
+    except HTTPError as exc:
+        try:
+            data = json.loads(exc.read().decode())
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            data = {"events": [], "error": "simulator event feed rejected"}
+        return int(exc.code), data
+    except (URLError, TimeoutError, OSError) as exc:
+        return 502, {
+            "schema_version": "linealert.simulator-plant-events.v1",
+            "source_scope": "simulator_only",
+            "asset_id": ASSET_ID,
+            "events": [],
+            "error": "simulator_event_feed_unavailable",
+            "error_type": type(exc).__name__,
         }
 
 
@@ -428,6 +461,16 @@ def labeler_handler_for(
                 return
             if request.path == "/api/history":
                 self._send_json(200, history.get(limit=240))
+                return
+            if request.path == "/api/plant-events":
+                try:
+                    raw_after = parse_qs(request.query).get("after", ["0"])[0]
+                    after = int(raw_after)
+                    status, payload = fetch_demo_plant_events(control_base_url, after)
+                except (TypeError, ValueError) as exc:
+                    self._send_json(400, {"events": [], "error": str(exc)})
+                    return
+                self._send_json(status, payload)
                 return
             return super().do_GET()
 
@@ -508,7 +551,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     print(f"LineAlert Labeler Canvas: http://{args.host}:{args.port}/triage/")
     print(f"Qualified telemetry: http://{args.host}:{args.port}/api/telemetry")
-    print(f"Simulator-only controls: {args.sim_control_url} via /api/demo-control")
+    print(f"Plant events: http://{args.host}:{args.port}/api/plant-events")
+    print(f"Simulator controls: {args.sim_control_url} via /api/demo-control")
     print("OPC UA source: read_only · simulator control: localhost_only · no equipment control")
     try:
         server.serve_forever()
