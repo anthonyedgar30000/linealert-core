@@ -40,6 +40,14 @@ A promising material change remains experimental until a no-change repeat reprod
 
 The demo never performs an automatic equipment restore. A restore recommendation is a recommendation, not an equipment command or authorization.
 
+## Diagnostic versus maintenance response
+
+The preserved PR #102 baseline used `mode === 'diagnostic'` as a shortcut for both a diagnostic workflow state and a zero-minute maintenance response. Its diagnostic schedule branch then rendered **MAINTENANCE · On response** even when the synthetic crew view showed no active work and no maintenance dispatch had been recorded.
+
+`docs/triage/maintenance-response-adapter.js` separates those concepts for the public demo. Diagnostic mode no longer forces the maintenance availability estimate to zero and no longer presents maintenance as being on response. Until the demo records an explicit dispatch, the diagnostic view shows **MAINTENANCE SUPPORT · Not dispatched** while crew-derived availability remains visible in the operations context.
+
+This is a presentation/state-model correction only. It does not assert that maintenance is unnecessary, authorize an operator action, or infer a physical machine state. A future dispatch workflow should record response ownership explicitly rather than infer it from diagnostic mode.
+
 ## Post-recovery fast-forward handoff
 
 When the configured 50-container production verification completes, the incident is closed and recovery remains visible as the just-completed episode. Any stale fast-forward target/event from the earlier incident is cleared at recovery completion.
@@ -64,6 +72,7 @@ The public route wrappers load those preserved pages and attach the shared-sessi
 - Simulated elapsed time != verified machine chronology.
 - Telemetry != diagnosis.
 - Recommendation != authorization or equipment command.
+- Diagnostic state != maintenance dispatch.
 - Restore recommendation != automatic equipment restore.
 - Historical pattern != current root cause.
 - Verified intermediate state != root-cause proof.
