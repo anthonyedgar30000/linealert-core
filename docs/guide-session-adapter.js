@@ -44,6 +44,7 @@
       return 'Continue production verification · '+(v.streak||0)+' / '+(v.target||50)+' consecutive healthy';
     }
     if(s.recoveryObserved)return 'Normal monitoring resumed';
+    if(s.nextStage==='production_verification')return 'Resume production from HMI · verify recovery';
     if(s.recommendationTitle)return s.recommendationTitle;
     return 'No action requested';
   }
