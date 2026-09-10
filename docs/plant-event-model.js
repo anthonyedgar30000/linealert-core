@@ -4,6 +4,7 @@
   const CALENDAR_SEED='linealert-calendar-v1';
   const OPS_SEED='linealert-plant-ops-v1';
   const MAX_EVENTS=300;
+  const physics=window.LineAlertRollPhysics||null;
 
   const incidentTypes={
     guide:{title:'Alignment variability emerging',summary:'Presentation variability crossed the synthetic concern threshold.',initialVar:21.6,quality:96.4,camera:'3 / 5 aligned',recommendation:'guide'},
@@ -67,21 +68,58 @@
     }
     return events;
   }
+  function signatureFields(ep,comparison){
+    if(!ep||!comparison)return{};
+    const p=comparison.problem,h=comparison.healthy;
+    return{
+      relatedIncidentId:ep.incidentId,
+      model:'physics_informed_roll_signature_v1',
+      classification:'synthetic_demo_only',
+      severityFactor:ep.severity,
+      rpm:p.rpm,
+      rotationalFrequencyHz:p.rotationalFrequencyHz,
+      angularVelocityRadS:p.angularVelocityRadS,
+      rollRadiusM:p.rollRadiusM,
+      imbalanceForceN:p.imbalanceForceN,
+      vibration1xMmS:p.vibration1xMmS,
+      healthyVibration1xMmS:h.vibration1xMmS,
+      vibrationRatioVsHealthy:comparison.vibrationRatio,
+      webTensionPeakToPeakN:p.tensionPeakToPeakN,
+      healthyWebTensionPeakToPeakN:h.tensionPeakToPeakN,
+      motorCurrentPeakToPeakA:p.currentPeakToPeakA,
+      healthyMotorCurrentPeakToPeakA:h.currentPeakToPeakA,
+      elapsedSinceRestartSec:p.elapsedSec,
+      formulas:ep.formulas,
+      coefficientBoundary:ep.coefficientBoundary,
+      boundary:'model_match_is_supporting_evidence_not_diagnosis_or_root_cause_proof'
+    };
+  }
   function incidentEventsForShift(shift){
     const inc=shiftEvent(shift);if(!inc)return[];
     const events=[];
+    let physicsEpisode=null;
     if(inc.kind==='guide'){
       const lead=(9+(hash32(inc.id+'|roll-lead')%10))*60;
       const rollTime=Math.max(shift.start+8*60,inc.time-lead);
       const pauseTime=Math.max(shift.start+5*60,rollTime-2*60);
       const restartTime=Math.min(inc.time-3*60,rollTime+3*60);
+      const presentationTime=Math.max(shift.start,inc.time-120);
       const change=makeEvent(rollTime,'synthetic-operator/changeover','CHANGEOVER','Information','Labeler 2','Label roll replaced and changeover record completed',{operator:'Shift operator',changeType:'label_roll_replacement',setupReference:'Approved marked setup reference',relatedIncidentId:inc.id,boundary:'preceded_by_change_does_not_establish_cause'});
       events.push(makeEvent(pauseTime,'synthetic-hmi/packaging-line-1','PRODUCTION','Information','Packaging Line 1','Production paused for label roll change',{runState:'stopped_changeover',relatedIncidentId:inc.id}));
       events.push(change);
       events.push(makeEvent(restartTime,'synthetic-hmi/packaging-line-1','PRODUCTION','Information','Packaging Line 1','Production resumed after recorded roll change',{runState:'production',relatedIncidentId:inc.id}));
+      if(physics){
+        physicsEpisode=physics.episode(inc.id,restartTime,presentationTime,inc.time);
+        events.push(makeEvent(physicsEpisode.detectionTime,'synthetic-telemetry/labeler2','SIGNATURE','Notice','Labeler 2','Coupled rotational/tension signature moved outside synthetic healthy settling reference',signatureFields(physicsEpisode,physicsEpisode.detectionComparison)));
+      }
     }
-    events.push(makeEvent(Math.max(shift.start,inc.time-120),'synthetic-telemetry/labeler2','TELEMETRY','Notice','Labeler 2','Presentation variability moved outside matched healthy behavior',{relatedIncidentId:inc.id,signal:'presentation_interval_stddev_ms',valueMs:inc.initialVar}));
-    events.push(makeEvent(inc.time,'linealert/deterministic','CONCERN','Attention','Labeler 2',inc.title+' · concern threshold crossed',{incidentId:inc.id,incidentKind:inc.kind,boundary:'telemetry_threshold_crossing_is_evidence_not_diagnosis'}));
+    const presentationTime=Math.max(shift.start,inc.time-120);
+    const presentationFields={relatedIncidentId:inc.id,signal:'presentation_interval_stddev_ms',valueMs:inc.initialVar};
+    if(physicsEpisode&&physicsEpisode.presentationComparison)Object.assign(presentationFields,{physicsInformedSignature:signatureFields(physicsEpisode,physicsEpisode.presentationComparison)});
+    events.push(makeEvent(presentationTime,'synthetic-telemetry/labeler2','TELEMETRY','Notice','Labeler 2','Presentation variability moved outside matched healthy behavior',presentationFields));
+    const concernFields={incidentId:inc.id,incidentKind:inc.kind,boundary:'telemetry_threshold_crossing_is_evidence_not_diagnosis'};
+    if(physicsEpisode)Object.assign(concernFields,{physicsSignatureDetectedSecondsBeforeConcern:Math.max(0,Math.round(inc.time-physicsEpisode.detectionTime)),physicsModel:'physics_informed_roll_signature_v1'});
+    events.push(makeEvent(inc.time,'linealert/deterministic','CONCERN','Attention','Labeler 2',inc.title+' · concern threshold crossed',concernFields));
     return events;
   }
   function precedingContext(incident){
