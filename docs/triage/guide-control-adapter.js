@@ -58,6 +58,7 @@
     if(runState===1&&pendingResumeVerification!==null){
       const skippedRecommended=pendingResumeVerification;
       pendingResumeVerification=null;
+      guideStage='idle';
       startProductionVerification(skippedRecommended);
     }
     return runState;
@@ -238,6 +239,20 @@
     if(controlError){
       why.textContent='Simulator-only control did not complete: '+controlError+'. No equipment action was taken.';
     }
+    if(guideStage==='awaiting_stop'){
+      title.textContent=VERIFY_TITLE;
+      why.textContent='Stop request acknowledged. Inspection remains blocked until qualified OPC UA reports run_state_code 0.';
+      next.disabled=true;
+      next.textContent='Waiting for OPC UA stopped state';
+      return;
+    }
+    if(guideStage==='awaiting_production'){
+      title.textContent='Production resume requested';
+      why.textContent='Waiting for qualified OPC UA to report production before verification begins.';
+      next.disabled=true;
+      next.textContent='Waiting for OPC UA production state';
+      return;
+    }
     if(trialInProgress){
       next.disabled=true;
       next.textContent='Trial armed · execute the emulator diagnostic batch below';
@@ -259,13 +274,6 @@
       why.textContent='Qualified OPC UA reports a diagnostic run in progress. Wait for the source to return to the stopped diagnostic state before another workflow action.';
       next.disabled=true;
       next.textContent='Diagnostic run active · waiting for source state';
-      return;
-    }
-
-    if(guideStage==='awaiting_stop'){
-      why.textContent='Stop request acknowledged. Waiting for qualified OPC UA to report run_state_code 0 before inspection is enabled.';
-      next.disabled=true;
-      next.textContent='Waiting for OPC UA stopped state';
       return;
     }
 
@@ -298,14 +306,6 @@
       why.textContent='No guide correction is indicated from this observation. Matching the reference does not prove the guide path healthy; record the result and choose another commissioned check or escalate.';
       next.disabled=true;
       next.textContent='No guide correction indicated';
-      return;
-    }
-
-    if(guideStage==='awaiting_production'){
-      title.textContent='Production resume requested';
-      why.textContent='Waiting for qualified OPC UA to report production before verification begins.';
-      next.disabled=true;
-      next.textContent='Waiting for OPC UA production state';
     }
   }
 
