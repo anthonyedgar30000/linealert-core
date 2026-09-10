@@ -1,17 +1,29 @@
-"""Expose deterministic Labeler 2 demo observations through read-only OPC UA."""
+"""Expose deterministic Labeler 2 demo observations through read-only OPC UA.
+
+The OPC UA surface is evidence-only. Bounded simulator controls use a separate localhost HTTP
+channel so demo actions never become OPC UA writes or equipment-control precedent.
+"""
 
 from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import math
+import threading
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 
 NAMESPACE_URI = "urn:linealert:emulator:labeler2"
 PROFILE_ID = "linealert-labeler2-observable-v1"
 ASSET_ID = "Labeler 2"
+CONTROL_SCOPE = "simulator_only"
+GUIDE_REFERENCE_MM = 0.0
+GUIDE_REFERENCE_TOLERANCE_MM = 0.4
+DISTURBED_GUIDE_OFFSET_MM = 2.1
 
 NODE_IDS = {
     "emulator_sequence": "LineAlert.Labeler2.EmulatorSequence",
@@ -60,17 +72,217 @@ class LabelerObservable:
         }
 
 
+class ControlRejected(ValueError):
+    """A simulator-only control request failed a declared prerequisite."""
+
+
+class LabelerDemoState:
+    """Private demo state; none of these mechanism variables are exported as OPC UA nodes."""
+
+    def __init__(self) -> None:
+        self._lock = threading.RLock()
+        self._cycle = -1
+        self._sequence = 0
+        self._guide_offset_mm = GUIDE_REFERENCE_MM
+        self._roll_change_applied = False
+        self._production_enabled = True
+        self._diagnostic_batches_remaining = 0
+        self._inspection_counter = 0
+        self._last_inspection_id: str | None = None
+        self._last_inspection_cycle: int | None = None
+        self._last_inspection_outside = False
+
+    def _prepare_locked(self, sequence: int) -> None:
+        if sequence < 0:
+            raise ValueError("sequence must be non-negative")
+        cycle = sequence // 160
+        phase = sequence % 160
+        if cycle != self._cycle:
+            self._cycle = cycle
+            self._guide_offset_mm = GUIDE_REFERENCE_MM
+            self._roll_change_applied = False
+            self._production_enabled = True
+            self._diagnostic_batches_remaining = 0
+            self._last_inspection_id = None
+            self._last_inspection_cycle = None
+            self._last_inspection_outside = False
+        if phase >= 40 and not self._roll_change_applied:
+            self._guide_offset_mm = DISTURBED_GUIDE_OFFSET_MM
+            self._roll_change_applied = True
+        self._sequence = sequence
+
+    def observation(self, sequence: int) -> LabelerObservable:
+        with self._lock:
+            self._prepare_locked(sequence)
+            if self._diagnostic_batches_remaining > 0:
+                self._diagnostic_batches_remaining -= 1
+                run_state_code = 2
+            elif self._production_enabled:
+                run_state_code = 1
+            else:
+                run_state_code = 0
+            return observable_for_sequence(
+                sequence,
+                guide_offset_mm=self._guide_offset_mm,
+                run_state_code=run_state_code,
+            )
+
+    def stop_for_diagnostic(self) -> dict[str, Any]:
+        with self._lock:
+            self._production_enabled = False
+            self._diagnostic_batches_remaining = 0
+            return self._receipt("stop_for_diagnostic", "stopped_for_bounded_diagnostic")
+
+    def inspect_guide(self) -> dict[str, Any]:
+        with self._lock:
+            if self._production_enabled or self._diagnostic_batches_remaining:
+                raise ControlRejected("guide verification requires the stopped diagnostic state")
+            outside = abs(self._guide_offset_mm - GUIDE_REFERENCE_MM) > GUIDE_REFERENCE_TOLERANCE_MM
+            self._inspection_counter += 1
+            observation_id = (
+                f"SIM-GUIDE-{self._cycle:04d}-{self._sequence:06d}-{self._inspection_counter:03d}"
+            )
+            self._last_inspection_id = observation_id
+            self._last_inspection_cycle = self._cycle
+            self._last_inspection_outside = outside
+            return {
+                "schema_version": "linealert.synthetic-human-observation.v1",
+                "classification": "synthetic_human_observation",
+                "source_kind": "simulated_operator",
+                "source_scope": CONTROL_SCOPE,
+                "asset_id": ASSET_ID,
+                "action_id": "verify-guide-spacing",
+                "observation_id": observation_id,
+                "observed_offset_mm": round(self._guide_offset_mm - GUIDE_REFERENCE_MM, 2),
+                "reference_tolerance_mm": GUIDE_REFERENCE_TOLERANCE_MM,
+                "within_reference": not outside,
+                "sequence_at_observation": self._sequence,
+                "observed_at": datetime.now(UTC).isoformat(),
+                "boundary": (
+                    "Synthetic operator observation for demo workflow; it is not OPC UA evidence, "
+                    "OEM truth, or verified physical state."
+                ),
+            }
+
+    def restore_guide(self, observation_id: str | None) -> dict[str, Any]:
+        with self._lock:
+            if self._production_enabled or self._diagnostic_batches_remaining:
+                raise ControlRejected("guide restoration requires the stopped diagnostic state")
+            if not observation_id or observation_id != self._last_inspection_id:
+                raise ControlRejected("restore requires the latest matching guide observation")
+            if self._last_inspection_cycle != self._cycle:
+                raise ControlRejected("guide observation belongs to a different simulator cycle")
+            if not self._last_inspection_outside:
+                raise ControlRejected(
+                    "guide observation did not establish an out-of-reference condition"
+                )
+            self._guide_offset_mm = GUIDE_REFERENCE_MM
+            self._last_inspection_outside = False
+            return self._receipt("restore_guide_spacing", "restored_to_approved_reference")
+
+    def run_diagnostic_batch(self) -> dict[str, Any]:
+        with self._lock:
+            if self._production_enabled:
+                raise ControlRejected("diagnostic batch requires the stopped diagnostic state")
+            self._diagnostic_batches_remaining = 4
+            return self._receipt("run_diagnostic_batch", "diagnostic_batch_armed")
+
+    def resume_production(self) -> dict[str, Any]:
+        with self._lock:
+            if self._diagnostic_batches_remaining:
+                raise ControlRejected("cannot resume while a diagnostic batch is still emitting")
+            self._production_enabled = True
+            return self._receipt("resume_production", "production_resumed_in_simulator")
+
+    def _receipt(self, action: str, result: str) -> dict[str, Any]:
+        return {
+            "schema_version": "linealert.simulator-control-result.v1",
+            "classification": "simulator_control_only",
+            "source_scope": CONTROL_SCOPE,
+            "asset_id": ASSET_ID,
+            "action": action,
+            "accepted": True,
+            "result": result,
+            "sequence_at_action": self._sequence,
+            "recorded_at": datetime.now(UTC).isoformat(),
+            "equipment_effect": "none_physical_simulator_only",
+            "boundary": "Simulator control changes synthetic state only; it is not equipment control.",
+        }
+
+
 def _wave(sequence: int, base: float, amplitude: float, divisor: float) -> float:
     return base + math.sin(sequence / divisor) * amplitude
 
 
-def observable_for_sequence(sequence: int) -> LabelerObservable:
-    """Return deterministic observable evidence for one point in the repeating demo episode."""
+def observable_for_sequence(
+    sequence: int,
+    *,
+    guide_offset_mm: float | None = None,
+    run_state_code: int | None = None,
+) -> LabelerObservable:
+    """Return deterministic observable evidence for declared synthetic conditions.
+
+    Optional private-state inputs let the running emulator respond to simulator controls without
+    publishing those private mechanism variables as OPC UA evidence.
+    """
 
     if sequence < 0:
         raise ValueError("sequence must be non-negative")
 
     phase = sequence % 160
+    if guide_offset_mm is None:
+        guide_offset_mm = DISTURBED_GUIDE_OFFSET_MM if phase >= 40 else GUIDE_REFERENCE_MM
+    if run_state_code is None:
+        if 100 <= phase < 110:
+            run_state_code = 0
+        elif 110 <= phase < 120:
+            run_state_code = 2
+        else:
+            run_state_code = 1
+    if run_state_code not in {0, 1, 2}:
+        raise ValueError("run_state_code must be 0, 1, or 2")
+
+    guide_outside = abs(guide_offset_mm - GUIDE_REFERENCE_MM) > GUIDE_REFERENCE_TOLERANCE_MM
+    roll_recent = 40 <= phase < 120
+
+    if run_state_code == 0:
+        presentation = 21.0 if guide_outside else 9.4
+        return LabelerObservable(
+            sequence=sequence,
+            run_state_code=0,
+            line_speed_cpm=0.0,
+            presentation_interval_stddev_ms=presentation,
+            camera_observed_containers=0,
+            camera_aligned_containers=0,
+            apparent_skew_events=0,
+            max_abs_alignment_offset_mm=0.0,
+            accepted_containers=0,
+            reject_candidates=0,
+            roll_change_recent=roll_recent,
+        )
+
+    if run_state_code == 2:
+        if guide_outside:
+            presentation = _wave(sequence, 20.4, 0.5, 3.0)
+            aligned = 3
+            offset = 2.8
+        else:
+            presentation = _wave(sequence, 9.1, 0.2, 3.0)
+            aligned = 5
+            offset = 0.9
+        return LabelerObservable(
+            sequence=sequence,
+            run_state_code=2,
+            line_speed_cpm=24.0,
+            presentation_interval_stddev_ms=presentation,
+            camera_observed_containers=5,
+            camera_aligned_containers=aligned,
+            apparent_skew_events=5 - aligned,
+            max_abs_alignment_offset_mm=offset,
+            accepted_containers=aligned,
+            reject_candidates=5 - aligned,
+            roll_change_recent=roll_recent,
+        )
 
     if phase < 40:
         return LabelerObservable(
@@ -87,7 +299,7 @@ def observable_for_sequence(sequence: int) -> LabelerObservable:
             roll_change_recent=False,
         )
 
-    if phase < 60:
+    if guide_outside and phase < 60:
         progress = (phase - 40) / 19
         presentation = 9.0 + progress * 5.0
         aligned = 5 if phase < 52 else 4
@@ -105,7 +317,7 @@ def observable_for_sequence(sequence: int) -> LabelerObservable:
             roll_change_recent=True,
         )
 
-    if phase < 100:
+    if guide_outside:
         return LabelerObservable(
             sequence=sequence,
             run_state_code=1,
@@ -117,37 +329,7 @@ def observable_for_sequence(sequence: int) -> LabelerObservable:
             max_abs_alignment_offset_mm=2.9,
             accepted_containers=3,
             reject_candidates=2,
-            roll_change_recent=True,
-        )
-
-    if phase < 110:
-        return LabelerObservable(
-            sequence=sequence,
-            run_state_code=0,
-            line_speed_cpm=0.0,
-            presentation_interval_stddev_ms=21.0,
-            camera_observed_containers=0,
-            camera_aligned_containers=0,
-            apparent_skew_events=0,
-            max_abs_alignment_offset_mm=0.0,
-            accepted_containers=0,
-            reject_candidates=0,
-            roll_change_recent=True,
-        )
-
-    if phase < 120:
-        return LabelerObservable(
-            sequence=sequence,
-            run_state_code=2,
-            line_speed_cpm=24.0,
-            presentation_interval_stddev_ms=_wave(sequence, 9.1, 0.2, 3.0),
-            camera_observed_containers=5,
-            camera_aligned_containers=5,
-            apparent_skew_events=0,
-            max_abs_alignment_offset_mm=0.9,
-            accepted_containers=5,
-            reject_candidates=0,
-            roll_change_recent=True,
+            roll_change_recent=roll_recent,
         )
 
     return LabelerObservable(
@@ -161,8 +343,90 @@ def observable_for_sequence(sequence: int) -> LabelerObservable:
         max_abs_alignment_offset_mm=0.9,
         accepted_containers=5,
         reject_candidates=0,
-        roll_change_recent=False,
+        roll_change_recent=roll_recent,
     )
+
+
+def control_handler_for(state: LabelerDemoState) -> type[BaseHTTPRequestHandler]:
+    class Handler(BaseHTTPRequestHandler):
+        server_version = "LineAlertLabelerDemoControl/1"
+
+        def _send_json(self, status: int, payload: dict[str, Any]) -> None:
+            body = json.dumps(payload, separators=(",", ":")).encode()
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def _body(self) -> dict[str, Any]:
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+            except ValueError:
+                length = 0
+            if length < 0 or length > 8192:
+                raise ControlRejected("invalid control payload length")
+            if length == 0:
+                return {}
+            try:
+                payload = json.loads(self.rfile.read(length))
+            except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+                raise ControlRejected("control payload must be valid JSON") from exc
+            if not isinstance(payload, dict):
+                raise ControlRejected("control payload must be a JSON object")
+            return payload
+
+        def do_GET(self) -> None:  # noqa: N802
+            if self.path == "/health":
+                self._send_json(
+                    200,
+                    {
+                        "schema_version": "linealert.simulator-control-health.v1",
+                        "status": "ready",
+                        "source_scope": CONTROL_SCOPE,
+                        "asset_id": ASSET_ID,
+                        "equipment_control": False,
+                    },
+                )
+                return
+            self._send_json(404, {"error": "not_found"})
+
+        def do_POST(self) -> None:  # noqa: N802
+            try:
+                body = self._body()
+                if self.path == "/control/stop-for-diagnostic":
+                    result = state.stop_for_diagnostic()
+                elif self.path == "/control/inspect-guide":
+                    result = state.inspect_guide()
+                elif self.path == "/control/restore-guide":
+                    result = state.restore_guide(body.get("observation_id"))
+                elif self.path == "/control/run-diagnostic-batch":
+                    result = state.run_diagnostic_batch()
+                elif self.path == "/control/resume-production":
+                    result = state.resume_production()
+                else:
+                    self._send_json(404, {"error": "not_found"})
+                    return
+            except ControlRejected as exc:
+                self._send_json(
+                    409,
+                    {
+                        "schema_version": "linealert.simulator-control-result.v1",
+                        "accepted": False,
+                        "source_scope": CONTROL_SCOPE,
+                        "asset_id": ASSET_ID,
+                        "reason": str(exc),
+                        "equipment_effect": "none",
+                    },
+                )
+                return
+            self._send_json(200, result)
+
+        def log_message(self, format: str, *args: Any) -> None:
+            return
+
+    return Handler
 
 
 async def serve_emulator(
@@ -170,8 +434,10 @@ async def serve_emulator(
     endpoint: str,
     publish_interval_seconds: float,
     loop: bool,
+    control_host: str,
+    control_port: int,
 ) -> None:
-    """Publish the observable episode without exposing simulator-private mechanism truth."""
+    """Publish observable evidence and host a separate localhost simulator-control channel."""
 
     if publish_interval_seconds <= 0:
         raise ValueError("publish_interval_seconds must be positive")
@@ -181,6 +447,14 @@ async def serve_emulator(
     except ImportError as exc:
         raise SystemExit("Install the OPC UA extra: python -m pip install -e '.[opcua]'") from exc
 
+    state = LabelerDemoState()
+    control_server = ThreadingHTTPServer(
+        (control_host, control_port),
+        control_handler_for(state),
+    )
+    control_thread = threading.Thread(target=control_server.serve_forever, daemon=True)
+    control_thread.start()
+
     server = Server()
     await server.init()
     server.set_endpoint(endpoint)
@@ -188,7 +462,7 @@ async def serve_emulator(
     namespace_index = await server.register_namespace(NAMESPACE_URI)
     root = await server.nodes.objects.add_object(namespace_index, "LineAlertLabeler2")
 
-    first = observable_for_sequence(0).opcua_nodes()
+    first = state.observation(0).opcua_nodes()
     variables: dict[str, Any] = {}
     for node_id, value in first.items():
         browse_name = node_id.rsplit(".", 1)[-1]
@@ -204,20 +478,26 @@ async def serve_emulator(
             "namespace_uri": NAMESPACE_URI,
             "profile": PROFILE_ID,
             "asset_id": ASSET_ID,
-            "read_only": True,
+            "read_only_opcua": True,
+            "simulator_control": f"http://{control_host}:{control_port}",
+            "simulator_control_scope": CONTROL_SCOPE,
         }
     )
 
     sequence = 0
-    async with server:
-        while True:
-            observation = observable_for_sequence(sequence)
-            for node_id, value in observation.opcua_nodes().items():
-                await variables[node_id].write_value(value)
-            sequence += 1
-            if not loop and sequence >= 160:
-                return
-            await asyncio.sleep(publish_interval_seconds)
+    try:
+        async with server:
+            while True:
+                observation = state.observation(sequence)
+                for node_id, value in observation.opcua_nodes().items():
+                    await variables[node_id].write_value(value)
+                sequence += 1
+                if not loop and sequence >= 160:
+                    return
+                await asyncio.sleep(publish_interval_seconds)
+    finally:
+        control_server.shutdown()
+        control_server.server_close()
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -228,6 +508,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--publish-seconds", type=float, default=0.5)
     parser.add_argument("--loop", action="store_true")
+    parser.add_argument("--control-host", default="127.0.0.1")
+    parser.add_argument("--control-port", type=int, default=4842)
     return parser
 
 
@@ -238,6 +520,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             endpoint=args.endpoint,
             publish_interval_seconds=args.publish_seconds,
             loop=args.loop,
+            control_host=args.control_host,
+            control_port=args.control_port,
         )
     )
     return 0

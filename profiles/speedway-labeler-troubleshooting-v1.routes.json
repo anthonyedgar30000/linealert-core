@@ -1,27 +1,27 @@
 {
   "schema_version": "linealert.troubleshooting-route-profile.v1",
   "profile_id": "speedway-labeler-troubleshooting-v1",
-  "profile_version": 2,
+  "profile_version": 3,
   "guide_path": "/troubleshooting-guide.html",
   "allowed_finding_scope": "synthetic_demo",
   "demo_authority_assumption": {
     "default_role": "operator",
     "policy": "All candidate checks and interventions shown in the synthetic troubleshooting guide are routine operator-friendly commissioned actions by default for this demo plant unless an action is explicitly marked otherwise.",
-    "runtime_rule": "Rank the useful next action from current evidence and maintained CMMS history, let the operator perform one standard bounded action, then require a fresh verification run before another material change.",
+    "runtime_rule": "Rank the useful next action from current evidence and maintained CMMS history, verify the relevant setup relationship before adjustment, allow one commissioned bounded correction only when the observation supports it, then require fresh evidence before another material change.",
     "boundary": "This is a synthetic demo assumption only. A real plant may commission the same action to a different role or prohibit it in a given state. Recommendation does not itself authorize an action outside the commissioned plant envelope."
   },
   "procedures": {
     "LINEALERT.DEMO.LABEL_ALIGNMENT_OFF": {
       "procedure_id": "LABEL_ALIGNMENT_OFF",
       "default_check": "Verify guide / spacing relationship against the approved setup reference",
-      "default_intervention": "Restore guide / spacing to the approved marked setup reference",
+      "default_intervention": "If a current observation shows guide / spacing outside the approved reference and current authority permits, restore it to the approved marked setup reference",
       "default_role": "operator",
       "required_semantics": ["arrival_phase", "merge_spacing"],
       "standard_change_match": {
         "scenario_id": "labeler-roll-change-stability-v1",
         "match_strength": "strong",
-        "basis": "Current alignment evidence and strong similar CMMS history heavily align with a standard guide / presentation setup correction in the synthetic demo.",
-        "verification": "Perform exactly one bounded standard change, then run the 5-container synthetic verification trial before any additional material change."
+        "basis": "Current alignment evidence and strong similar CMMS history make guide / presentation verification a high-information first check in the synthetic demo. Historical similarity does not establish that the current guide is out of reference.",
+        "verification": "Verify first. Only if the current observation is out of reference may the commissioned demo actor restore that one bounded setup reference, then run the 5-container synthetic verification trial before any additional material change."
       }
     },
     "LINEALERT.DEMO.LABEL_FOLDS": {
