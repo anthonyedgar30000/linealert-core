@@ -21,6 +21,8 @@ linealert-opcua-bridge = "linealert_core.opcua_bridge:main"
 linealert-historian-service = "linealert_core.historian_service:main"
 linealert-emulate = "linealert_core.emulator_cli:main"
 linealert-emulator-opcua = "linealert_core.emulator_opcua_server:main"
+linealert-labeler-opcua-emulator = "linealert_core.labeler_demo_opcua_server:main"
+linealert-labeler-opcua-bridge = "linealert_core.labeler_demo_bridge:main"
 
 [project.optional-dependencies]
 dev = [
