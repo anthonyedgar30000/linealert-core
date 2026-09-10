@@ -28,6 +28,7 @@ def test_public_routes_attach_shared_session_adapters():
     assert "./maintenance-response-adapter.js" in plant_wrapper
     assert "./maintenance-observe-adapter.js" in plant_wrapper
     assert "./session-adapter.js" in plant_wrapper
+    assert "./maintenance-session-adapter.js" in plant_wrapper
     assert "./recovery-fast-forward-adapter.js" in plant_wrapper
     assert plant_wrapper.index("./trial-discipline-adapter.js") < plant_wrapper.index(
         "./maintenance-response-adapter.js"
@@ -39,12 +40,19 @@ def test_public_routes_attach_shared_session_adapters():
         "./session-adapter.js"
     )
     assert plant_wrapper.index("./session-adapter.js") < plant_wrapper.index(
+        "./maintenance-session-adapter.js"
+    )
+    assert plant_wrapper.index("./maintenance-session-adapter.js") < plant_wrapper.index(
         "./recovery-fast-forward-adapter.js"
     )
 
     assert "troubleshooting-guide-reference-v102.html" in guide_wrapper
     assert "./demo-session.js" in guide_wrapper
     assert "./guide-session-adapter.js" in guide_wrapper
+    assert "./maintenance-guide-adapter.js" in guide_wrapper
+    assert guide_wrapper.index("./guide-session-adapter.js") < guide_wrapper.index(
+        "./maintenance-guide-adapter.js"
+    )
 
 
 def test_shared_session_contract_carries_workflow_and_evidence_state():
@@ -91,19 +99,42 @@ def test_diagnostic_mode_does_not_imply_maintenance_dispatch():
     assert "if(mode==='diagnostic')return 0" not in adapter
 
 
-def test_asset_maintenance_suspends_normal_linealert_interpretation():
+def test_asset_maintenance_has_reachable_quiet_lifecycle():
     adapter = read(DOCS / "triage" / "maintenance-observe-adapter.js")
 
+    assert "Scheduled Labeler 2 inspection / cleaning" in adapter
+    assert "shift.code!=='E'||shiftEvent(shift)" in adapter
     assert "job.asset===TARGET_ASSET" in adapter
-    assert "if(maintenanceActive())return;" in adapter
+    assert "mode='maintenance'" in adapter
     assert "productionVerification=false" in adapter
     assert "MAINTENANCE · OBSERVE ONLY" in adapter
     assert "NORMAL INTERPRETATION PAUSED" in adapter
     assert "normal production findings" in adapter
-    assert "Telemetry and event capture continue" in adapter
-    assert "normal production interpretation is suspended" in adapter
+    assert "POST_MAINT_TARGET=10" in adapter
+    assert "postMaintenanceObservation" in adapter
+    assert "Complete maintenance window" in adapter
+    assert "maintenance_completion_is_not_proof_of_health" in adapter
+    assert "observation_is_not_return_to_service_authorization" in adapter
+    assert "normal_interpretation_resumed_not_maintenance_success_or_safety_approval" in adapter
     assert "LineAlertMaintenanceObserve" in adapter
     assert "handledIncidentIds.clear" not in adapter
+
+
+def test_shared_views_suppress_stale_troubleshooting_during_maintenance():
+    session_adapter = read(DOCS / "triage" / "maintenance-session-adapter.js")
+    guide_adapter = read(DOCS / "maintenance-guide-adapter.js")
+
+    assert "snapshot.maintenance=maintenance" in session_adapter
+    assert "snapshot.state='MAINTENANCE'" in session_adapter
+    assert "snapshot.state='POST_MAINTENANCE_OBSERVE'" in session_adapter
+    assert "snapshot.recommendation=null" in session_adapter
+    assert "snapshot.recommendationTitle=null" in session_adapter
+
+    assert "MAINTENANCE · NORMAL INTERPRETATION PAUSED" in guide_adapter
+    assert "No LineAlert troubleshooting action requested" in guide_adapter
+    assert "POST-MAINTENANCE OBSERVATION" in guide_adapter
+    assert "No troubleshooting recommendation is active during this observation gate" in guide_adapter
+    assert "Observation != return-to-service authorization" in guide_adapter
 
 
 def test_post_recovery_fast_forward_starts_from_clean_live_projection():
@@ -155,6 +186,8 @@ def test_static_sync_preserves_linealert_boundaries():
         "Recommendation != authorization or equipment command.",
         "Diagnostic state != maintenance dispatch.",
         "Maintenance activity != normal production context.",
+        "Maintenance completion != verified return to service.",
+        "Post-maintenance observation != return-to-service authorization.",
         "Historical pattern != current root cause.",
         "Five-container response != safe production change.",
     ):
