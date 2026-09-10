@@ -11,6 +11,16 @@
     "linealert_role": "arm_trial_capture_evidence_compare_rerank",
     "one_material_change_per_trial": true
   },
+  "configuration_discipline": {
+    "default_basis": "last_verified_intermediate_state",
+    "stack_unverified_changes": false,
+    "automatic_restore": false,
+    "ineffective_or_adverse_trial": "recommend_explicit_restore_of_the_one_changed_setting_then_verify_restore_before_another_material_change",
+    "promising_trial": "repeat_without_another_material_change_before_retaining_the_change",
+    "retention_rule": "a material change becomes a retained verified intermediate state only after a fresh no-change verification reproduces the improvement",
+    "stacking_rule": "an additional material change may be tested only from a retained verified intermediate state and introduces one new material difference at a time",
+    "boundary": "LineAlert may recommend a restore or later stacked trial; recommendation is not automatic equipment action, authorization, or causal proof."
+  },
   "production_verification": {
     "classification": "synthetic_demo_parameter",
     "required_consecutive_healthy_containers": 50,
@@ -69,6 +79,13 @@
       "title": "Repeat 5-container run with no further change",
       "default_rank": 6,
       "class": "verification_only"
+    },
+    {
+      "action_id": "restore-previous-setting",
+      "title": "Restore the last changed setting to its previous approved setting",
+      "default_rank": null,
+      "class": "generated_restore_transition",
+      "availability": "only_after_a_trial_that_does_not_earn_retention"
     }
   ],
   "deterministic_trial_outcomes": {
@@ -78,7 +95,7 @@
       "apparent_skew_events": 0,
       "quality_accepted": "5/5",
       "interpretation": "Strong improvement toward matched healthy behavior after one bounded change.",
-      "rerank_rule": "Promote repeat-no-change to rank 1 to test repeatability before another material change; keep guide-spacing as supported current configuration."
+      "rerank_rule": "Promote repeat-no-change to rank 1. Do not stack another material change yet; reproduce the improvement before guide-spacing can become a retained verified intermediate state."
     },
     "adjust-peel-angle": {
       "presentation_interval_stddev_ms": 18.7,
@@ -86,7 +103,7 @@
       "apparent_skew_events": 1,
       "quality_accepted": "4/5",
       "interpretation": "Visible outcome improves slightly while presentation variability remains materially elevated.",
-      "rerank_rule": "Restore-guide-spacing remains rank 1; peel-angle loses priority because improvement is partial and the historian pattern remains presentation-dominant."
+      "rerank_rule": "Do not stack guide-spacing onto the unverified peel-angle change. Promote explicit restore of peel angle to the previous approved setting, verify that restore, then rerank from the recovered intermediate state."
     },
     "adjust-hold-down": {
       "presentation_interval_stddev_ms": 20.2,
@@ -94,7 +111,7 @@
       "apparent_skew_events": 2,
       "quality_accepted": "3/5",
       "interpretation": "Little meaningful change in the bounded evidence window.",
-      "rerank_rule": "Restore-guide-spacing remains rank 1; hold-down moves down because the trial added little supporting evidence."
+      "rerank_rule": "Promote explicit restore of hold-down to its previous approved setting. Verify the restore before another material change; only then rerank guide-spacing or other actions."
     },
     "increase-label-delay": {
       "presentation_interval_stddev_ms": 21.1,
@@ -102,7 +119,7 @@
       "apparent_skew_events": 2,
       "quality_accepted": "3/5",
       "interpretation": "No useful improvement and the current/historical timing relationship remains inside its healthy band.",
-      "rerank_rule": "Timing-related action moves down; restore-guide-spacing remains rank 1."
+      "rerank_rule": "Promote explicit restore of label delay to its previous approved setting and verify before testing another material change."
     },
     "reduce-speed-temporarily": {
       "presentation_interval_stddev_ms": 17.6,
@@ -110,7 +127,7 @@
       "apparent_skew_events": 0,
       "quality_accepted": "5/5",
       "interpretation": "Observed consequence is suppressed at lower speed while the presentation relationship remains outside matched healthy behavior.",
-      "rerank_rule": "Rate sensitivity gains support, but restore-guide-spacing remains rank 1 because the underlying presentation relationship is still abnormal."
+      "rerank_rule": "The temporary rate test is diagnostic evidence, not a retained production configuration. Promote explicit restore of the previous speed and verify before another material change."
     },
     "repeat-no-change": {
       "presentation_interval_stddev_ms": 9.4,
@@ -118,12 +135,22 @@
       "apparent_skew_events": 0,
       "quality_accepted": "5/5",
       "interpretation": "Improvement repeats without another material change.",
-      "rerank_rule": "Promote production verification to the next recommended step; do not introduce another change unless production evidence contradicts the bounded result."
+      "rerank_rule": "Mark the promising material change as a retained verified intermediate state, then promote production verification. A later stacked trial is permitted only by introducing one additional bounded change from this verified state."
+    },
+    "restore-previous-setting": {
+      "presentation_interval_stddev_ms": "dynamic_previous_verified_value",
+      "camera_within_alignment_envelope": "dynamic_previous_verified_value",
+      "apparent_skew_events": "dynamic_previous_verified_value",
+      "quality_accepted": "dynamic_previous_verified_value",
+      "interpretation": "The operator explicitly restores the one changed setting and LineAlert runs a fresh verification against the pre-change evidence state.",
+      "rerank_rule": "After the restore is verified, rerank from the recovered intermediate state. Do not claim the restore happened unless the operator action and fresh evidence are represented."
     }
   },
   "ranking_inputs": [
     "current machine and sensor evidence",
     "latest bounded trial result",
+    "last verified intermediate configuration state",
+    "retained versus unverified material changes",
     "matched historical machine windows",
     "historian relationship state",
     "CMMS similar-case history",
@@ -131,13 +158,15 @@
     "commissioned action catalog",
     "information value of the next trial"
   ],
-  "ranking_semantics": "Ranks the best-supported next bounded action given the evidence available now. Rank is advisory, not causal probability, proof, authorization, or an equipment command.",
+  "ranking_semantics": "Ranks the best-supported next bounded action given the evidence available now. Rank is advisory, not causal probability, proof, authorization, or an equipment command. Unverified material changes are not silently stacked.",
   "boundaries": [
     "telemetry != diagnosis",
     "historical pattern != current root cause",
     "recommendation != authorized action",
     "intervention response != causal proof",
     "LineAlert trial arm != HMI equipment execution",
+    "LineAlert restore recommendation != automatic equipment restore",
+    "verified intermediate state != root cause proof",
     "successful 5-container trial != verified production recovery",
     "recovery observed != root cause proof or future reliability guarantee"
   ]
