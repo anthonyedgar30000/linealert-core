@@ -1,0 +1,54 @@
+{
+  "schema_version": "linealert.synthetic-plant-operations-context.v1",
+  "classification": "synthetic_demo_only",
+  "plant_context": "Synthetic packaging plant",
+  "purpose": "Add a bounded plant-level operating context around Packaging Line 1 so maintenance workload, staffing availability, work orders, and neighboring lines change on the same deterministic shift calendar.",
+  "fleet": [
+    {"line_id": "packaging-line-1", "name": "Packaging Line 1", "role": "detailed_linealert_troubleshooting_surface"},
+    {"line_id": "packaging-line-2", "name": "Packaging Line 2", "role": "ambient_fleet_and_maintenance_demand"},
+    {"line_id": "carton-line-1", "name": "Carton Line 1", "role": "ambient_fleet_and_maintenance_demand"}
+  ],
+  "maintenance_staffing": {
+    "shift_crew_size": 2,
+    "crew": [
+      {"staff_id": "tech-a", "display_name": "Tech A", "synthetic_skill": "Mechanical / packaging"},
+      {"staff_id": "tech-b", "display_name": "Tech B", "synthetic_skill": "Electrical / controls"}
+    ],
+    "dispatch_model": "Each synthetic shift generates a small deterministic workload. Jobs are assigned to the earliest compatible technician; current LineAlert maintenance ETA is derived from present technician occupancy rather than a fixed timer.",
+    "boundary": "Synthetic availability is operational context only. It is not authorization, a staffing recommendation, or a substitute for plant dispatch rules."
+  },
+  "cmms_work_generation": {
+    "seed": "linealert-plant-ops-v1",
+    "jobs_per_shift_min": 3,
+    "jobs_per_shift_max": 5,
+    "job_types": ["PM", "Corrective", "Inspection"],
+    "priority_classes": ["P2", "P3"],
+    "duration_minutes_min": 22,
+    "duration_minutes_max": 75,
+    "arrival_behavior": "Jobs become visible when their deterministic arrival time is reached; future jobs appear as incoming work in the public demo.",
+    "examples": [
+      "Scheduled capper inspection",
+      "Intermittent blank-feed follow-up",
+      "Lubrication / inspection route",
+      "Photoeye nuisance-stop check",
+      "Pressure-drop verification",
+      "Tape-head tracking complaint"
+    ]
+  },
+  "operational_interaction": {
+    "maintenance_eta_input": ["current technician occupancy", "remaining duration of active synthetic work"],
+    "line_state_input": ["active work on line", "queued P2 work on line", "active LineAlert concern on Packaging Line 1"],
+    "fast_forward_rule": "Calendar, production counters, staffing state, and work-order state advance together; the demo returns to 1x before the next LineAlert concern.",
+    "linealert_role": "observe context and revise bounded operational guidance; do not create hidden equipment effects or autonomous dispatch changes"
+  },
+  "current_scope_limit": "Only Packaging Line 1 retains the full interactive bounded-trial workflow in this increment. Other lines provide ambient operating and maintenance demand. Fleet-wide incident-specific troubleshooting remains future scope.",
+  "boundaries": [
+    "synthetic work order != CMMS truth",
+    "staffing estimate != authorized dispatch",
+    "maintenance ETA != guaranteed response time",
+    "telemetry != diagnosis",
+    "anomaly != fault",
+    "recommendation != authorized action",
+    "simulation outcome != verified physical state"
+  ]
+}
