@@ -162,7 +162,10 @@ def test_guide_inspection_action_names_physical_check_and_reports_observed_relat
     assert "Stop Labeler 2 for bounded diagnostic" in script
     assert "function observedRelation(observation)" in script
     assert "guide / spacing matches the marked reference" in script
-    assert "guide / spacing '+Math.abs(offset).toFixed(1)+' mm outside the marked reference" in script
+    assert (
+        "guide / spacing '+Math.abs(offset).toFixed(1)+' mm outside the marked reference"
+        in script
+    )
     assert "Observed: '+relation" in script
 
 
