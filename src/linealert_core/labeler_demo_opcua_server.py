@@ -38,6 +38,7 @@ CONTROL_SCOPE = "simulator_only"
 GUIDE_REFERENCE_MM = 0.0
 GUIDE_REFERENCE_TOLERANCE_MM = 0.4
 DISTURBED_GUIDE_OFFSET_MM = 2.1
+GUIDE_ADJUSTMENT_WHILE_RUNNING_COMMISSIONED = True
 
 NODE_IDS = {
     "emulator_sequence": "LineAlert.Labeler2.EmulatorSequence",
@@ -162,6 +163,14 @@ class LabelerDemoState:
             return 0
         return 1
 
+    def _guide_action_run_state_locked(self) -> int:
+        run_state = self._run_state_locked()
+        if run_state == 2:
+            raise ControlRejected("guide action is unavailable during a diagnostic batch")
+        if run_state == 1 and not GUIDE_ADJUSTMENT_WHILE_RUNNING_COMMISSIONED:
+            raise ControlRejected("guide action requires the commissioned stopped state")
+        return run_state
+
     def _observation_locked(self) -> LabelerObservable:
         run_state_code = self._run_state_locked()
         if self._diagnostic_batches_remaining > 0:
@@ -239,8 +248,7 @@ class LabelerDemoState:
 
     def inspect_guide(self) -> dict[str, Any]:
         with self._lock:
-            if self._production_enabled or self._diagnostic_batches_remaining:
-                raise ControlRejected("guide verification requires the stopped diagnostic state")
+            run_state = self._guide_action_run_state_locked()
             outside = abs(self._guide_offset_mm - GUIDE_REFERENCE_MM) > GUIDE_REFERENCE_TOLERANCE_MM
             self._inspection_counter += 1
             observation_id = (
@@ -260,6 +268,7 @@ class LabelerDemoState:
                 "observed_offset_mm": round(self._guide_offset_mm - GUIDE_REFERENCE_MM, 2),
                 "reference_tolerance_mm": GUIDE_REFERENCE_TOLERANCE_MM,
                 "within_reference": not outside,
+                "run_state_code_at_observation": run_state,
                 "sequence_at_observation": self._sequence,
                 "observed_at": datetime.now(UTC).isoformat(),
                 "boundary": (
@@ -270,8 +279,7 @@ class LabelerDemoState:
 
     def restore_guide(self, observation_id: str | None) -> dict[str, Any]:
         with self._lock:
-            if self._production_enabled or self._diagnostic_batches_remaining:
-                raise ControlRejected("guide restoration requires the stopped diagnostic state")
+            run_state = self._guide_action_run_state_locked()
             if not observation_id or observation_id != self._last_inspection_id:
                 raise ControlRejected("restore requires the latest matching guide observation")
             if self._last_inspection_cycle != self._cycle:
@@ -282,7 +290,11 @@ class LabelerDemoState:
                 )
             self._guide_offset_mm = GUIDE_REFERENCE_MM
             self._last_inspection_outside = False
-            return self._receipt("restore_guide_spacing", "restored_to_approved_reference")
+            return self._receipt(
+                "restore_guide_spacing",
+                "restored_to_approved_reference",
+                run_state_code_at_action=run_state,
+            )
 
     def run_diagnostic_batch(self) -> dict[str, Any]:
         with self._lock:
@@ -500,6 +512,9 @@ def control_handler_for(state: LabelerDemoState) -> type[BaseHTTPRequestHandler]
                         "asset_id": ASSET_ID,
                         "equipment_control": False,
                         "plant_event_orchestration": True,
+                        "running_guide_adjustment_commissioned": (
+                            GUIDE_ADJUSTMENT_WHILE_RUNNING_COMMISSIONED
+                        ),
                     },
                 )
                 return
@@ -616,6 +631,9 @@ async def serve_emulator(
             "simulator_control": f"http://{control_host}:{control_port}",
             "simulator_control_scope": CONTROL_SCOPE,
             "plant_event_orchestration": True,
+            "running_guide_adjustment_commissioned": (
+                GUIDE_ADJUSTMENT_WHILE_RUNNING_COMMISSIONED
+            ),
         }
     )
 
