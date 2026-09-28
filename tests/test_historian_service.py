@@ -257,8 +257,6 @@ def _localization_query() -> dict[str, list[str]]:
         "selection_label": ["Incident persistence window"],
         "episode_id": ["incident-42"],
         "target_relationship_id": ["relationship:label-presentation-delay"],
-        "required_outside": ["3"],
-        "window_size": ["4"],
         "limit": ["250"],
     }
 
@@ -280,12 +278,12 @@ def test_localization_topology_authority_binds_demo_asset_profile_and_hash() -> 
     assert policy.window_size == 4
 
 
-def test_condition_localization_request_parser_preserves_scope_and_rule() -> None:
+def test_condition_localization_request_parser_preserves_scope_without_rule_override() -> None:
     query = _localization_query()
     query["from_time"] = ["2026-09-14T11:37:00Z"]
     query["to_time"] = ["2026-09-14T11:40:00Z"]
 
-    selection, target, rule = condition_localization_request_from_query(
+    selection, target = condition_localization_request_from_query(
         query,
         default_limit=240,
     )
@@ -299,8 +297,6 @@ def test_condition_localization_request_parser_preserves_scope_and_rule() -> Non
     assert selection.to_time is not None
     assert selection.to_time.isoformat() == "2026-09-14T11:40:00+00:00"
     assert target == "relationship:label-presentation-delay"
-    assert rule.required_outside == 3
-    assert rule.window_size == 4
 
 
 def test_condition_localization_request_parser_rejects_hidden_dependency_filter() -> None:
@@ -311,11 +307,12 @@ def test_condition_localization_request_parser_rejects_hidden_dependency_filter(
         condition_localization_request_from_query(query, default_limit=240)
 
 
-def test_condition_localization_request_parser_requires_explicit_persistence_rule() -> None:
+def test_condition_localization_request_parser_rejects_caller_rule_override() -> None:
     query = _localization_query()
-    del query["required_outside"]
+    query["required_outside"] = ["1"]
+    query["window_size"] = ["1"]
 
-    with pytest.raises(ValueError, match="required_outside is required"):
+    with pytest.raises(ValueError, match="resolved from machine configuration"):
         condition_localization_request_from_query(query, default_limit=240)
 
 
@@ -331,6 +328,7 @@ def test_historian_condition_localization_returns_bounded_result_and_topology_pr
         authority,
     )
 
+    assert payload["schema_version"] == "linealert.configured-condition-localization.v1"
     assert payload["disposition"] == "READY"
     localization = payload["localization"]
     assert isinstance(localization, dict)
@@ -339,6 +337,18 @@ def test_historian_condition_localization_returns_bounded_result_and_topology_pr
     assert isinstance(onset, dict)
     assert onset["outside_count"] == 3
     assert onset["window_count"] == 4
+    policy = payload["persistence_policy"]
+    assert isinstance(policy, dict)
+    policy_payload = policy["policy"]
+    assert isinstance(policy_payload, dict)
+    assert policy_payload["policy_id"] == "label-presentation-persistence-v1"
+    assert policy_payload["policy_revision"] == "1"
+    assert policy_payload["required_outside"] == 3
+    assert policy_payload["window_size"] == 4
+    policy_application = payload["policy_application"]
+    assert isinstance(policy_application, dict)
+    assert policy_application["mode"] == "CURRENT_CONFIG_APPLIED_TO_SELECTED_HISTORY"
+    assert policy_application["historical_policy_equivalence"] == "UNVERIFIED"
     topology_authority = payload["topology_authority"]
     assert isinstance(topology_authority, dict)
     assert topology_authority["asset_id"] == "LABELER-DEMO-01"
@@ -409,8 +419,15 @@ def test_localization_endpoint_executes_selector_and_localizer() -> None:
     )
 
     assert status_code == 200
-    assert payload["schema_version"] == "linealert.selected-condition-localization.v1"
+    assert payload["schema_version"] == "linealert.configured-condition-localization.v1"
     assert payload["disposition"] == "READY"
+    policy = payload["persistence_policy"]
+    assert isinstance(policy, dict)
+    policy_payload = policy["policy"]
+    assert isinstance(policy_payload, dict)
+    assert policy_payload["policy_id"] == "label-presentation-persistence-v1"
+    assert "required_outside" not in _localization_query()
+    assert "window_size" not in _localization_query()
     localization = payload["localization"]
     assert isinstance(localization, dict)
     assert localization["disposition"] == "PERSISTENCE_ESTABLISHED"
@@ -441,3 +458,44 @@ def test_localization_endpoint_preserves_selector_truncation_refusal() -> None:
     topology_authority = payload["topology_authority"]
     assert isinstance(topology_authority, dict)
     assert topology_authority["asset_id"] == "LABELER-DEMO-01"
+
+
+def test_historian_condition_localization_refuses_missing_configured_policy(
+    tmp_path: Path,
+) -> None:
+    raw = json.loads(
+        (PROJECT_ROOT / "examples" / "labeler_demo_config.json").read_text(encoding="utf-8")
+    )
+    raw["persistence_policies"] = []
+    config_path = tmp_path / "no-policy-config.json"
+    config_path.write_text(json.dumps(raw, indent=2), encoding="utf-8")
+    authority = load_localization_topology_authority(config_path)
+    historian = _LocalizationHistorian(_localization_records())
+
+    payload = historian_condition_localization_from_query(
+        historian,  # type: ignore[arg-type]
+        _localization_query(),
+        authority,
+    )
+
+    assert payload["schema_version"] == "linealert.configured-condition-localization.v1"
+    assert payload["disposition"] == "REFUSED_POLICY_NOT_CONFIGURED"
+    assert payload["reason_code"] == "POLICY.PERSISTENCE_NOT_CONFIGURED"
+    assert payload["persistence_policy"] is None
+    assert payload["policy_application"] is None
+    assert payload["localization"] is None
+    assert payload["selection"] is None
+    assert historian.calls == []
+
+
+def test_localization_endpoint_unavailable_uses_configured_response_schema() -> None:
+    status_code, payload = _request_localization_endpoint(
+        _LocalizationHistorian(_localization_records()),
+        with_authority=False,
+    )
+
+    assert status_code == 503
+    assert payload["schema_version"] == "linealert.configured-condition-localization.v1"
+    assert payload["persistence_policy"] is None
+    assert payload["policy_application"] is None
+    assert payload["topology_authority"] is None

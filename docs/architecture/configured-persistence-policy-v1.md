@@ -80,13 +80,15 @@ The policy model distinguishes `DECLARED_CONFIGURATION` from `AD_HOC_EXPERIMENT`
 
 This increment only parses configured policies from machine configuration. An explicit ad-hoc criterion remains conceptually distinct and must never be relabeled as configured or commissioned evidence.
 
-## Current endpoint boundary
+## Endpoint integration
 
-The existing historian-backed localization endpoint from PR #137 still requires caller-supplied `required_outside` and `window_size`.
+The historian-backed localization endpoint now resolves the configured persistence policy for the requested target relationship.
 
-This increment deliberately does not silently change that contract.
+Normal HTTP localization no longer accepts caller-supplied `required_outside` or `window_size`. Those values come from the exact configured policy binding loaded with the machine topology authority.
 
-The next bounded integration can resolve the configured policy for the requested relationship and pass its retained `PersistenceRule` into the same selector/localizer path, while preserving policy provenance in the response.
+A missing configured policy produces a bounded refusal rather than a fallback rule.
+
+Lower-level Python APIs still accept an explicit `PersistenceRule`, which preserves a separate lab/experiment path without relabeling that criterion as configured authority.
 
 ## Authority boundary
 

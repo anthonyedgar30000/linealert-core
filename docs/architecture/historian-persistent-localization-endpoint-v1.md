@@ -7,7 +7,11 @@ The HTTP layer does not calculate persistence, infer dependency state, or recons
 ```text
 HTTP query
    ↓
-explicit selection + explicit N-of-M rule
+explicit bounded history selection
+   ↓
+target relationship
+   ↓
+configured persistence-policy resolution
    ↓
 asset-bound configured topology authority
    ↓
@@ -31,8 +35,6 @@ Required query fields:
 - `asset_id`
 - `selection_label`
 - `target_relationship_id`
-- `required_outside`
-- `window_size`
 
 The selection must also be bounded by at least one of:
 
@@ -47,7 +49,7 @@ Optional fields:
 
 A `relationship_id` query filter is explicitly rejected for localization because it would hide dependency evidence.
 
-The persistence rule is always supplied by the caller. The endpoint does not invent a default N-of-M rule.
+`required_outside` and `window_size` are also rejected on this normal endpoint. The service resolves the configured persistence policy bound to `target_relationship_id` from the loaded machine configuration. Missing policy is a bounded refusal; no default rule is synthesized.
 
 ## Topology authority
 
@@ -61,7 +63,7 @@ The historian sidecar accepts:
 --condition-config <machine-config.json>
 ```
 
-The config is loaded with the existing deterministic LineAlert configuration loader. The config must contain a machine profile so topology authority is bound to an exact asset and profile.
+The config is loaded with the existing deterministic LineAlert configuration loader. The config must contain a machine profile so topology authority is bound to an exact asset and profile. Configured persistence policies are parsed from the same exact config bytes and must bind to relationships declared by temporal rules in that file.
 
 The endpoint refuses an `asset_id` that does not match that configured asset.
 
@@ -108,17 +110,22 @@ The endpoint only parses, delegates, and serializes.
 The response uses:
 
 ```text
-linealert.selected-condition-localization.v1
+linealert.configured-condition-localization.v1
 ```
 
 and contains:
 
-- selection metadata and truncation state;
-- selector disposition/reason;
+- selection-request metadata;
+- selection metadata and truncation state when history was read;
+- selector/localization disposition and reason;
 - the unchanged localization evidence package when admitted;
-- topology-authority provenance.
+- configured persistence-policy ID, revision, N-of-M criterion, and config provenance;
+- topology-authority provenance;
+- policy-application semantics.
 
-A selector refusal is a valid bounded result and does not trigger fallback localization.
+A missing configured policy returns `REFUSED_POLICY_NOT_CONFIGURED` with reason `POLICY.PERSISTENCE_NOT_CONFIGURED` and does not query condition history. A selector refusal is also a valid bounded result and does not trigger fallback localization.
+
+Condition-history rows do not currently retain the machine-config SHA used by policy authority. Therefore the endpoint labels the configured-policy application as `CURRENT_CONFIG_APPLIED_TO_SELECTED_HISTORY` and marks `historical_policy_equivalence = UNVERIFIED`. It does not claim the currently loaded policy was necessarily the policy in force at the historical observation time.
 
 ## Hybrid demo
 
@@ -138,7 +145,7 @@ This endpoint does not:
 - establish causal direction;
 - prove when a physical degradation process began;
 - infer verified physical component state;
-- choose the persistence rule;
+- synthesize or silently default the persistence rule;
 - derive topology from observed data;
 - call CADGrounded;
 - write to equipment;
