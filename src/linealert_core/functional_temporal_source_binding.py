@@ -315,6 +315,7 @@ class FunctionalTemporalEvidenceBinder:
         uncertainty: str,
     ) -> BoundEvidenceObservation:
         source = measurement.observation
+        assessment = measurement.clock_evidence.interval_assessment
         source_ids = tuple(
             dict.fromkeys(
                 value
@@ -352,6 +353,21 @@ class FunctionalTemporalEvidenceBinder:
                     "start_source_id": source.start_source_id or "not-retained",
                     "end_source_id": source.end_source_id or "not-retained",
                     "clock_basis": measurement.clock_evidence.basis,
+                    **(
+                        {
+                            "clock_reference_id": assessment.reference_clock_id,
+                            "clock_estimated_delay_ms": str(assessment.estimated_delay_ms),
+                            "clock_lower_delay_ms": str(assessment.lower_delay_ms),
+                            "clock_upper_delay_ms": str(assessment.upper_delay_ms),
+                            "clock_combined_uncertainty_ms": str(
+                                assessment.combined_uncertainty_ms
+                            ),
+                            "start_clock_evidence_id": assessment.start_evidence_id,
+                            "end_clock_evidence_id": assessment.end_evidence_id,
+                        }
+                        if assessment is not None
+                        else {}
+                    ),
                     "start_timestamp": source.start_timestamp,
                     "end_timestamp": source.end_timestamp,
                     "value": str(source.value),

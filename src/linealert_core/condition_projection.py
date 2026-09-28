@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -25,6 +26,7 @@ class TimingConditionBinding:
     semantic: str
     scope: str
     unit: str = "ms"
+    max_combined_uncertainty_ms: float | None = None
 
     def __post_init__(self) -> None:
         for field_name in ("signal_name", "rule_id", "semantic", "scope", "unit"):
@@ -33,6 +35,16 @@ class TimingConditionBinding:
                 raise ConditionProjectionError(f"{field_name} must be a non-empty string")
         if self.unit not in {"ms", "s"}:
             raise ConditionProjectionError("condition signal unit must be 'ms' or 's'")
+        bound = self.max_combined_uncertainty_ms
+        if bound is not None and (
+            isinstance(bound, bool)
+            or not isinstance(bound, (int, float))
+            or not math.isfinite(bound)
+            or bound < 0
+        ):
+            raise ConditionProjectionError(
+                "max_combined_uncertainty_ms must be finite and non-negative"
+            )
 
     @property
     def relationship_id(self) -> str:
@@ -157,6 +169,11 @@ def project_replay_condition_signals(
         raise ConditionProjectionError("condition signal rule IDs must be unique")
 
     observations: list[ConditionSignalObservation] = []
+    if any(binding.max_combined_uncertainty_ms is not None for binding in bindings):
+        raise ConditionProjectionError(
+            "quantified clock requirements need live event-bound clock observations; "
+            "unqualified replay projection is unavailable"
+        )
     for pipeline_result in summary.results:
         for finding in pipeline_result.timing_findings:
             binding = by_rule.get(finding.rule_id)
@@ -203,6 +220,7 @@ def load_condition_signal_bindings(
                 semantic=_required_text(item, "semantic", location),
                 scope=_required_text(item, "scope", location),
                 unit=_optional_text(item, "unit") or "ms",
+                max_combined_uncertainty_ms=item.get("max_combined_uncertainty_ms"),
             )
         )
 
@@ -235,6 +253,11 @@ def condition_signal_projection_to_dict(
                 "scope": binding.scope,
                 "unit": binding.unit,
                 "relationship_id": binding.relationship_id,
+                **(
+                    {"max_combined_uncertainty_ms": binding.max_combined_uncertainty_ms}
+                    if binding.max_combined_uncertainty_ms is not None
+                    else {}
+                ),
             }
             for binding in projection.bindings
         ],
