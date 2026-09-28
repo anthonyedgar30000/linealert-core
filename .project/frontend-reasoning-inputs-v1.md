@@ -1,0 +1,23 @@
+# Frontend reasoning inputs v1
+
+- Scope: `ui/app/reasoning/page.tsx` plus one Plant Canvas navigation link.
+- Source baseline: main `41cea555418d7a35cbff214ec879cbcb159999f2` after aggregate project-state sync through PR #150.
+- Classification: read-only local hybrid UI increment.
+- Runtime authority: existing same-origin historian proxy routes only.
+- Equipment scope: no physical equipment connection or control path is introduced.
+- Historian behavior: unavailable historian state is displayed fail-closed; cached evidence is not substituted.
+- Reasoning behavior: no inference endpoint is exposed or claimed by this UI.
+- Evidence boundary: retrieval availability does not establish diagnosis, root cause, verified physical state, or authorized action.
+- Canonical boundaries preserved:
+  - telemetry != diagnosis
+  - historical_pattern != current_root_cause
+  - recommendation != authorized_action
+  - successful_retrieval != true_explanation
+- Verification:
+  - npm run lint
+  - npm run build
+  - Next.js route manifest must include /reasoning
+  - runtime smoke should return HTTP 200 for /reasoning
+- Expected degraded observation: if TimescaleDB is offline, the screen reports OFFLINE / FAIL CLOSED and no live history.
+- Rollback: revert this increment or return to baseline `41cea555418d7a35cbff214ec879cbcb159999f2`.
+- Aggregate project state: `.project/active-work.json` was synchronized by PR #151 before this increment; this UI-only change does not rewrite it.
