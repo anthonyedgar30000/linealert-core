@@ -12,25 +12,25 @@
   "updated_on": "2026-09-28",
   "state_model": {
     "record_type": "repository_coordination_snapshot",
-    "captured_from_main": "741790bec2179b4e6ba09f54d1e9d65d22345809",
+    "captured_from_main": "a39007ab09ec1be4ff7fb051e524ae7bc2833227",
     "current_reality_source": "live_github_and_explicit_user_direction",
     "semantics": "This is a time-bounded coordination snapshot. Live GitHub lifecycle, exact current branch head, CI, deployment, equipment documentation, and equipment evidence supersede cached claims.",
     "publication_policy": {
       "state_only_merge_requires_immediate_self_sync": false,
       "publication_pr_self_reference_required": false,
       "rule": "A state-only publication does not require another pull request merely to record its own merge. Create a corrective sync only when a substantive external lifecycle, authority, deployment, equipment, or scope fact changes or contradicts the published snapshot.",
-      "current_correction_reason": "PR #155 merged the Speedway Service Workspace as the primary local frontend. This snapshot advances repository reality to that merged main before the bounded local service-case persistence increment."
+      "current_correction_reason": "PR #156 merged bounded local service-case persistence. This snapshot advances repository/runtime reality to that merged main before the explicit live emulated historian increment."
     }
   },
   "live_observation": {
-    "observed_at": "2026-09-28T22:52:48Z",
+    "observed_at": "2026-09-28T23:30:36Z",
     "default_branch": "main",
-    "default_branch_head": "741790bec2179b4e6ba09f54d1e9d65d22345809",
-    "default_branch_tree": "bb9540a81ae4f564a63b17cb8fa1cd9def3c664a",
+    "default_branch_head": "a39007ab09ec1be4ff7fb051e524ae7bc2833227",
+    "default_branch_tree": "26b80541cd22313de25eb9b40ef1298a9be323d8",
     "latest_functional_merge": {
-      "pull_request": 155,
-      "title": "Add Speedway Service Workspace",
-      "merge_commit": "741790bec2179b4e6ba09f54d1e9d65d22345809"
+      "pull_request": 156,
+      "title": "Add local service case persistence",
+      "merge_commit": "a39007ab09ec1be4ff7fb051e524ae7bc2833227"
     },
     "open_pull_requests_before_branch_creation": [],
     "active_sync_pull_request": null,
@@ -56,10 +56,10 @@
     },
     "main_ci": {
       "verification_scope": "merged_main_push",
-      "pull_request": 155,
-      "run_id": 36493836811,
-      "head_sha": "741790bec2179b4e6ba09f54d1e9d65d22345809",
-      "merge_commit": "741790bec2179b4e6ba09f54d1e9d65d22345809",
+      "pull_request": 156,
+      "run_id": 36495833503,
+      "head_sha": "a39007ab09ec1be4ff7fb051e524ae7bc2833227",
+      "merge_commit": "a39007ab09ec1be4ff7fb051e524ae7bc2833227",
       "conclusion": "success",
       "jobs": [
         "test (3.11)",
@@ -71,9 +71,9 @@
     },
     "public_pages": {
       "status": "observed_deployed_2026_09_28",
-      "workflow_run": 36493836802,
-      "source_commit": "741790bec2179b4e6ba09f54d1e9d65d22345809",
-      "source_tree": "bb9540a81ae4f564a63b17cb8fa1cd9def3c664a",
+      "workflow_run": 36495833532,
+      "source_commit": "a39007ab09ec1be4ff7fb051e524ae7bc2833227",
+      "source_tree": "26b80541cd22313de25eb9b40ef1298a9be323d8",
       "plant_canvas": "https://anthonyedgar30000.github.io/linealert-core/triage/",
       "troubleshooting_guide": "https://anthonyedgar30000.github.io/linealert-core/troubleshooting-guide.html",
       "event_log": "https://anthonyedgar30000.github.io/linealert-core/event-log/",
@@ -89,10 +89,10 @@
     "equipment_control_path": "not_observed",
     "equipment_documentation": "synthetic demo profiles and planning material observed; no Labeler 2 OEM manual or commissioned machine package observed",
     "latest_merged_pull_request": {
-      "pull_request": 155,
-      "title": "Add Speedway Service Workspace",
-      "source_head": "777bededd4cb0d6a9405d87ee43f15246d634792",
-      "merge_commit": "741790bec2179b4e6ba09f54d1e9d65d22345809"
+      "pull_request": 156,
+      "title": "Add local service case persistence",
+      "source_head": "569e1369e05538654b1b32f7181933c50fb716c3",
+      "merge_commit": "a39007ab09ec1be4ff7fb051e524ae7bc2833227"
     },
     "recent_repository_increments": [
       {
@@ -164,6 +164,11 @@
         "pull_request": 155,
         "title": "Add Speedway Service Workspace",
         "merge_commit": "741790bec2179b4e6ba09f54d1e9d65d22345809"
+      },
+      {
+        "pull_request": 156,
+        "title": "Add local service case persistence",
+        "merge_commit": "a39007ab09ec1be4ff7fb051e524ae7bc2833227"
       }
     ]
   },
@@ -339,13 +344,13 @@
     },
     "product_scope_relationship": "The existing Plant Canvas and operator/shift-supervisor workflow remain preserved synthetic demo behavior, but they are not the initial commercial LineAlert user workflow after the Speedway service-scope reset.",
     "speedway_service_workspace": {
-      "state": "merged_primary_surface_with_local_persistence_increment",
+      "state": "merged_primary_surface_with_local_persistence",
       "route": "/",
       "legacy_operator_demo_route": "/plant-canvas",
       "classification": "synthetic_browser_session_service_workspace",
       "service_case_source": "controlled_synthetic_fixture_aligned_to_v1_contract",
       "historian_status": "read_only_same_origin_status_only",
-      "plant_context_entry": "local_persistent_v1_in_current_increment",
+      "plant_context_entry": "local_persistent_v1_merged",
       "manual_verification_states": [
         "plant_relay_only",
         "technician_viewed_source",
@@ -575,7 +580,16 @@
     "persisted_plant_reported_context != verified_source_record",
     "single_process_atomic_replace != distributed_transaction",
     "service_case_persistence != equipment_authority",
-    "service_case_persistence != return_to_service_authority"
+    "service_case_persistence != return_to_service_authority",
+    "emulated_history != plant_history",
+    "emulated_historian != timescaledb",
+    "deterministic_synthetic_pattern != historical_pattern",
+    "synthetic_clock_model != verified_clock_synchronization",
+    "simulated_departure != current_root_cause",
+    "emulated_condition_violation != physical_fault",
+    "post_intervention_scenario != verified_maintenance_action",
+    "successful_emulated_retrieval != explanation_truth",
+    "historian_retrieval != diagnosis"
   ],
   "reasoning_node_reality": {
     "classification": "controlled_synthetic_local_reasoning_substrate",
@@ -612,7 +626,59 @@
     "document_retrieval": "not_implemented",
     "embeddings_or_vector_retrieval": "not_implemented",
     "local_model_integration": "not_implemented",
-    "production_equipment_authority": "not_granted"
+    "production_equipment_authority": "not_granted",
+    "historian_emulation": {
+      "status": "implemented_in_current_increment",
+      "classification": "controlled_synthetic_live_historian_emulation",
+      "source_baseline_main": "a39007ab09ec1be4ff7fb051e524ae7bc2833227",
+      "explicit_mode": "-UseEmulatedHistorian",
+      "automatic_timescale_fallback": false,
+      "service": {
+        "host": "127.0.0.1",
+        "port": 8767,
+        "lan_binding": false,
+        "next_same_origin_proxy": true
+      },
+      "storage": {
+        "backend": "sqlite",
+        "persistence": "sqlite_local_emulated",
+        "default_windows_path": "%LOCALAPPDATA%\\LineAlert\\historian-emulator-v1\\historian.sqlite3",
+        "wal": true,
+        "synchronous": "FULL",
+        "bounded_cycle_retention": true,
+        "cycle_transaction": true
+      },
+      "scenario": {
+        "deterministic": true,
+        "random_values": false,
+        "cycle_interval_seconds": 2.0,
+        "scenario_length_cycles": 48,
+        "phases": [
+          "stable_reference",
+          "incipient_presentation_drift",
+          "persistent_presentation_drift",
+          "bounded_diagnostic_observation",
+          "post_intervention_observation"
+        ],
+        "changed_relationship": "LabelFeedCommand -> LabelAtPeelPoint",
+        "held_relationship": "BottleDetected -> SpacingConfirmed"
+      },
+      "read_endpoints": [
+        "/api/status",
+        "/api/history/functional-temporal",
+        "/api/history/conditions",
+        "/api/history/observations",
+        "/api/history/episodes/{episode_id}"
+      ],
+      "http_external_writes": "refused_405",
+      "unavailable_fail_closed": [
+        "configured_policy_condition_localization",
+        "functional_temporal_reference_selected_comparison"
+      ],
+      "physical_state_authority": false,
+      "production_authority": false,
+      "timescale_replacement_claim": false
+    }
   },
   "clock_integrity_reality": {
     "classification": "bounded_synthetic_clock_evidence_and_lab_projection",
@@ -717,7 +783,7 @@
   },
   "service_case_contract_reality": {
     "status": "executable_v1_contract_defined",
-    "source_baseline_main": "741790bec2179b4e6ba09f54d1e9d65d22345809",
+    "source_baseline_main": "a39007ab09ec1be4ff7fb051e524ae7bc2833227",
     "schema_versions": [
       "linealert.service-case.v1",
       "linealert.plant-reported-context.v1"
@@ -783,9 +849,9 @@
     "local_persistence_failure_mode": "fail_closed_for_writes"
   },
   "service_case_persistence_reality": {
-    "status": "implemented_in_current_increment",
+    "status": "merged_local_runtime_capability",
     "classification": "local_synthetic_development_persistence",
-    "source_baseline_main": "741790bec2179b4e6ba09f54d1e9d65d22345809",
+    "source_baseline_main": "a39007ab09ec1be4ff7fb051e524ae7bc2833227",
     "service": {
       "host": "127.0.0.1",
       "port": 8768,
@@ -833,6 +899,54 @@
       "single_process_atomic_replace != distributed_transaction",
       "service_case_persistence != equipment_authority",
       "service_case_persistence != return_to_service_authority"
+    ]
+  },
+  "emulated_historian_reality": {
+    "status": "implemented_in_current_increment",
+    "classification": "controlled_synthetic_live_historian_emulation",
+    "source_baseline_main": "a39007ab09ec1be4ff7fb051e524ae7bc2833227",
+    "runtime_identity": {
+      "historian_backend": "sqlite_emulator",
+      "persistence": "sqlite_local_emulated",
+      "source_mode": "controlled_synthetic_live_emulation",
+      "source_classification": "controlled_synthetic_demo",
+      "emulated": true
+    },
+    "retained_context": [
+      "source_identity",
+      "asset_identity",
+      "component_identity",
+      "timestamp",
+      "episode_id",
+      "cycle_id",
+      "clock_model_basis",
+      "engineering_units",
+      "expected_envelope",
+      "profile_id",
+      "operating_mode",
+      "configuration_version",
+      "firmware_version",
+      "calibration_id",
+      "sampling_profile_id",
+      "recipe_id",
+      "product_id",
+      "config_sha256",
+      "scenario_phase",
+      "evidence_ids",
+      "reason_code"
+    ],
+    "failure_behavior": "retained store and live source health remain separate; source failure sets source_available=false and does not invent a replacement cycle",
+    "boundaries": [
+      "emulated_history != plant_history",
+      "emulated_historian != timescaledb",
+      "deterministic_synthetic_pattern != historical_pattern",
+      "synthetic_clock_model != verified_clock_synchronization",
+      "simulated_departure != current_root_cause",
+      "emulated_condition_violation != physical_fault",
+      "post_intervention_scenario != verified_maintenance_action",
+      "successful_emulated_retrieval != explanation_truth",
+      "historian_retrieval != diagnosis",
+      "recommendation != authorized_action"
     ]
   }
 }

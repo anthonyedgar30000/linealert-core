@@ -28,16 +28,19 @@ SPEEDWAY_WORKSPACE = (
 SERVICE_CASE_PERSISTENCE = (
     PROJECT_ROOT / "docs" / "architecture" / "service-case-local-persistence-v1.md"
 )
+LIVE_EMULATED_HISTORIAN = (
+    PROJECT_ROOT / "docs" / "architecture" / "live-emulated-historian-v1.md"
+)
 
 PR37_HEAD = "fc22177e1b855fd6f416f648330cd3416215a96c"
 PR37_MERGE = "97256907cd428a8a0ba3dfb7d4020fa19a2485ee"
 PR38_HEAD = "0d5d8180a5edffaeca8a9822800d7e729ef96327"
 PR38_MERGE = "06f795e760c7ad360bc51e264f8c55238a2a60da"
 PR114_MERGE = "4037c2c0bcadce3e3e6e414735c0045b65db6027"
-CURRENT_MAIN = "741790bec2179b4e6ba09f54d1e9d65d22345809"
-CURRENT_TREE = "bb9540a81ae4f564a63b17cb8fa1cd9def3c664a"
+CURRENT_MAIN = "a39007ab09ec1be4ff7fb051e524ae7bc2833227"
+CURRENT_TREE = "26b80541cd22313de25eb9b40ef1298a9be323d8"
 PR150_HEAD = "d300af099fe493f5e6c727c66f2f0371d2ccbf86"
-PR155_HEAD = "777bededd4cb0d6a9405d87ee43f15246d634792"
+PR156_HEAD = "569e1369e05538654b1b32f7181933c50fb716c3"
 
 
 def load_project_state() -> dict[str, Any]:
@@ -59,10 +62,10 @@ def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
     assert policy["state_only_merge_requires_immediate_self_sync"] is False
     assert policy["publication_pr_self_reference_required"] is False
     assert "substantive external lifecycle" in policy["rule"]
-    assert "PR #155 merged the Speedway Service Workspace" in (
+    assert "PR #156 merged bounded local service-case persistence" in (
         policy["current_correction_reason"]
     )
-    assert "local service-case persistence increment" in (
+    assert "live emulated historian increment" in (
         policy["current_correction_reason"]
     )
 
@@ -73,9 +76,9 @@ def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
     assert observation["active_sync_pull_request"] is None
     assert observation["open_issues"] == [31]
     assert observation["latest_merged_pull_request"] == {
-        "pull_request": 155,
-        "title": "Add Speedway Service Workspace",
-        "source_head": PR155_HEAD,
+        "pull_request": 156,
+        "title": "Add local service case persistence",
+        "source_head": PR156_HEAD,
         "merge_commit": CURRENT_MAIN,
     }
     assert observation["recently_closed_issues"]["23"] == {
@@ -90,8 +93,8 @@ def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
 
     ci = observation["main_ci"]
     assert ci["verification_scope"] == "merged_main_push"
-    assert ci["pull_request"] == 155
-    assert ci["run_id"] == 36493836811
+    assert ci["pull_request"] == 156
+    assert ci["run_id"] == 36495833503
     assert ci["head_sha"] == CURRENT_MAIN
     assert ci["merge_commit"] == CURRENT_MAIN
     assert ci["conclusion"] == "success"
@@ -101,7 +104,7 @@ def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
 
     pages = observation["public_pages"]
     assert pages["status"] == "observed_deployed_2026_09_28"
-    assert pages["workflow_run"] == 36493836802
+    assert pages["workflow_run"] == 36495833532
     assert pages["source_commit"] == CURRENT_MAIN
     assert pages["source_tree"] == CURRENT_TREE
     assert pages["fresh_verification_in_this_sync"] is True
@@ -353,10 +356,10 @@ def test_speedway_service_workspace_reality_is_primary_and_bounded() -> None:
     assert "Machine Health / Evidence" in demo["supporting_surfaces"]
 
     workspace = demo["speedway_service_workspace"]
-    assert workspace["state"] == "merged_primary_surface_with_local_persistence_increment"
+    assert workspace["state"] == "merged_primary_surface_with_local_persistence"
     assert workspace["route"] == "/"
     assert workspace["legacy_operator_demo_route"] == "/plant-canvas"
-    assert workspace["plant_context_entry"] == "local_persistent_v1_in_current_increment"
+    assert workspace["plant_context_entry"] == "local_persistent_v1_merged"
     assert workspace["persistence_status"] == "local_atomic_json_single_process_v1"
     assert workspace["persistence_backend"] == "loopback_127_0_0_1_8768"
     assert workspace["direct_source_retrieval_state"] is False
@@ -385,7 +388,7 @@ def test_service_case_local_persistence_reality_is_bounded() -> None:
     state = load_project_state()
     persistence = state["service_case_persistence_reality"]
 
-    assert persistence["status"] == "implemented_in_current_increment"
+    assert persistence["status"] == "merged_local_runtime_capability"
     assert persistence["classification"] == "local_synthetic_development_persistence"
     assert persistence["source_baseline_main"] == CURRENT_MAIN
 
@@ -487,6 +490,82 @@ def test_reasoning_node_reality_tracks_merged_bounded_substrate() -> None:
     assert reasoning["embeddings_or_vector_retrieval"] == "not_implemented"
     assert reasoning["local_model_integration"] == "not_implemented"
     assert reasoning["production_equipment_authority"] == "not_granted"
+
+
+def test_emulated_historian_reality_is_explicit_and_non_authoritative() -> None:
+    state = load_project_state()
+    reality = state["emulated_historian_reality"]
+
+    assert reality["status"] == "implemented_in_current_increment"
+    assert reality["classification"] == "controlled_synthetic_live_historian_emulation"
+    assert reality["source_baseline_main"] == CURRENT_MAIN
+
+    identity = reality["runtime_identity"]
+    assert identity["historian_backend"] == "sqlite_emulator"
+    assert identity["persistence"] == "sqlite_local_emulated"
+    assert identity["source_mode"] == "controlled_synthetic_live_emulation"
+    assert identity["source_classification"] == "controlled_synthetic_demo"
+    assert identity["emulated"] is True
+
+    for field in {
+        "source_identity",
+        "asset_identity",
+        "component_identity",
+        "timestamp",
+        "clock_model_basis",
+        "engineering_units",
+        "expected_envelope",
+        "configuration_version",
+        "firmware_version",
+        "calibration_id",
+        "sampling_profile_id",
+        "config_sha256",
+        "scenario_phase",
+        "evidence_ids",
+        "reason_code",
+    }:
+        assert field in reality["retained_context"]
+
+    assert "source_available=false" in reality["failure_behavior"]
+    assert "emulated_history != plant_history" in reality["boundaries"]
+    assert "emulated_historian != timescaledb" in reality["boundaries"]
+    assert "synthetic_clock_model != verified_clock_synchronization" in (
+        reality["boundaries"]
+    )
+    assert "simulated_departure != current_root_cause" in reality["boundaries"]
+
+    architecture = LIVE_EMULATED_HISTORIAN.read_text(encoding="utf-8")
+    assert "-UseEmulatedHistorian" in architecture
+    assert "No random values are used" in architecture
+    assert "127.0.0.1:8767" in architecture
+    assert "sqlite_local_emulated" in architecture
+    assert "emulated_history != plant_history" in architecture
+    assert "emulated_historian != timescaledb" in architecture
+
+
+def test_reasoning_node_tracks_current_emulated_historian_increment() -> None:
+    reasoning = load_project_state()["reasoning_node_reality"]
+    emulation = reasoning["historian_emulation"]
+
+    assert emulation["status"] == "implemented_in_current_increment"
+    assert emulation["explicit_mode"] == "-UseEmulatedHistorian"
+    assert emulation["automatic_timescale_fallback"] is False
+    assert emulation["service"] == {
+        "host": "127.0.0.1",
+        "port": 8767,
+        "lan_binding": False,
+        "next_same_origin_proxy": True,
+    }
+    assert emulation["storage"]["backend"] == "sqlite"
+    assert emulation["storage"]["wal"] is True
+    assert emulation["storage"]["synchronous"] == "FULL"
+    assert emulation["scenario"]["deterministic"] is True
+    assert emulation["scenario"]["random_values"] is False
+    assert emulation["scenario"]["scenario_length_cycles"] == 48
+    assert emulation["http_external_writes"] == "refused_405"
+    assert emulation["physical_state_authority"] is False
+    assert emulation["production_authority"] is False
+    assert emulation["timescale_replacement_claim"] is False
 
 
 def test_clock_integrity_reality_remains_synthetic_and_bounded() -> None:
@@ -597,6 +676,9 @@ def test_publication_and_readme_guidance_remain_current() -> None:
     assert "loopback-only local persistence service on port 8768" in readme
     assert "plaintext atomic JSON" in readme
     assert "service-case-local-persistence-v1.md" in readme
+    assert "-UseEmulatedHistorian" in readme
+    assert "live-emulated-historian-v1.md" in readme
+    assert "does not represent physical plant history" in readme
 
     lineage = LINEAGE_GUIDANCE.read_text(encoding="utf-8")
     assert "green_ci != authorized_merge" in lineage

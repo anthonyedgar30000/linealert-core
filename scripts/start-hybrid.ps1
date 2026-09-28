@@ -1,6 +1,7 @@
 param(
     [switch]$SkipInstall,
-    [switch]$SkipHistorian
+    [switch]$SkipHistorian,
+    [switch]$UseEmulatedHistorian
 )
 
 $ErrorActionPreference = "Stop"
@@ -14,9 +15,11 @@ $conditionBindings = Join-Path $repoRoot "examples\condition_signal_bindings.jso
 $serviceCaseSeed = Join-Path $repoRoot "examples\speedway_service_case_workspace_seed_v1.json"
 if ($env:LOCALAPPDATA) {
     $serviceCaseDataDir = Join-Path $env:LOCALAPPDATA "LineAlert\service-cases-v1"
+    $emulatedHistorianDb = Join-Path $env:LOCALAPPDATA "LineAlert\historian-emulator-v1\historian.sqlite3"
 }
 else {
     $serviceCaseDataDir = Join-Path $repoRoot ".runtime\service-cases-v1"
+    $emulatedHistorianDb = Join-Path $repoRoot ".runtime\historian-emulator-v1\historian.sqlite3"
 }
 $historianCompose = Join-Path $repoRoot "docker-compose.historian.yml"
 $historianDsn = "postgresql://linealert:linealert_dev@127.0.0.1:5433/linealert"
@@ -28,12 +31,16 @@ if (-not (Test-Path $python)) {
     throw "Python environment missing. Run: py -m venv .venv; .\.venv\Scripts\python.exe -m pip install -e '.[opcua,historian]'"
 }
 
+if ($SkipHistorian -and $UseEmulatedHistorian) {
+    throw "Choose either -SkipHistorian or -UseEmulatedHistorian, not both."
+}
+
 $uiReady = Test-NetConnection -ComputerName 127.0.0.1 -Port 8766 -InformationLevel Quiet -WarningAction SilentlyContinue
 if ($uiReady) {
     throw "Port 8766 is already in use. Stop the existing LineAlert UI before starting another hybrid session."
 }
 
-if (-not $SkipHistorian) {
+if (-not $SkipHistorian -and -not $UseEmulatedHistorian) {
     & $python -c "import psycopg" 2>$null
     if ($LASTEXITCODE -ne 0) {
         throw "Historian extra missing. Run: .\.venv\Scripts\python.exe -m pip install -e '.[opcua,historian]'"
@@ -82,7 +89,37 @@ if (-not $serviceCaseReady) {
     }
 }
 
-if (-not $SkipHistorian) {
+if ($UseEmulatedHistorian) {
+    $historianReady = Test-NetConnection -ComputerName 127.0.0.1 -Port 8767 -InformationLevel Quiet -WarningAction SilentlyContinue
+    if ($historianReady) {
+        try {
+            $historianStatus = Invoke-RestMethod -Uri "http://127.0.0.1:8767/api/status" -TimeoutSec 2
+            if (-not $historianStatus.emulated) {
+                throw "Port 8767 is occupied by a non-emulated historian."
+            }
+        }
+        catch {
+            throw "Port 8767 is occupied but the emulated historian identity could not be verified."
+        }
+    }
+    else {
+        $startedHistorian = Start-Process -FilePath $python `
+            -ArgumentList `
+                "-m", "linealert_core.historian_emulator_service", `
+                "--database", $emulatedHistorianDb, `
+                "--config", $conditionConfig, `
+                "--interval-seconds", "2", `
+                "--seed-cycles", "36" `
+            -WorkingDirectory $repoRoot `
+            -PassThru
+        Start-Sleep -Seconds 1
+        $historianReady = Test-NetConnection -ComputerName 127.0.0.1 -Port 8767 -InformationLevel Quiet -WarningAction SilentlyContinue
+        if (-not $historianReady) {
+            throw "Emulated historian did not become ready on localhost:8767."
+        }
+    }
+}
+elseif (-not $SkipHistorian) {
     $historianReady = Test-NetConnection -ComputerName 127.0.0.1 -Port 8767 -InformationLevel Quiet -WarningAction SilentlyContinue
     if (-not $historianReady) {
         $startedHistorian = Start-Process -FilePath $python `
@@ -108,7 +145,13 @@ try {
     Write-Host "Condition evidence: http://localhost:8765/api/condition" -ForegroundColor DarkCyan
     Write-Host "Service-case persistence: http://localhost:8768/api/status" -ForegroundColor DarkMagenta
     Write-Host "Service-case data: $serviceCaseDataDir" -ForegroundColor DarkMagenta
-    if (-not $SkipHistorian) {
+    if ($UseEmulatedHistorian) {
+        Write-Host "Emulated historian: http://localhost:8767/api/status" -ForegroundColor DarkGreen
+        Write-Host "Emulated historian data: $emulatedHistorianDb" -ForegroundColor DarkGreen
+        Write-Host "Functional/temporal history: http://localhost:8767/api/history/functional-temporal" -ForegroundColor DarkGreen
+        Write-Host "Boundary: emulated historian != TimescaleDB != verified physical history" -ForegroundColor DarkYellow
+    }
+    elseif (-not $SkipHistorian) {
         Write-Host "Shared historian: http://localhost:8767/api/status" -ForegroundColor DarkGreen
         Write-Host "Condition history: http://localhost:8767/api/history/conditions" -ForegroundColor DarkGreen
         Write-Host "Persistent localization: http://localhost:8767/api/history/conditions/localize" -ForegroundColor DarkGreen
