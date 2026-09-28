@@ -12,21 +12,21 @@
   "updated_on": "2026-09-28",
   "state_model": {
     "record_type": "repository_coordination_snapshot",
-    "captured_from_main": "13d57e81164c28918d9959874348b498cb3b45e2",
+    "captured_from_main": "e22ca7cc404b9040c0c2a48eabe6fa442d75dfe5",
     "current_reality_source": "live_github_and_explicit_user_direction",
     "semantics": "This is a time-bounded coordination snapshot. Live GitHub lifecycle, exact current branch head, CI, deployment, equipment documentation, and equipment evidence supersede cached claims.",
     "publication_policy": {
       "state_only_merge_requires_immediate_self_sync": false,
       "publication_pr_self_reference_required": false,
       "rule": "A state-only publication does not require another pull request merely to record its own merge. Create a corrective sync only when a substantive external lifecycle, authority, deployment, equipment, or scope fact changes or contradicts the published snapshot.",
-      "current_correction_reason": "The initial commercial product scope changed materially after PR #152: LineAlert v1 is now centered on Speedway service/maintenance technicians, with plant personnel and plant systems treated as evidence sources rather than required LineAlert end users. This snapshot records that product-scope reset before service-case runtime or UI work proceeds."
+      "current_correction_reason": "PR #153 merged the authoritative Speedway service-workflow scope reset. This snapshot advances repository reality to that merged main before the service-case data-contract increment, while preserving the rule that a publication PR does not need to self-reference its own merge."
     }
   },
   "live_observation": {
-    "observed_at": "2026-09-28T21:58:08Z",
+    "observed_at": "2026-09-28T22:13:44Z",
     "default_branch": "main",
-    "default_branch_head": "13d57e81164c28918d9959874348b498cb3b45e2",
-    "default_branch_tree": "9ab4f7b25e19d27482d5a9a5d78dd4f76006d00b",
+    "default_branch_head": "e22ca7cc404b9040c0c2a48eabe6fa442d75dfe5",
+    "default_branch_tree": "41361eb16a4901ad3f7d52d6efe67cd5ddc790d3",
     "latest_functional_merge": {
       "pull_request": 152,
       "title": "Add read-only Reasoning Inputs frontend",
@@ -56,10 +56,10 @@
     },
     "main_ci": {
       "verification_scope": "merged_main_push",
-      "pull_request": 152,
-      "run_id": 36485473903,
-      "head_sha": "13d57e81164c28918d9959874348b498cb3b45e2",
-      "merge_commit": "13d57e81164c28918d9959874348b498cb3b45e2",
+      "pull_request": 153,
+      "run_id": 36490047406,
+      "head_sha": "e22ca7cc404b9040c0c2a48eabe6fa442d75dfe5",
+      "merge_commit": "e22ca7cc404b9040c0c2a48eabe6fa442d75dfe5",
       "conclusion": "success",
       "jobs": [
         "test (3.11)",
@@ -70,17 +70,17 @@
       "merge_commit_ci": "verified_success"
     },
     "public_pages": {
-      "status": "previously_observed_deployed_not_reverified_in_2026_09_28_sync",
-      "workflow_run": 34447779687,
-      "source_commit": "4037c2c0bcadce3e3e6e414735c0045b65db6027",
-      "source_tree": "9ae2eaaae207c1503cd6ce09b50d91c0c9df0410",
+      "status": "observed_deployed_2026_09_28",
+      "workflow_run": 36490047509,
+      "source_commit": "e22ca7cc404b9040c0c2a48eabe6fa442d75dfe5",
+      "source_tree": "41361eb16a4901ad3f7d52d6efe67cd5ddc790d3",
       "plant_canvas": "https://anthonyedgar30000.github.io/linealert-core/triage/",
       "troubleshooting_guide": "https://anthonyedgar30000.github.io/linealert-core/troubleshooting-guide.html",
       "event_log": "https://anthonyedgar30000.github.io/linealert-core/event-log/",
       "investigation_workspace": "https://anthonyedgar30000.github.io/linealert-core/investigation/",
-      "note": "GitHub Pages was previously observed as a static controlled synthetic demo. This September 28 repository-state sync did not freshly prove external Pages availability; the static demo is not a production LineAlert runtime.",
-      "last_verified_observation": "2026-09-10",
-      "fresh_verification_in_this_sync": false
+      "note": "GitHub Pages deployment for merged main completed successfully. This remains a static controlled demo/documentation surface and is not a production LineAlert runtime.",
+      "last_verified_observation": "2026-09-28",
+      "fresh_verification_in_this_sync": true
     },
     "production_runtime_deployment": "not_observed",
     "azure_lab_resources": "not_observed",
@@ -89,10 +89,10 @@
     "equipment_control_path": "not_observed",
     "equipment_documentation": "synthetic demo profiles and planning material observed; no Labeler 2 OEM manual or commissioned machine package observed",
     "latest_merged_pull_request": {
-      "pull_request": 152,
-      "title": "Add read-only Reasoning Inputs frontend",
-      "source_head": "6d7d284008ca7e8ee1a7f4d03a67cdba2a79f87",
-      "merge_commit": "13d57e81164c28918d9959874348b498cb3b45e2"
+      "pull_request": 153,
+      "title": "Reset initial product scope to Speedway service workflow",
+      "source_head": "2868ac6d4a69513356e4fc17ce2692ec71500e7a",
+      "merge_commit": "e22ca7cc404b9040c0c2a48eabe6fa442d75dfe5"
     },
     "recent_repository_increments": [
       {
@@ -149,6 +149,11 @@
         "pull_request": 152,
         "title": "Add read-only Reasoning Inputs frontend",
         "merge_commit": "13d57e81164c28918d9959874348b498cb3b45e2"
+      },
+      {
+        "pull_request": 153,
+        "title": "Reset initial product scope to Speedway service workflow",
+        "merge_commit": "e22ca7cc404b9040c0c2a48eabe6fa442d75dfe5"
       }
     ]
   },
@@ -294,7 +299,7 @@
     },
     "event_log_boundary": "Recorded event order and temporal proximity are context evidence, not causal proof.",
     "investigation_workspace": {
-      "state": "merged_static_demo_previous_pages_deployment_not_reverified_in_this_sync",
+      "state": "merged_static_demo_pages_deployment_workflow_verified_2026_09_28",
       "behavior": "Keeps a best-supported working explanation plus credible alternatives visible, with evidence consistent with, evidence against or limiting, and missing or discriminating evidence. The view evolves from the shared synthetic session and event journal.",
       "standing_model": [
         "most_supported",
@@ -470,7 +475,7 @@
     "network_listener": "not_observed",
     "equipment_control_path": "not_observed"
   },
-  "deployment_state_scope": "production_runtime_and_equipment_path_only; a static GitHub Pages demo was previously observed separately but was not freshly reverified by the 2026-09-28 state sync",
+  "deployment_state_scope": "production_runtime_and_equipment_path_only; static GitHub Pages deployment was reverified successfully on 2026-09-28 and remains distinct from production runtime",
   "governance_and_provenance": {
     "historical_detail": "Earlier governance incidents and exact historical records remain preserved in prior revisions and Git history; this current snapshot does not rewrite them.",
     "historical_governance_issue": 27,
@@ -508,7 +513,9 @@
     "clock_evidence_present != clock_synchronization_proven",
     "first_detected_departure != root_cause",
     "plant_reported_context != verified_source_record",
-    "technician_entry != direct_system_observation"
+    "technician_entry != direct_system_observation",
+    "reported_event_time != verified_machine_timestamp",
+    "technician_viewed_source != direct_system_ingestion"
   ],
   "reasoning_node_reality": {
     "classification": "controlled_synthetic_local_reasoning_substrate",
@@ -619,7 +626,8 @@
         "reported_source",
         "original_wording_or_bounded_summary",
         "source_verification_state",
-        "asset_or_process_scope"
+        "asset_or_process_scope",
+        "reported_clock_quality"
       ],
       "reported_context_default_classification": "plant_reported_context",
       "reported_context_is_verified_source_record": false
@@ -645,6 +653,71 @@
       "temporal_precedence != causation",
       "technician_entry != direct_system_observation",
       "recommendation != authorized_action"
+    ]
+  },
+  "service_case_contract_reality": {
+    "status": "executable_v1_contract_defined",
+    "source_baseline_main": "e22ca7cc404b9040c0c2a48eabe6fa442d75dfe5",
+    "schema_versions": [
+      "linealert.service-case.v1",
+      "linealert.plant-reported-context.v1"
+    ],
+    "objects": [
+      "ServiceCase",
+      "FirstDetectedDeparture",
+      "PlantReportedContext"
+    ],
+    "wire_examples": [
+      "examples/speedway_service_case_v1.json",
+      "examples/plant_reported_context_v1.json"
+    ],
+    "preserved_identity": [
+      "service_case_id",
+      "customer_id",
+      "site_id",
+      "asset_id",
+      "evidence_ids",
+      "source_ids",
+      "reported_source",
+      "source_record_reference"
+    ],
+    "preserved_time_and_quality": [
+      "service_call_received_at",
+      "reported_incident_at",
+      "preincident_window_start",
+      "preincident_window_end",
+      "first_departure_observed_at",
+      "first_departure_clock_quality",
+      "reported_event_time_or_window",
+      "reported_clock_quality",
+      "entered_at"
+    ],
+    "manual_plant_context_verification_states": [
+      "plant_relay_only",
+      "technician_viewed_source",
+      "technician_retained_copy"
+    ],
+    "direct_source_retrieval_state_available": false,
+    "persistence": "not_implemented",
+    "api": "not_implemented",
+    "speedway_service_workspace_ui": "not_implemented",
+    "automatic_first_departure_selection": "not_implemented",
+    "reasoning_node_consumption": "not_implemented",
+    "direct_cmms_integration": "not_implemented",
+    "equipment_control": "not_authorized",
+    "claim_boundaries": [
+      "first_detected_departure != root_cause",
+      "first_detected_departure != incident_start",
+      "temporal_precedence != causation",
+      "plant_reported_context != verified_source_record",
+      "technician_entry != direct_system_observation",
+      "reported_event_time != verified_machine_timestamp",
+      "recommendation != authorized_action"
+    ],
+    "plant_context_binding_validation": [
+      "service_case_id_match",
+      "asset_id_match",
+      "context_id_referenced_by_service_case"
     ]
   }
 }

@@ -19,16 +19,19 @@ CI_WORKFLOW = PROJECT_ROOT / ".github" / "workflows" / "ci.yml"
 SPEEDWAY_SCOPE = (
     PROJECT_ROOT / "docs" / "architecture" / "speedway-service-workflow-scope-v1.md"
 )
+SERVICE_CASE_CONTRACT = (
+    PROJECT_ROOT / "docs" / "architecture" / "service-case-data-contract-v1.md"
+)
 
 PR37_HEAD = "fc22177e1b855fd6f416f648330cd3416215a96c"
 PR37_MERGE = "97256907cd428a8a0ba3dfb7d4020fa19a2485ee"
 PR38_HEAD = "0d5d8180a5edffaeca8a9822800d7e729ef96327"
 PR38_MERGE = "06f795e760c7ad360bc51e264f8c55238a2a60da"
 PR114_MERGE = "4037c2c0bcadce3e3e6e414735c0045b65db6027"
-CURRENT_MAIN = "13d57e81164c28918d9959874348b498cb3b45e2"
-CURRENT_TREE = "9ab4f7b25e19d27482d5a9a5d78dd4f76006d00b"
+CURRENT_MAIN = "e22ca7cc404b9040c0c2a48eabe6fa442d75dfe5"
+CURRENT_TREE = "41361eb16a4901ad3f7d52d6efe67cd5ddc790d3"
 PR150_HEAD = "d300af099fe493f5e6c727c66f2f0371d2ccbf86"
-PR152_HEAD = "6d7d284008ca7e8ee1a7f4d03a67cdba2a79f87"
+PR153_HEAD = "2868ac6d4a69513356e4fc17ce2692ec71500e7a"
 
 
 def load_project_state() -> dict[str, Any]:
@@ -50,12 +53,10 @@ def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
     assert policy["state_only_merge_requires_immediate_self_sync"] is False
     assert policy["publication_pr_self_reference_required"] is False
     assert "substantive external lifecycle" in policy["rule"]
-    assert "initial commercial product scope changed materially" in (
+    assert "PR #153 merged the authoritative Speedway service-workflow scope reset" in (
         policy["current_correction_reason"]
     )
-    assert "Speedway service/maintenance technicians" in (
-        policy["current_correction_reason"]
-    )
+    assert "service-case data-contract increment" in policy["current_correction_reason"]
 
     observation = state["live_observation"]
     assert observation["default_branch_head"] == CURRENT_MAIN
@@ -64,9 +65,9 @@ def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
     assert observation["active_sync_pull_request"] is None
     assert observation["open_issues"] == [31]
     assert observation["latest_merged_pull_request"] == {
-        "pull_request": 152,
-        "title": "Add read-only Reasoning Inputs frontend",
-        "source_head": PR152_HEAD,
+        "pull_request": 153,
+        "title": "Reset initial product scope to Speedway service workflow",
+        "source_head": PR153_HEAD,
         "merge_commit": CURRENT_MAIN,
     }
     assert observation["recently_closed_issues"]["23"] == {
@@ -81,8 +82,8 @@ def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
 
     ci = observation["main_ci"]
     assert ci["verification_scope"] == "merged_main_push"
-    assert ci["pull_request"] == 152
-    assert ci["run_id"] == 36485473903
+    assert ci["pull_request"] == 153
+    assert ci["run_id"] == 36490047406
     assert ci["head_sha"] == CURRENT_MAIN
     assert ci["merge_commit"] == CURRENT_MAIN
     assert ci["conclusion"] == "success"
@@ -91,12 +92,11 @@ def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
     assert ci["merge_commit_ci"] == "verified_success"
 
     pages = observation["public_pages"]
-    assert pages["status"] == (
-        "previously_observed_deployed_not_reverified_in_2026_09_28_sync"
-    )
-    assert pages["workflow_run"] == 34447779687
-    assert pages["source_commit"] == PR114_MERGE
-    assert pages["fresh_verification_in_this_sync"] is False
+    assert pages["status"] == "observed_deployed_2026_09_28"
+    assert pages["workflow_run"] == 36490047509
+    assert pages["source_commit"] == CURRENT_MAIN
+    assert pages["source_tree"] == CURRENT_TREE
+    assert pages["fresh_verification_in_this_sync"] is True
     assert pages["investigation_workspace"].endswith("/investigation/")
     assert "not a production LineAlert runtime" in pages["note"]
 
@@ -261,6 +261,7 @@ def test_initial_commercial_scope_is_speedway_service_workflow() -> None:
         "original_wording_or_bounded_summary",
         "source_verification_state",
         "asset_or_process_scope",
+        "reported_clock_quality",
     }:
         assert field in plant["manual_entry_must_preserve"]
 
@@ -285,6 +286,50 @@ def test_initial_commercial_scope_is_speedway_service_workflow() -> None:
     assert "Temporal precedence" in architecture
 
 
+def test_service_case_contract_reality_is_bounded_and_non_authoritative() -> None:
+    state = load_project_state()
+    contract = state["service_case_contract_reality"]
+
+    assert contract["status"] == "executable_v1_contract_defined"
+    assert contract["source_baseline_main"] == CURRENT_MAIN
+    assert contract["schema_versions"] == [
+        "linealert.service-case.v1",
+        "linealert.plant-reported-context.v1",
+    ]
+    assert contract["objects"] == [
+        "ServiceCase",
+        "FirstDetectedDeparture",
+        "PlantReportedContext",
+    ]
+    assert contract["direct_source_retrieval_state_available"] is False
+    assert contract["manual_plant_context_verification_states"] == [
+        "plant_relay_only",
+        "technician_viewed_source",
+        "technician_retained_copy",
+    ]
+    assert contract["plant_context_binding_validation"] == [
+        "service_case_id_match",
+        "asset_id_match",
+        "context_id_referenced_by_service_case",
+    ]
+    assert contract["persistence"] == "not_implemented"
+    assert contract["api"] == "not_implemented"
+    assert contract["speedway_service_workspace_ui"] == "not_implemented"
+    assert contract["automatic_first_departure_selection"] == "not_implemented"
+    assert contract["reasoning_node_consumption"] == "not_implemented"
+    assert contract["direct_cmms_integration"] == "not_implemented"
+    assert contract["equipment_control"] == "not_authorized"
+    assert "reported_clock_quality" in contract["preserved_time_and_quality"]
+    assert "reported_event_time != verified_machine_timestamp" in (
+        contract["claim_boundaries"]
+    )
+
+    architecture = SERVICE_CASE_CONTRACT.read_text(encoding="utf-8")
+    assert "There is intentionally no direct_source_retrieval state" in architecture
+    assert "reported_clock_quality" in architecture
+    assert "first_detected_departure != root_cause" in architecture
+
+
 def test_current_demo_boundaries_include_investigation_and_maintenance() -> None:
     state = load_project_state()
     demo = state["current_demo_reality"]
@@ -298,7 +343,7 @@ def test_current_demo_boundaries_include_investigation_and_maintenance() -> None
 
     investigation = demo["investigation_workspace"]
     assert investigation["state"] == (
-        "merged_static_demo_previous_pages_deployment_not_reverified_in_this_sync"
+        "merged_static_demo_pages_deployment_workflow_verified_2026_09_28"
     )
     assert "working_explanation != diagnosis" in investigation["boundaries"]
     assert "investigation_priority != causal_probability" in investigation["boundaries"]
@@ -444,6 +489,8 @@ def test_publication_and_readme_guidance_remain_current() -> None:
     assert "LineAlert v1 is centered on Speedway service / maintenance technicians" in readme
     assert "Direct client CMMS integration is not required for v1" in readme
     assert "First detected departure is not root-cause proof" in readme
+    assert "service-case and plant-reported-context contracts" in readme
+    assert "examples/speedway_service_case_v1.json" in readme
 
     lineage = LINEAGE_GUIDANCE.read_text(encoding="utf-8")
     assert "green_ci != authorized_merge" in lineage
@@ -461,5 +508,6 @@ def test_production_deployment_and_equipment_reality_remain_bounded() -> None:
         "equipment_control_path": "not_observed",
     }
     scope = state["deployment_state_scope"]
-    assert "static GitHub Pages demo was previously observed separately" in scope
-    assert "not freshly reverified by the 2026-09-28 state sync" in scope
+    assert "static GitHub Pages deployment" in scope
+    assert "reverified successfully on 2026-09-28" in scope
+    assert "distinct from production runtime" in scope
