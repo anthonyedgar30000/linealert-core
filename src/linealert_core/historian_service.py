@@ -26,7 +26,6 @@ from .condition_history_selection import (
     ConditionHistorySelectionSpec,
     selected_condition_localization_to_dict,
 )
-from .condition_localization import PersistenceRule
 from .condition_projection import ConditionSignalObservation
 from .functional_temporal import (
     EpistemicState,
@@ -52,6 +51,7 @@ from .persistence_policy import (
     ConfiguredPersistencePolicyBinding,
     PersistencePolicyRegistry,
     bind_configured_persistence_policy,
+    configured_persistence_policy_binding_to_dict,
     persistence_policy_registry_from_config,
 )
 from .replay import ReplayInputError, build_core_from_config
@@ -393,21 +393,27 @@ def condition_localization_request_from_query(
     query: dict[str, list[str]],
     *,
     default_limit: int,
-) -> tuple[ConditionHistorySelectionSpec, str, PersistenceRule]:
-    """Parse an explicit historian-backed persistence-localization request."""
+) -> tuple[ConditionHistorySelectionSpec, str]:
+    """Parse one configured-policy historian localization request."""
 
     if _query_text(query, "relationship_id") is not None:
         raise ValueError(
             "relationship_id is not accepted for persistent localization; "
             "dependency evidence must remain visible"
         )
+    if (
+        _query_text(query, "required_outside") is not None
+        or _query_text(query, "window_size") is not None
+    ):
+        raise ValueError(
+            "required_outside and window_size are not accepted by configured-policy "
+            "localization; the persistence criterion is resolved from machine configuration"
+        )
 
     asset_id = _required_query_text(query, "asset_id")
     target_relationship_id = _required_query_text(query, "target_relationship_id")
     label = _required_query_text(query, "selection_label")
     limit = _query_int(query, "limit", default=default_limit)
-    required_outside = _query_int(query, "required_outside")
-    window_size = _query_int(query, "window_size")
 
     spec = ConditionHistorySelectionSpec(
         label=label,
@@ -425,14 +431,7 @@ def condition_localization_request_from_query(
             "to_time",
         ),
     )
-    return (
-        spec,
-        target_relationship_id,
-        PersistenceRule(
-            required_outside=required_outside,
-            window_size=window_size,
-        ),
-    )
+    return spec, target_relationship_id
 
 
 def historian_condition_localization_from_query(
@@ -442,29 +441,93 @@ def historian_condition_localization_from_query(
     *,
     default_limit: int = 240,
 ) -> dict[str, object]:
-    """Execute one governed read-only localization from persisted history."""
+    """Execute one governed configured-policy localization over persisted history."""
 
-    spec, target_relationship_id, persistence_rule = condition_localization_request_from_query(
+    spec, target_relationship_id = condition_localization_request_from_query(
         query,
         default_limit=default_limit,
     )
     if spec.asset_id != authority.asset_id:
         raise ValueError("asset_id does not match the configured localization topology authority")
 
+    policy = authority.persistence_policies.resolve(target_relationship_id)
+    if policy is None:
+        return {
+            "schema_version": "linealert.configured-condition-localization.v1",
+            "disposition": "REFUSED_POLICY_NOT_CONFIGURED",
+            "reason_code": "POLICY.PERSISTENCE_NOT_CONFIGURED",
+            "detail": (
+                "No configured persistence policy is bound to the requested target "
+                "relationship in the loaded machine configuration."
+            ),
+            "selection_request": _condition_selection_request_to_dict(spec),
+            "selection": None,
+            "localization": None,
+            "persistence_policy": None,
+            "policy_application": None,
+            "topology_authority": _topology_authority_to_dict(authority),
+        }
+
+    binding = authority.bind_persistence_policy(target_relationship_id)
     selected = ConditionHistorianSelector(historian).localize(
         spec,
         target_relationship_id=target_relationship_id,
-        persistence_rule=persistence_rule,
+        persistence_rule=binding.persistence_rule,
         topology=authority.topology,
     )
-    payload = selected_condition_localization_to_dict(selected)
-    payload["topology_authority"] = {
+    selected_payload = selected_condition_localization_to_dict(selected)
+    return {
+        "schema_version": "linealert.configured-condition-localization.v1",
+        "disposition": selected_payload["disposition"],
+        "reason_code": selected_payload["reason_code"],
+        "detail": selected_payload["detail"],
+        "selection_request": _condition_selection_request_to_dict(spec),
+        "selection": selected_payload["selection"],
+        "localization": selected_payload["localization"],
+        "persistence_policy": configured_persistence_policy_binding_to_dict(binding),
+        "policy_application": _configured_policy_application_payload(),
+        "topology_authority": _topology_authority_to_dict(authority),
+    }
+
+
+def _condition_selection_request_to_dict(
+    spec: ConditionHistorySelectionSpec,
+) -> dict[str, object]:
+    return {
+        "label": spec.label,
+        "asset_id": spec.asset_id,
+        "episode_id": spec.episode_id,
+        "cycle_id": spec.cycle_id,
+        "phase_id": spec.phase_id,
+        "from_time": spec.from_time.isoformat() if spec.from_time is not None else None,
+        "to_time": spec.to_time.isoformat() if spec.to_time is not None else None,
+        "limit": spec.limit,
+    }
+
+
+def _configured_policy_application_payload() -> dict[str, object]:
+    return {
+        "mode": "CURRENT_CONFIG_APPLIED_TO_SELECTED_HISTORY",
+        "historical_policy_equivalence": "UNVERIFIED",
+        "detail": (
+            "Condition history does not currently retain the machine-config SHA used by "
+            "configured persistence-policy authority. The returned policy is the exact "
+            "policy from the configuration currently loaded by this historian service; "
+            "it is not asserted to be the policy that was in force at the historical "
+            "observation time."
+        ),
+    }
+
+
+def _topology_authority_to_dict(
+    authority: LocalizationTopologyAuthority,
+) -> dict[str, object]:
+    return {
         "asset_id": authority.asset_id,
         "profile_id": authority.profile_id,
         "source_name": authority.source_name,
         "source_sha256": authority.source_sha256,
     }
-    return payload
 
 
 def _query_int(
@@ -596,14 +659,21 @@ def handler_for(
                     if localization_authority is None:
                         self._send_json(
                             {
-                                "schema_version": ("linealert.selected-condition-localization.v1"),
+                                "schema_version": (
+                                    "linealert.configured-condition-localization.v1"
+                                ),
                                 "disposition": "UNAVAILABLE",
                                 "reason_code": ("EVIDENCE.LOCALIZATION_TOPOLOGY_UNAVAILABLE"),
                                 "detail": (
                                     "The historian service was not started with an "
-                                    "asset-bound condition topology configuration."
+                                    "asset-bound condition topology/policy configuration."
                                 ),
+                                "selection_request": None,
+                                "selection": None,
                                 "localization": None,
+                                "persistence_policy": None,
+                                "policy_application": None,
+                                "topology_authority": None,
                             },
                             status_code=503,
                         )
