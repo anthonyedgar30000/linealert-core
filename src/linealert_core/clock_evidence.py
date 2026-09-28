@@ -9,7 +9,7 @@ from __future__ import annotations
 import math
 from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import StrEnum
 from typing import Any
 
@@ -23,6 +23,73 @@ class IntervalDisposition(StrEnum):
     WITHIN = "within"
     LATE = "late"
     INDETERMINATE = "indeterminate"
+
+
+@dataclass(frozen=True, slots=True)
+class ClockTelemetryProvenance:
+    """Exact lab sample and binding retained with an event projection."""
+
+    sample_id: str
+    binding_id: str
+    sampled_at_reference: datetime
+    valid_until_reference: datetime
+    synchronization_method: str
+    sample_measurement_method: str
+    reference_path: tuple[str, ...]
+    firmware_version: str
+    configuration_version: str
+    calibration_id: str
+    sampling_profile_id: str
+    source_classification: str
+    sample_uncertainty_ms: float
+    max_sample_age_seconds: float
+    maximum_drift_ppm: float
+    drift_allowance_ms: float
+    age_seconds: float
+
+    def __post_init__(self) -> None:
+        for name in (
+            "sample_id",
+            "binding_id",
+            "synchronization_method",
+            "sample_measurement_method",
+            "firmware_version",
+            "configuration_version",
+            "calibration_id",
+            "sampling_profile_id",
+            "source_classification",
+        ):
+            if not isinstance(getattr(self, name), str) or not getattr(self, name).strip():
+                raise ClockEvidenceError(f"{name} must be non-empty")
+        if (
+            not isinstance(self.reference_path, tuple)
+            or len(self.reference_path) < 2
+            or any(not isinstance(node, str) or not node.strip() for node in self.reference_path)
+        ):
+            raise ClockEvidenceError("reference_path must contain exact reference and clock nodes")
+        for name in ("sampled_at_reference", "valid_until_reference"):
+            value = getattr(self, name)
+            if not isinstance(value, datetime) or value.tzinfo is None or value.utcoffset() is None:
+                raise ClockEvidenceError(f"{name} must be timezone-aware")
+        if self.sampled_at_reference >= self.valid_until_reference:
+            raise ClockEvidenceError("telemetry validity interval must be positive")
+        for name in (
+            "sample_uncertainty_ms",
+            "max_sample_age_seconds",
+            "maximum_drift_ppm",
+            "drift_allowance_ms",
+            "age_seconds",
+        ):
+            value = getattr(self, name)
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not math.isfinite(value)
+                or value < 0
+            ):
+                raise ClockEvidenceError(f"{name} must be finite and non-negative")
+        if self.maximum_drift_ppm >= 1_000_000:
+            raise ClockEvidenceError("maximum_drift_ppm must be below one million")
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,6 +111,7 @@ class ClockObservation:
     uncertainty_ms: float
     measurement_method: str
     evidence_id: str
+    telemetry_provenance: ClockTelemetryProvenance | None = None
 
     def __post_init__(self) -> None:
         for name in (
@@ -78,6 +146,33 @@ class ClockObservation:
             raise ClockEvidenceError(
                 "event reference time is inconsistent with the declared offset bound"
             )
+        provenance = self.telemetry_provenance
+        if provenance is not None:
+            if not isinstance(provenance, ClockTelemetryProvenance) or (
+                provenance.reference_path[0] != self.reference_clock_id
+                or provenance.reference_path[-1] != self.clock_id
+            ):
+                raise ClockEvidenceError("telemetry provenance does not match clock path")
+            lower = self.observed_at_reference - timedelta(milliseconds=self.uncertainty_ms)
+            upper = self.observed_at_reference + timedelta(milliseconds=self.uncertainty_ms)
+            if lower < provenance.sampled_at_reference or upper >= provenance.valid_until_reference:
+                raise ClockEvidenceError("event reference interval exceeds telemetry validity")
+            age = (self.observed_at_reference - provenance.sampled_at_reference).total_seconds()
+            expanded = (
+                provenance.sample_uncertainty_ms + provenance.maximum_drift_ppm / 1000 * age
+            ) / (1 - provenance.maximum_drift_ppm / 1_000_000)
+            if (
+                age < 0
+                or age > provenance.max_sample_age_seconds
+                or not math.isclose(age, provenance.age_seconds, abs_tol=1e-6)
+                or not math.isclose(
+                    self.uncertainty_ms,
+                    provenance.sample_uncertainty_ms + provenance.drift_allowance_ms,
+                    abs_tol=1e-6,
+                )
+                or not math.isclose(self.uncertainty_ms, expanded, abs_tol=1e-6)
+            ):
+                raise ClockEvidenceError("telemetry age or uncertainty derivation mismatch")
 
 
 @dataclass(frozen=True, slots=True)
@@ -98,7 +193,7 @@ class ClockIntervalAssessment:
 
 
 def _observation_to_dict(value: ClockObservation) -> dict[str, Any]:
-    return {
+    payload = {
         "event_id": value.event_id,
         "source_id": value.source_id,
         "clock_id": value.clock_id,
@@ -110,10 +205,63 @@ def _observation_to_dict(value: ClockObservation) -> dict[str, Any]:
         "measurement_method": value.measurement_method,
         "evidence_id": value.evidence_id,
     }
+    if value.telemetry_provenance is not None:
+        p = value.telemetry_provenance
+        payload["telemetry_provenance"] = {
+            "sample_id": p.sample_id,
+            "binding_id": p.binding_id,
+            "sampled_at_reference": p.sampled_at_reference.isoformat(),
+            "valid_until_reference": p.valid_until_reference.isoformat(),
+            "synchronization_method": p.synchronization_method,
+            "sample_measurement_method": p.sample_measurement_method,
+            "reference_path": list(p.reference_path),
+            "firmware_version": p.firmware_version,
+            "configuration_version": p.configuration_version,
+            "calibration_id": p.calibration_id,
+            "sampling_profile_id": p.sampling_profile_id,
+            "source_classification": p.source_classification,
+            "sample_uncertainty_ms": p.sample_uncertainty_ms,
+            "max_sample_age_seconds": p.max_sample_age_seconds,
+            "maximum_drift_ppm": p.maximum_drift_ppm,
+            "drift_allowance_ms": p.drift_allowance_ms,
+            "age_seconds": p.age_seconds,
+        }
+    return payload
+
+
+def _provenance_from_dict(raw: Mapping[str, Any]) -> ClockTelemetryProvenance:
+    try:
+        path = raw["reference_path"]
+        if not isinstance(path, list):
+            raise ClockEvidenceError("reference_path must be a list")
+        return ClockTelemetryProvenance(
+            sample_id=raw["sample_id"],
+            binding_id=raw["binding_id"],
+            sampled_at_reference=datetime.fromisoformat(raw["sampled_at_reference"]),
+            valid_until_reference=datetime.fromisoformat(raw["valid_until_reference"]),
+            synchronization_method=raw["synchronization_method"],
+            sample_measurement_method=raw["sample_measurement_method"],
+            reference_path=tuple(path),
+            firmware_version=raw["firmware_version"],
+            configuration_version=raw["configuration_version"],
+            calibration_id=raw["calibration_id"],
+            sampling_profile_id=raw["sampling_profile_id"],
+            source_classification=raw["source_classification"],
+            sample_uncertainty_ms=raw["sample_uncertainty_ms"],
+            max_sample_age_seconds=raw["max_sample_age_seconds"],
+            maximum_drift_ppm=raw["maximum_drift_ppm"],
+            drift_allowance_ms=raw["drift_allowance_ms"],
+            age_seconds=raw["age_seconds"],
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ClockEvidenceError("invalid retained clock telemetry provenance") from exc
 
 
 def _observation_from_dict(raw: Mapping[str, Any]) -> ClockObservation:
     try:
+        provenance = raw.get("telemetry_provenance")
+        if provenance is not None and not isinstance(provenance, Mapping):
+            raise ClockEvidenceError("telemetry_provenance must be an object")
         return ClockObservation(
             event_id=raw["event_id"],
             source_id=raw["source_id"],
@@ -125,6 +273,9 @@ def _observation_from_dict(raw: Mapping[str, Any]) -> ClockObservation:
             uncertainty_ms=raw["uncertainty_ms"],
             measurement_method=raw["measurement_method"],
             evidence_id=raw["evidence_id"],
+            telemetry_provenance=(
+                _provenance_from_dict(provenance) if provenance is not None else None
+            ),
         )
     except (KeyError, TypeError, ValueError) as exc:
         raise ClockEvidenceError("invalid retained clock observation") from exc
