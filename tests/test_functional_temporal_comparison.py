@@ -2,16 +2,14 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from linealert_core.functional_temporal import (
-    EpistemicState,
-    EvidenceValidity,
-    TemporalCoverage,
-    TransitionDisposition,
-)
-from linealert_core.functional_temporal_comparison import (
+from linealert_core import (
     ComparisonDisposition,
     ComparisonPointDisposition,
+    EpistemicState,
+    EvidenceValidity,
     FunctionalTemporalComparator,
+    TemporalCoverage,
+    TransitionDisposition,
 )
 from linealert_core.historian import (
     FunctionalTemporalHistoryRecord,
