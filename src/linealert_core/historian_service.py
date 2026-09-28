@@ -25,6 +25,11 @@ from .functional_temporal import (
     TemporalCoverage,
     TransitionDisposition,
 )
+from .functional_temporal_selection import (
+    FunctionalTemporalHistorianSelector,
+    FunctionalTemporalSelectionSpec,
+    functional_temporal_selected_comparison_to_dict,
+)
 from .historian import (
     FunctionalTemporalHistoryRecord,
     FunctionalTemporalRecordKind,
@@ -260,6 +265,62 @@ def history_time_from_query(value: str | None, field_name: str) -> datetime | No
     return parsed
 
 
+def functional_temporal_selection_spec_from_query(
+    query: dict[str, list[str]],
+    *,
+    prefix: str,
+    asset_id: str,
+    default_limit: int,
+) -> FunctionalTemporalSelectionSpec:
+    """Build one explicit comparison selection from prefixed HTTP query fields."""
+
+    label = _required_query_text(query, f"{prefix}_label")
+    try:
+        limit = int(query.get(f"{prefix}_limit", [str(default_limit)])[0])
+    except ValueError as exc:
+        raise ValueError(f"{prefix}_limit must be an integer") from exc
+
+    record_kind_raw = query.get(f"{prefix}_record_kind", [None])[0]
+    try:
+        record_kind = (
+            FunctionalTemporalRecordKind(record_kind_raw) if record_kind_raw is not None else None
+        )
+    except ValueError as exc:
+        raise ValueError(f"{prefix}_record_kind is invalid") from exc
+
+    return FunctionalTemporalSelectionSpec(
+        label=label,
+        asset_id=asset_id,
+        limit=limit,
+        episode_id=_query_text(query, f"{prefix}_episode_id"),
+        cycle_id=_query_text(query, f"{prefix}_cycle_id"),
+        phase_id=_query_text(query, f"{prefix}_phase_id"),
+        record_kind=record_kind,
+        from_time=history_time_from_query(
+            _query_text(query, f"{prefix}_from_time"),
+            f"{prefix}_from_time",
+        ),
+        to_time=history_time_from_query(
+            _query_text(query, f"{prefix}_to_time"),
+            f"{prefix}_to_time",
+        ),
+    )
+
+
+def _query_text(query: dict[str, list[str]], name: str) -> str | None:
+    value = query.get(name, [None])[0]
+    if value is None:
+        return None
+    return value if value.strip() else None
+
+
+def _required_query_text(query: dict[str, list[str]], name: str) -> str:
+    value = _query_text(query, name)
+    if value is None:
+        raise ValueError(f"{name} is required")
+    return value
+
+
 def persist_published_evidence(
     source_base_url: str,
     historian: TimescaleHistorian,
@@ -369,6 +430,25 @@ def handler_for(
                             asset_id=query.get("asset_id", [None])[0],
                         )
                     )
+                    return
+                if request.path == "/api/history/functional-temporal/compare":
+                    asset_id = _required_query_text(query, "asset_id")
+                    selector = FunctionalTemporalHistorianSelector(historian)
+                    comparison = selector.compare(
+                        functional_temporal_selection_spec_from_query(
+                            query,
+                            prefix="reference",
+                            asset_id=asset_id,
+                            default_limit=limit,
+                        ),
+                        functional_temporal_selection_spec_from_query(
+                            query,
+                            prefix="selected",
+                            asset_id=asset_id,
+                            default_limit=limit,
+                        ),
+                    )
+                    self._send_json(functional_temporal_selected_comparison_to_dict(comparison))
                     return
                 if request.path == "/api/history/functional-temporal":
                     self._send_json(

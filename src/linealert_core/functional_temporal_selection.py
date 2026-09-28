@@ -200,3 +200,144 @@ def _require_aware(value: datetime | None, field_name: str) -> None:
         return
     if value.tzinfo is None or value.utcoffset() is None:
         raise FunctionalTemporalSelectionError(f"{field_name} must be timezone-aware")
+
+
+def functional_temporal_selected_comparison_to_dict(
+    value: FunctionalTemporalSelectedComparison,
+) -> dict[str, object]:
+    """Serialize the governed selection/comparison result without reinterpreting it."""
+
+    return {
+        "schema_version": "linealert.functional-temporal-selected-comparison.v1",
+        "disposition": value.disposition.value,
+        "reason_code": value.reason_code,
+        "detail": value.detail,
+        "reference": _history_selection_to_dict(value.reference),
+        "selected": _history_selection_to_dict(value.selected),
+        "comparison": (
+            _comparison_result_to_dict(value.comparison) if value.comparison is not None else None
+        ),
+    }
+
+
+def _history_selection_to_dict(
+    value: FunctionalTemporalHistorySelection,
+) -> dict[str, object]:
+    return {
+        "label": value.spec.label,
+        "asset_id": value.spec.asset_id,
+        "episode_id": value.spec.episode_id,
+        "cycle_id": value.spec.cycle_id,
+        "phase_id": value.spec.phase_id,
+        "record_kind": (
+            value.spec.record_kind.value if value.spec.record_kind is not None else None
+        ),
+        "from_time": (
+            value.spec.from_time.isoformat() if value.spec.from_time is not None else None
+        ),
+        "to_time": value.spec.to_time.isoformat() if value.spec.to_time is not None else None,
+        "limit": value.spec.limit,
+        "record_count": len(value.records),
+        "truncated": value.truncated,
+    }
+
+
+def _comparison_result_to_dict(
+    value: FunctionalTemporalComparisonResult,
+) -> dict[str, object]:
+    return {
+        "disposition": value.disposition.value,
+        "reference_label": value.reference_label,
+        "selected_label": value.selected_label,
+        "changed_count": value.changed_count,
+        "unresolved_count": value.unresolved_count,
+        "reference_start": (
+            value.reference_start.isoformat() if value.reference_start is not None else None
+        ),
+        "reference_end": (
+            value.reference_end.isoformat() if value.reference_end is not None else None
+        ),
+        "selected_start": (
+            value.selected_start.isoformat() if value.selected_start is not None else None
+        ),
+        "selected_end": value.selected_end.isoformat() if value.selected_end is not None else None,
+        "claim_boundary": value.claim_boundary,
+        "refusals": [
+            {
+                "reason_code": refusal.reason_code,
+                "detail": refusal.detail,
+                "fields": list(refusal.fields),
+            }
+            for refusal in value.refusals
+        ],
+        "points": [
+            {
+                "identity": {
+                    "key": point.identity.key,
+                    "record_kind": point.identity.record_kind.value,
+                    "component_id": point.identity.component_id,
+                    "phase_id": point.identity.phase_id,
+                    "requirement_id": point.identity.requirement_id,
+                    "transition_id": point.identity.transition_id,
+                    "from_phase_id": point.identity.from_phase_id,
+                    "to_phase_id": point.identity.to_phase_id,
+                    "record_semantic": point.identity.record_semantic,
+                },
+                "disposition": point.disposition.value,
+                "reference_record_id": point.reference_record_id,
+                "selected_record_id": point.selected_record_id,
+                "reference_observed_at": (
+                    point.reference_observed_at.isoformat()
+                    if point.reference_observed_at is not None
+                    else None
+                ),
+                "selected_observed_at": (
+                    point.selected_observed_at.isoformat()
+                    if point.selected_observed_at is not None
+                    else None
+                ),
+                "reference_cycle_id": point.reference_cycle_id,
+                "selected_cycle_id": point.selected_cycle_id,
+                "reference_state": (
+                    point.reference_state.value if point.reference_state is not None else None
+                ),
+                "selected_state": (
+                    point.selected_state.value if point.selected_state is not None else None
+                ),
+                "reference_validity": (
+                    point.reference_validity.value if point.reference_validity is not None else None
+                ),
+                "selected_validity": (
+                    point.selected_validity.value if point.selected_validity is not None else None
+                ),
+                "reference_coverage": (
+                    point.reference_coverage.value if point.reference_coverage is not None else None
+                ),
+                "selected_coverage": (
+                    point.selected_coverage.value if point.selected_coverage is not None else None
+                ),
+                "reference_transition_disposition": point.reference_transition_disposition,
+                "selected_transition_disposition": point.selected_transition_disposition,
+                "first_divergence_at": (
+                    point.first_divergence_at.isoformat()
+                    if point.first_divergence_at is not None
+                    else None
+                ),
+                "metric_deltas": [
+                    {
+                        "evidence_key": metric.evidence_key,
+                        "semantic": metric.semantic,
+                        "unit": metric.unit,
+                        "reference_value": metric.reference_value,
+                        "selected_value": metric.selected_value,
+                        "delta": metric.delta,
+                        "reference_status": metric.reference_status,
+                        "selected_status": metric.selected_status,
+                    }
+                    for metric in point.metric_deltas
+                ],
+                "reasons": list(point.reasons),
+            }
+            for point in value.points
+        ],
+    }
