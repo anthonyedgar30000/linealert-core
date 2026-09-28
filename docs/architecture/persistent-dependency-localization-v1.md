@@ -109,11 +109,13 @@ initial contact:            PERSISTENT_OUTSIDE
 
 That is dependency localization, not a causal proof.
 
-## Historical payload adapter
+## Historian selection boundary
 
-`condition_history_sample_from_dict` reconstructs the retained historian condition shape without upgrading its meaning.
+`condition_history_sample_from_dict` remains available for reconstructing the retained historian condition shape without upgrading its meaning.
 
-The localizer itself does not query TimescaleDB in this increment. This is intentional because a future historian integration must first guarantee a complete, non-truncated history selection before claiming an earliest persistent onset.
+A separate read-only condition-history selector now provides typed, bounded historian records for this localizer. It refuses the localization handoff when the selected history is truncated, empty, spans multiple operating contexts, or was filtered to one relationship in a way that would hide dependency evidence.
+
+The localizer itself still does not query TimescaleDB. This separation keeps evidence selection and persistence completeness outside the reasoning primitive while guaranteeing that a historian-backed caller cannot silently claim an earliest persistent onset from a clipped history.
 
 ## Evidence package
 

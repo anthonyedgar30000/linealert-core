@@ -93,6 +93,71 @@ class HistorianOperatingContext:
 
 
 @dataclass(frozen=True, slots=True)
+class ConditionHistoryRecord:
+    """Typed persisted condition relationship evidence."""
+
+    observed_at: datetime
+    observation_id: str
+    episode_id: str
+    asset_id: str
+    relationship_id: str
+    signal: str
+    value: float
+    unit: str
+    min_value: float
+    max_value: float
+    temporal_rule_status: str
+    quality: str
+    reason_code: str
+    correlation_id: str
+    topology_from: str
+    topology_to: str
+    source_mode: str
+    cycle_id: str | None = None
+    phase_id: str | None = None
+    operating_context: Mapping[str, Any] = field(default_factory=dict)
+    clock_evidence: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.observed_at.tzinfo is None or self.observed_at.utcoffset() is None:
+            raise HistorianError("observed_at must be timezone-aware")
+        for field_name in (
+            "observation_id",
+            "episode_id",
+            "asset_id",
+            "relationship_id",
+            "signal",
+            "unit",
+            "temporal_rule_status",
+            "quality",
+            "reason_code",
+            "correlation_id",
+            "topology_from",
+            "topology_to",
+            "source_mode",
+        ):
+            value = getattr(self, field_name)
+            if not isinstance(value, str) or not value.strip():
+                raise HistorianError(f"{field_name} must be a non-empty string")
+        for field_name in ("cycle_id", "phase_id"):
+            value = getattr(self, field_name)
+            if value is not None and (not isinstance(value, str) or not value.strip()):
+                raise HistorianError(f"{field_name} must be non-empty when supplied")
+        if self.min_value > self.max_value:
+            raise HistorianError("min_value cannot exceed max_value")
+        object.__setattr__(
+            self,
+            "operating_context",
+            MappingProxyType(dict(self.operating_context)),
+        )
+        object.__setattr__(
+            self,
+            "clock_evidence",
+            MappingProxyType(dict(self.clock_evidence)),
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class FunctionalTemporalHistoryRecord:
     """Append-only historian record for evaluated phase/transition evidence."""
 
@@ -559,27 +624,47 @@ class TimescaleHistorian:
             "status": str(payload["status"]),
         }
 
-    def condition_history(
+    def select_condition_history_records(
         self,
         *,
         limit: int = 240,
         asset_id: str | None = None,
         relationship_id: str | None = None,
         episode_id: str | None = None,
-    ) -> dict[str, Any]:
-        bounded_limit = max(1, min(limit, 5000))
+        cycle_id: str | None = None,
+        phase_id: str | None = None,
+        from_time: datetime | None = None,
+        to_time: datetime | None = None,
+    ) -> tuple[tuple[ConditionHistoryRecord, ...], bool]:
+        """Return typed condition history plus explicit truncation state."""
+
+        if limit < 1 or limit > 5000:
+            raise HistorianQueryError("condition history limit must be between 1 and 5000")
+        _validate_optional_history_time(from_time, "from_time")
+        _validate_optional_history_time(to_time, "to_time")
+        if from_time is not None and to_time is not None and from_time > to_time:
+            raise HistorianQueryError("from_time must be less than or equal to to_time")
+
         where: list[str] = []
         params: list[Any] = []
         for column, value in (
             ("asset_id", asset_id),
             ("relationship_id", relationship_id),
             ("episode_id", episode_id),
+            ("cycle_id", cycle_id),
+            ("phase_id", phase_id),
         ):
             if value:
                 where.append(f"{column} = %s")
                 params.append(value)
+        if from_time is not None:
+            where.append("observed_at >= %s")
+            params.append(from_time)
+        if to_time is not None:
+            where.append("observed_at <= %s")
+            params.append(to_time)
         predicate = f"WHERE {' AND '.join(where)}" if where else ""
-        params.append(bounded_limit)
+        params.append(limit + 1)
         query = f"""
             SELECT observed_at, observation_id, episode_id, asset_id, relationship_id,
                    signal_name, value, unit, min_value, max_value, temporal_rule_status,
@@ -587,43 +672,49 @@ class TimescaleHistorian:
                    source_mode, cycle_id, phase_id, operating_context, clock_evidence
             FROM condition_measurements
             {predicate}
-            ORDER BY observed_at DESC
+            ORDER BY observed_at DESC, observation_id DESC
             LIMIT %s
         """
         with self._lock, self._connection.cursor() as cursor:
             cursor.execute(query, tuple(params))
             rows = cursor.fetchall()
-        measurements = [
-            {
-                "observed_at": row[0].isoformat(),
-                "observation_id": row[1],
-                "episode_id": row[2],
-                "asset_id": row[3],
-                "relationship_id": row[4],
-                "signal": row[5],
-                "value": row[6],
-                "unit": row[7],
-                "min_value": row[8],
-                "max_value": row[9],
-                "temporal_rule_status": row[10],
-                "quality": row[11],
-                "reason_code": row[12],
-                "correlation_id": row[13],
-                "topology_from": row[14],
-                "topology_to": row[15],
-                "source_mode": row[16],
-                "cycle_id": row[17],
-                "phase_id": row[18],
-                "operating_context": row[19],
-                "clock_evidence": row[20],
-            }
-            for row in reversed(rows)
-        ]
+
+        truncated = len(rows) > limit
+        selected_rows = rows[:limit]
+        records = tuple(_condition_history_record_from_row(row) for row in reversed(selected_rows))
+        return records, truncated
+
+    def condition_history(
+        self,
+        *,
+        limit: int = 240,
+        asset_id: str | None = None,
+        relationship_id: str | None = None,
+        episode_id: str | None = None,
+        cycle_id: str | None = None,
+        phase_id: str | None = None,
+        from_time: datetime | None = None,
+        to_time: datetime | None = None,
+    ) -> dict[str, Any]:
+        records, truncated = self.select_condition_history_records(
+            limit=limit,
+            asset_id=asset_id,
+            relationship_id=relationship_id,
+            episode_id=episode_id,
+            cycle_id=cycle_id,
+            phase_id=phase_id,
+            from_time=from_time,
+            to_time=to_time,
+        )
         return {
             "schema_version": "linealert.historian.condition-history.v1",
             "persistence": "timescaledb",
-            "count": len(measurements),
-            "measurements": measurements,
+            "count": len(records),
+            "truncated": truncated,
+            "truncation_semantic": ("older_matching_records_omitted" if truncated else None),
+            "from_time": from_time.isoformat() if from_time is not None else None,
+            "to_time": to_time.isoformat() if to_time is not None else None,
+            "measurements": [_condition_history_record_to_payload(record) for record in records],
         }
 
     def select_functional_temporal_records(
@@ -809,6 +900,62 @@ def _validate_optional_history_time(value: datetime | None, field_name: str) -> 
         return
     if value.tzinfo is None or value.utcoffset() is None:
         raise HistorianQueryError(f"{field_name} must be timezone-aware")
+
+
+def _condition_history_record_from_row(
+    row: tuple[Any, ...],
+) -> ConditionHistoryRecord:
+    return ConditionHistoryRecord(
+        observed_at=row[0],
+        observation_id=row[1],
+        episode_id=row[2],
+        asset_id=row[3],
+        relationship_id=row[4],
+        signal=row[5],
+        value=row[6],
+        unit=row[7],
+        min_value=row[8],
+        max_value=row[9],
+        temporal_rule_status=row[10],
+        quality=row[11],
+        reason_code=row[12],
+        correlation_id=row[13],
+        topology_from=row[14],
+        topology_to=row[15],
+        source_mode=row[16],
+        cycle_id=row[17],
+        phase_id=row[18],
+        operating_context=row[19] or {},
+        clock_evidence=row[20] or {},
+    )
+
+
+def _condition_history_record_to_payload(
+    record: ConditionHistoryRecord,
+) -> dict[str, Any]:
+    return {
+        "observed_at": record.observed_at.isoformat(),
+        "observation_id": record.observation_id,
+        "episode_id": record.episode_id,
+        "asset_id": record.asset_id,
+        "relationship_id": record.relationship_id,
+        "signal": record.signal,
+        "value": record.value,
+        "unit": record.unit,
+        "min_value": record.min_value,
+        "max_value": record.max_value,
+        "temporal_rule_status": record.temporal_rule_status,
+        "quality": record.quality,
+        "reason_code": record.reason_code,
+        "correlation_id": record.correlation_id,
+        "topology_from": record.topology_from,
+        "topology_to": record.topology_to,
+        "source_mode": record.source_mode,
+        "cycle_id": record.cycle_id,
+        "phase_id": record.phase_id,
+        "operating_context": dict(record.operating_context),
+        "clock_evidence": dict(record.clock_evidence),
+    }
 
 
 def _functional_temporal_record_from_row(
