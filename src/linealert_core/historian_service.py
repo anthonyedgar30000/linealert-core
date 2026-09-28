@@ -48,6 +48,12 @@ from .historian import (
     TimescaleHistorian,
 )
 from .live_condition import LiveClockEvidence, LiveConditionMeasurement
+from .persistence_policy import (
+    ConfiguredPersistencePolicyBinding,
+    PersistencePolicyRegistry,
+    bind_configured_persistence_policy,
+    persistence_policy_registry_from_config,
+)
 from .replay import ReplayInputError, build_core_from_config
 from .topology import TopologyGraph
 
@@ -76,13 +82,27 @@ class HistorianServiceStatus:
 
 @dataclass(frozen=True, slots=True)
 class LocalizationTopologyAuthority:
-    """Exact configured topology source used for historian-backed localization."""
+    """Exact configured topology/policy source used for historian-backed localization."""
 
     topology: TopologyGraph
+    persistence_policies: PersistencePolicyRegistry
     source_name: str
     source_sha256: str
     asset_id: str
     profile_id: str
+
+    def bind_persistence_policy(
+        self,
+        relationship_id: str,
+    ) -> ConfiguredPersistencePolicyBinding:
+        return bind_configured_persistence_policy(
+            self.persistence_policies,
+            relationship_id,
+            asset_id=self.asset_id,
+            profile_id=self.profile_id,
+            source_name=self.source_name,
+            source_sha256=self.source_sha256,
+        )
 
 
 def load_localization_topology_authority(
@@ -100,8 +120,24 @@ def load_localization_topology_authority(
         raise ValueError(
             "condition config must define a machine_profile for asset-bound localization"
         )
+    try:
+        raw = json.loads(source_bytes.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError(f"cannot parse condition config: {path}") from exc
+    if not isinstance(raw, dict):
+        raise ValueError("condition config must be a JSON object")
+
+    declared_relationship_ids = frozenset(
+        f"relationship:{rule.rule_id}" for rule in core.timing_monitor.rules
+    )
+    persistence_policies = persistence_policy_registry_from_config(
+        raw,
+        declared_relationship_ids=declared_relationship_ids,
+        location=str(path),
+    )
     return LocalizationTopologyAuthority(
         topology=core.topology,
+        persistence_policies=persistence_policies,
         source_name=path.name,
         source_sha256=hashlib.sha256(source_bytes).hexdigest(),
         asset_id=core.machine_profile.asset_id,
@@ -753,6 +789,11 @@ def main() -> None:
         ),
         localization_topology_source_sha256=(
             localization_authority.source_sha256 if localization_authority is not None else None
+        ),
+        localization_persistence_policy_count=(
+            len(localization_authority.persistence_policies.policies)
+            if localization_authority is not None
+            else 0
         ),
     )
     poll_thread = threading.Thread(
