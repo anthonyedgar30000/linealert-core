@@ -273,6 +273,11 @@ def test_localization_topology_authority_binds_demo_asset_profile_and_hash() -> 
     assert authority.source_name == "labeler_demo_config.json"
     assert len(authority.source_sha256) == 64
     assert authority.topology.has_edge("LabelFeedCommand", "LabelAtPeelPoint")
+    policy = authority.persistence_policies.require("relationship:label-presentation-delay")
+    assert policy.policy_id == "label-presentation-persistence-v1"
+    assert policy.policy_revision == "1"
+    assert policy.required_outside == 3
+    assert policy.window_size == 4
 
 
 def test_condition_localization_request_parser_preserves_scope_and_rule() -> None:

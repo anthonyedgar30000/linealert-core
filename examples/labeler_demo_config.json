@@ -207,6 +207,19 @@
       }
     ]
   },
+  "persistence_policies": [
+    {
+      "policy_id": "label-presentation-persistence-v1",
+      "policy_revision": "1",
+      "relationship_id": "relationship:label-presentation-delay",
+      "required_outside": 3,
+      "window_size": 4,
+      "metadata": {
+        "classification": "controlled_synthetic_demo",
+        "purpose": "service-troubleshooting-persistence"
+      }
+    }
+  ],
   "temporal_rules": [
     {
       "rule_id": "bottle-spacing-delay",
