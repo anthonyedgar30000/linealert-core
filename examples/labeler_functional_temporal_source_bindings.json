@@ -1,0 +1,27 @@
+{
+  "schema_version": "linealert.functional-temporal-source-bindings.v1",
+  "bindings": [
+    {
+      "binding_id": "event:bottle-detected",
+      "source_kind": "machine_event_occurrence",
+      "evidence_key": "bottle_detected_event_observed",
+      "event_type": "BottleDetected",
+      "component_id": "infeed-photoeye",
+      "source_id": "plc-labeler-demo",
+      "semantic": "BottleDetected source event observed; this does not independently prove physical bottle presence."
+    },
+    {
+      "binding_id": "relationship:label-presentation",
+      "source_kind": "clock_qualified_timing_relationship",
+      "evidence_key": "label_presentation_timing_within_envelope",
+      "relationship_id": "relationship:label-presentation-delay",
+      "rule_id": "label-presentation-delay",
+      "signal_name": "label_presentation_delay_ms",
+      "semantic": "measured_label_feed_command_to_label_at_peel_point_delay",
+      "scope": "replay_measurement_candidate",
+      "unit": "ms",
+      "start_source_id": "plc-labeler-demo",
+      "end_source_id": "plc-labeler-demo"
+    }
+  ]
+}

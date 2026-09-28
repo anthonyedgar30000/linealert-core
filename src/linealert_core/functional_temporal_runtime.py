@@ -553,6 +553,11 @@ class FunctionalTemporalRuntime:
                 "coverage": observation.coverage.value,
                 "cycle_id": observation.cycle_id,
                 "phase_id": observation.phase_id,
+                "semantic": observation.semantic,
+                "source_classification": observation.source_classification,
+                "reason_code": observation.reason_code,
+                "retained_uncertainty": observation.retained_uncertainty,
+                "provenance": dict(observation.provenance),
             }
         return details
 

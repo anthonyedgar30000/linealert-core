@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from types import MappingProxyType
 
@@ -59,6 +59,11 @@ class EvidenceObservation:
     source_id: str
     cycle_id: str | None = None
     phase_id: str | None = None
+    semantic: str | None = None
+    source_classification: str | None = None
+    reason_code: str | None = None
+    retained_uncertainty: str | None = None
+    provenance: Mapping[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         for field_name in ("evidence_id", "evidence_key", "source_id"):
@@ -67,10 +72,30 @@ class EvidenceObservation:
                 raise FunctionalTemporalError(f"{field_name} must not be empty")
         if self.state is EpistemicState.EXPOSED:
             raise FunctionalTemporalError("EXPOSED is derived and cannot be raw evidence")
-        for field_name in ("cycle_id", "phase_id"):
+        for field_name in (
+            "cycle_id",
+            "phase_id",
+            "semantic",
+            "source_classification",
+            "reason_code",
+            "retained_uncertainty",
+        ):
             value = getattr(self, field_name)
-            if value is not None and not value.strip():
+            if value is not None and (not isinstance(value, str) or not value.strip()):
                 raise FunctionalTemporalError(f"{field_name} must not be empty when supplied")
+
+        normalized_provenance: dict[str, str] = {}
+        for key, value in self.provenance.items():
+            if not isinstance(key, str) or not key.strip():
+                raise FunctionalTemporalError("provenance keys must be non-empty strings")
+            if not isinstance(value, str) or not value.strip():
+                raise FunctionalTemporalError("provenance values must be non-empty strings")
+            normalized_provenance[key.strip()] = value.strip()
+        object.__setattr__(
+            self,
+            "provenance",
+            MappingProxyType(dict(sorted(normalized_provenance.items()))),
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -397,6 +422,11 @@ class FunctionalTemporalEvaluator:
                 )
                 continue
             states.append(observation.state)
+            if (
+                observation.state is not EpistemicState.VERIFIED
+                and observation.reason_code is not None
+            ):
+                reasons.append(f"{key} source evidence: {observation.reason_code}")
         state = FunctionalTemporalEvaluator._aggregate(states)
         return RequirementEvaluation(
             requirement_id=definition.requirement_id,

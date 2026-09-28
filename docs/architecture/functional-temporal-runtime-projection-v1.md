@@ -57,4 +57,6 @@ The runtime does not:
 - authorize maintenance or safety decisions;
 - make historian durability part of deterministic core rollback.
 
-A later integration can feed governed classified evidence into this runtime and persist the returned records after deterministic evaluation completes.
+The functional-temporal source-binding layer now provides the explicit governed path from `MachineEvent` / `LiveConditionMeasurement` evidence into `EvidenceObservation`. The runtime still does not invoke that binder implicitly; callers must supply the bounded projection deliberately.
+
+A later orchestration increment can connect those explicit bindings to the runtime and persist returned records after deterministic evaluation completes without changing these authority boundaries.
