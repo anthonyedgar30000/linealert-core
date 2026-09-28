@@ -75,7 +75,10 @@ type PersistencePolicyBinding = {
 type PolicyApplication = {
   mode: string;
   historical_policy_equivalence: string;
+  reason_code?: string;
   detail: string;
+  evidence_basis?: string;
+  authority_boundary?: string;
 };
 
 type ConfiguredLocalizationPayload = {
@@ -336,8 +339,14 @@ export default function SustainedDeviation({
 
         {payload.policy_application && (
           <div className={styles.policyCaveat}>
-            <b>Historical policy equivalence: {payload.policy_application.historical_policy_equivalence}</b>
+            <b>
+              Historian write-time policy equivalence:{" "}
+              {payload.policy_application.historical_policy_equivalence}
+            </b>
             <small>{payload.policy_application.detail}</small>
+            {payload.policy_application.authority_boundary && (
+              <small>{payload.policy_application.authority_boundary}</small>
+            )}
           </div>
         )}
       </section>
@@ -410,10 +419,13 @@ export default function SustainedDeviation({
       {policyApplication && (
         <div className={styles.policyCaveat}>
           <b>
-            Current configured policy applied to selected history · historical policy equivalence{" "}
+            Historian write-time policy equivalence ·{" "}
             {policyApplication.historical_policy_equivalence.toLowerCase()}
           </b>
           <small>{policyApplication.detail}</small>
+          {policyApplication.authority_boundary && (
+            <small>{policyApplication.authority_boundary}</small>
+          )}
         </div>
       )}
 

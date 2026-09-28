@@ -24,7 +24,13 @@ from urllib.request import Request, urlopen
 from .condition_history_selection import (
     ConditionHistorianSelector,
     ConditionHistorySelectionSpec,
+    ConditionLocalizationHandoffDisposition,
+    SelectedConditionLocalization,
     selected_condition_localization_to_dict,
+)
+from .condition_policy_equivalence import (
+    historical_policy_equivalence_to_dict,
+    verify_historical_policy_equivalence,
 )
 from .condition_projection import ConditionSignalObservation
 from .functional_temporal import (
@@ -478,6 +484,11 @@ def historian_condition_localization_from_query(
         topology=authority.topology,
     )
     selected_payload = selected_condition_localization_to_dict(selected)
+    policy_application = _configured_policy_application_payload(
+        selected,
+        target_relationship_id=target_relationship_id,
+        binding=binding,
+    )
     return {
         "schema_version": "linealert.configured-condition-localization.v1",
         "disposition": selected_payload["disposition"],
@@ -487,7 +498,7 @@ def historian_condition_localization_from_query(
         "selection": selected_payload["selection"],
         "localization": selected_payload["localization"],
         "persistence_policy": configured_persistence_policy_binding_to_dict(binding),
-        "policy_application": _configured_policy_application_payload(),
+        "policy_application": policy_application,
         "topology_authority": _topology_authority_to_dict(authority),
     }
 
@@ -507,18 +518,63 @@ def _condition_selection_request_to_dict(
     }
 
 
-def _configured_policy_application_payload() -> dict[str, object]:
-    return {
+def _configured_policy_application_payload(
+    selected: SelectedConditionLocalization,
+    *,
+    target_relationship_id: str,
+    binding: ConfiguredPersistencePolicyBinding,
+) -> dict[str, object]:
+    disposition = selected.disposition
+    selection = selected.selection
+    if disposition is not ConditionLocalizationHandoffDisposition.READY:
+        records = selection.records
+        retained_count = sum(1 for record in records if record.evidence_authority is not None)
+        target_count = sum(
+            1 for record in records if record.relationship_id == target_relationship_id
+        )
+        return {
+            "mode": "CURRENT_CONFIG_APPLIED_TO_SELECTED_HISTORY",
+            "historical_policy_equivalence": "UNVERIFIED",
+            "reason_code": "POLICY.HISTORICAL_AUTHORITY_SELECTION_NOT_ADMITTED",
+            "detail": (
+                "Historical policy equivalence was not evaluated because the selected "
+                "condition history was not admitted as a complete localization evidence set."
+            ),
+            "evidence_basis": "HISTORIAN_WRITE_TIME_POLICY_AUTHORITY",
+            "selected_record_count": len(records),
+            "target_record_count": target_count,
+            "retained_authority_count": retained_count,
+            "missing_authority_count": len(records) - retained_count,
+            "incomplete_authority_count": 0,
+            "conflict_count": 0,
+            "first_missing_observation_id": next(
+                (record.observation_id for record in records if record.evidence_authority is None),
+                None,
+            ),
+            "first_incomplete_observation_id": None,
+            "first_conflict_observation_id": None,
+            "authority_boundary": (
+                "This field evaluates historian write-time configuration/policy authority "
+                "only. It does not prove the upstream runtime used identical config bytes "
+                "at the physical observation timestamp."
+            ),
+        }
+
+    equivalence = verify_historical_policy_equivalence(
+        selection.records,
+        target_relationship_id=target_relationship_id,
+        binding=binding,
+    )
+    payload = {
         "mode": "CURRENT_CONFIG_APPLIED_TO_SELECTED_HISTORY",
-        "historical_policy_equivalence": "UNVERIFIED",
-        "detail": (
-            "Condition history does not currently retain the machine-config SHA used by "
-            "configured persistence-policy authority. The returned policy is the exact "
-            "policy from the configuration currently loaded by this historian service; "
-            "it is not asserted to be the policy that was in force at the historical "
-            "observation time."
+        **historical_policy_equivalence_to_dict(equivalence),
+        "authority_boundary": (
+            "This field evaluates historian write-time configuration/policy authority only. "
+            "It does not prove the upstream runtime used identical config bytes at the "
+            "physical observation timestamp."
         ),
     }
+    return payload
 
 
 def _topology_authority_to_dict(

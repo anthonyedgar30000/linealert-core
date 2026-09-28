@@ -63,16 +63,20 @@ Examples include:
 
 A selector refusal can still show the resolved configured policy because policy resolution may succeed before evidence admission fails.
 
-## Historical-policy limitation
+## Historian write-time policy equivalence
 
-The card surfaces the backend's current policy-application semantics instead of hiding them:
+The card surfaces the backend's policy-application evidence instead of hiding it:
 
 ```text
-CURRENT_CONFIG_APPLIED_TO_SELECTED_HISTORY
-historical_policy_equivalence = UNVERIFIED
+historian write-time policy equivalence =
+  VERIFIED | UNVERIFIED | CONFLICT
 ```
 
-This means the UI may show the exact current configured policy used to evaluate selected historical evidence, but it does not state that the same policy revision was in force when the historical measurements were created.
+The browser does not calculate this state.
+
+`VERIFIED` means the complete admitted selection retains matching historian write-time config authority and exact target-policy binding. `UNVERIFIED` covers missing/incomplete provenance or a selector refusal. `CONFLICT` means retained authority concretely disagrees with the currently applied config or target policy.
+
+The UI deliberately says **historian write-time policy equivalence**. Even `VERIFIED` does not assert that the upstream runtime used identical config bytes at the physical observation timestamp.
 
 ## Technician workflow position
 
@@ -98,7 +102,7 @@ The presentation does not:
 
 - upgrade anomaly to fault;
 - claim causation;
-- claim historical configured-policy equivalence;
+- widen historian write-time authority equivalence into a source-runtime or physical-time policy claim;
 - infer verified physical state;
 - recommend or authorize equipment changes;
 - call CADGrounded;

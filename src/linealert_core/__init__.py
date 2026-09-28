@@ -60,6 +60,12 @@ from .condition_localization import (
     condition_history_sample_from_dict,
     dependency_localization_to_dict,
 )
+from .condition_policy_equivalence import (
+    HistoricalPolicyEquivalenceResult,
+    HistoricalPolicyEquivalenceState,
+    historical_policy_equivalence_to_dict,
+    verify_historical_policy_equivalence,
+)
 from .condition_projection import (
     ConditionProjectionError,
     ConditionSignalObservation,
@@ -308,6 +314,8 @@ __all__ = [
     "FunctionalTemporalSelectionError",
     "FunctionalTemporalSelectionSpec",
     "FunctionalTemporalSourceBindingError",
+    "HistoricalPolicyEquivalenceResult",
+    "HistoricalPolicyEquivalenceState",
     "GuardDefinition",
     "InvariantDefinition",
     "FusionMosaic",
@@ -387,6 +395,7 @@ __all__ = [
     "condition_history_sample_from_dict",
     "condition_signal_projection_to_dict",
     "dependency_localization_to_dict",
+    "historical_policy_equivalence_to_dict",
     "consume_live_condition_stream",
     "consume_stream",
     "live_condition_summary_to_dict",
@@ -409,4 +418,5 @@ __all__ = [
     "stream_summary_to_dict",
     "summary_to_dict",
     "timing_baseline_assessment_to_dict",
+    "verify_historical_policy_equivalence",
 ]
