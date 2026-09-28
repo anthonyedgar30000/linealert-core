@@ -32,6 +32,31 @@ Any missing binding or sample, identity conflict, expired or future sample,
 overlap, or degraded synchronization returns a reasoned refusal. There is no
 latest-wins or implicit reference-path normalization.
 
+## Supplied step boundaries
+
+The optional `step_boundaries` array contains **synthetic lab notices** for one
+exact bound source clock and reference path. Each notice has a unique ID, an
+observation method, and an inclusive `[earliest_reference, latest_reference]`
+bracket in reference time. A drift-analysis `STEP_CANDIDATE` is not a notice;
+the adapter never infers a step boundary from an offset jump.
+
+For each otherwise eligible sample, the adapter tests the entire estimated
+event reference-time interval. If it touches a step bracket, that sample is
+disqualified. If the event is after the bracket but the sample was taken at or
+before its latest possible step time, that sample is also disqualified. A
+fresh sample taken strictly after the bracket can qualify an event whose
+entire interval is strictly after it. Other source clocks are unaffected.
+Disqualified samples do not make a fresh sample ambiguous; if none qualifies,
+the refusal retains the implicated sample and boundary IDs. An accepted
+post-step observation retains the last boundary ID, reference-time bracket and
+observation method with the fresh sample provenance through the historian round
+trip.
+
+This is conditional on the completeness and accuracy of the supplied lab
+notices. The absence of a notice is not evidence that a physical clock did
+not step. A real connector must establish how a step is detected, bound its
+time and invalidate cached offsets before any physical timing claim.
+
 An accepted projection adds `ClockObservation` to a `StreamEnvelope` without
 changing its event, raw timestamp or transport `clock_quality`. The numeric
 cross-source gate from #144 then applies its own declared uncertainty limit.
@@ -53,9 +78,9 @@ projection, drift and step candidates, stale/expired data, conflicting
 topology/configuration/calibration, degraded state and overlapping samples.
 This establishes the software contract under synthetic input only. A future
 connector must independently establish the measurement path and uncertainty
-for real NTP/PTP or controller telemetry, including clock steps during a
-validity window. Qualified review and equipment-specific timing requirements
-are needed before using this for physical cross-system claims.
+for real NTP/PTP or controller telemetry, including completeness of step
+notices during a validity window. Qualified review and equipment-specific
+timing requirements are needed before using this for physical cross-system claims.
 
 Rollback is removal of the lab adapter/fixture or stopping fixture injection.
 It has no runtime service or equipment side effects.
