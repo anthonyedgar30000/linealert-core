@@ -9,32 +9,34 @@
     "visibility": "public",
     "default_branch": "main"
   },
-  "updated_on": "2026-09-10",
+  "updated_on": "2026-09-28",
   "state_model": {
     "record_type": "repository_coordination_snapshot",
-    "captured_from_main": "4037c2c0bcadce3e3e6e414735c0045b65db6027",
+    "captured_from_main": "d4f26be57d87258ea92d61f4f11db2dc25ef1a0f",
     "current_reality_source": "live_github_and_explicit_user_direction",
     "semantics": "This is a time-bounded coordination snapshot. Live GitHub lifecycle, exact current branch head, CI, deployment, equipment documentation, and equipment evidence supersede cached claims.",
     "publication_policy": {
       "state_only_merge_requires_immediate_self_sync": false,
       "publication_pr_self_reference_required": false,
       "rule": "A state-only publication does not require another pull request merely to record its own merge. Create a corrective sync only when a substantive external lifecycle, authority, deployment, equipment, or scope fact changes or contradicts the published snapshot.",
-      "current_correction_reason": "The August 2 snapshot ended at PR 38-era repository state. PRs through #114, GitHub Pages deployment, maintenance follow-up closure, and the evolving investigation workspace now supersede those cached current-state claims while preserving PR 37/38 evidence as history."
+      "current_correction_reason": "The September 10 snapshot still described PR #115 as active. Live GitHub now shows PR #115 merged and repository reality advanced through PR #150, including persisted historian authority, bounded clock evidence, the deterministic Reasoning Node context bundle, read-only historian retrieval, clock-step/coverage gates, and live local Timescale acceptance. This corrective sync updates aggregate coordination state while preserving older PR 37/38 evidence as history."
     }
   },
   "live_observation": {
-    "observed_at": "2026-09-10T03:06:00-04:00",
+    "observed_at": "2026-09-28T21:06:27Z",
     "default_branch": "main",
-    "default_branch_head": "4037c2c0bcadce3e3e6e414735c0045b65db6027",
-    "default_branch_tree": "9ae2eaaae207c1503cd6ce09b50d91c0c9df0410",
+    "default_branch_head": "d4f26be57d87258ea92d61f4f11db2dc25ef1a0f",
+    "default_branch_tree": "1416286f085ac7340c0442779abb8effb5367669",
     "latest_functional_merge": {
-      "pull_request": 114,
-      "title": "Add evolving investigation workspace",
-      "merge_commit": "4037c2c0bcadce3e3e6e414735c0045b65db6027"
+      "pull_request": 150,
+      "title": "Add live Reasoning Node Timescale acceptance",
+      "merge_commit": "d4f26be57d87258ea92d61f4f11db2dc25ef1a0f"
     },
     "open_pull_requests_before_branch_creation": [],
-    "active_sync_pull_request": 115,
-    "open_issues": [31],
+    "active_sync_pull_request": null,
+    "open_issues": [
+      31
+    ],
     "recently_closed_issues": {
       "23": {
         "state": "closed_completed",
@@ -53,12 +55,22 @@
       "status": "verified_public"
     },
     "main_ci": {
-      "run_id": 34447779672,
-      "head_sha": "4037c2c0bcadce3e3e6e414735c0045b65db6027",
-      "conclusion": "success"
+      "verification_scope": "latest_verified_pull_request_head",
+      "pull_request": 150,
+      "run_id": 36482787357,
+      "head_sha": "d300af099fe493f5e6c727c66f2f0371d2ccbf86",
+      "merge_commit": "d4f26be57d87258ea92d61f4f11db2dc25ef1a0f",
+      "conclusion": "success",
+      "jobs": [
+        "test (3.11)",
+        "test (3.12)",
+        "ui-build"
+      ],
+      "checkout_provenance": "literal_pull_request_head_sha",
+      "merge_commit_ci": "not_observed_via_connected_pr_run_endpoint"
     },
     "public_pages": {
-      "status": "deployed",
+      "status": "previously_observed_deployed_not_reverified_in_2026_09_28_sync",
       "workflow_run": 34447779687,
       "source_commit": "4037c2c0bcadce3e3e6e414735c0045b65db6027",
       "source_tree": "9ae2eaaae207c1503cd6ce09b50d91c0c9df0410",
@@ -66,25 +78,83 @@
       "troubleshooting_guide": "https://anthonyedgar30000.github.io/linealert-core/troubleshooting-guide.html",
       "event_log": "https://anthonyedgar30000.github.io/linealert-core/event-log/",
       "investigation_workspace": "https://anthonyedgar30000.github.io/linealert-core/investigation/",
-      "note": "GitHub Pages is a static controlled synthetic demo, not a production LineAlert runtime."
+      "note": "GitHub Pages was previously observed as a static controlled synthetic demo. This September 28 repository-state sync did not freshly prove external Pages availability; the static demo is not a production LineAlert runtime.",
+      "last_verified_observation": "2026-09-10",
+      "fresh_verification_in_this_sync": false
     },
     "production_runtime_deployment": "not_observed",
     "azure_lab_resources": "not_observed",
     "physical_equipment_connection": "not_observed",
     "network_listener_for_live_equipment": "not_observed",
     "equipment_control_path": "not_observed",
-    "equipment_documentation": "synthetic demo profiles and planning material observed; no Labeler 2 OEM manual or commissioned machine package observed"
+    "equipment_documentation": "synthetic demo profiles and planning material observed; no Labeler 2 OEM manual or commissioned machine package observed",
+    "latest_merged_pull_request": {
+      "pull_request": 150,
+      "title": "Add live Reasoning Node Timescale acceptance",
+      "source_head": "d300af099fe493f5e6c727c66f2f0371d2ccbf86",
+      "merge_commit": "d4f26be57d87258ea92d61f4f11db2dc25ef1a0f"
+    },
+    "recent_repository_increments": [
+      {
+        "pull_request": 141,
+        "title": "Persist condition authority provenance",
+        "merge_commit": "a502e3e58a6458925eebc77832383d61b372df94"
+      },
+      {
+        "pull_request": 142,
+        "title": "Verify historical policy equivalence",
+        "merge_commit": "9a675026c0321e75ac39de1e76c2ee01677361e3"
+      },
+      {
+        "pull_request": 143,
+        "title": "Add live Timescale acceptance harness",
+        "merge_commit": "75fb156d6dd811ceb85e2f4beef061c1865de7c4"
+      },
+      {
+        "pull_request": 144,
+        "title": "Add bounded clock evidence and temporal uncertainty gate",
+        "merge_commit": "d26da26b1305001b2910260bb1aadd1fc498bcb7"
+      },
+      {
+        "pull_request": 145,
+        "title": "Add deterministic Reasoning Node context bundle",
+        "merge_commit": "430b83448a6f5c69ec0a6b1ee71838dc0b0e0c15"
+      },
+      {
+        "pull_request": 146,
+        "title": "Add synthetic lab clock telemetry adapter",
+        "merge_commit": "1f046d14ba68fdea134c35f7e344041264e30279"
+      },
+      {
+        "pull_request": 147,
+        "title": "Add read-only Reasoning Node historian retrieval",
+        "merge_commit": "7e486310efb51cf253151b82d2e4bc22f2027d00"
+      },
+      {
+        "pull_request": 148,
+        "title": "Invalidate synthetic lab clock evidence across step boundaries",
+        "merge_commit": "720d0ea1c4252141b98529385dbd149d65f843aa"
+      },
+      {
+        "pull_request": 149,
+        "title": "Require synthetic step-monitor coverage for clock projection",
+        "merge_commit": "5b719850bcb30e166ef6501c326d1475bcbbd0be"
+      },
+      {
+        "pull_request": 150,
+        "title": "Add live Reasoning Node Timescale acceptance",
+        "merge_commit": "d4f26be57d87258ea92d61f4f11db2dc25ef1a0f"
+      }
+    ]
   },
   "active_work": {
-    "branch": "agent/sync-current-reality-v1",
-    "pull_request": 115,
-    "objective": "Synchronize repository coordination state and its state-contract tests with current merged demo, CI, deployment, issue, and equipment-documentation reality.",
-    "permitted_paths": [
-      ".project/active-work.json",
-      "tests/test_project_state.py"
-    ],
-    "capability_boundary": "repository_state_and_state_contract_tests_only_no_runtime_or_equipment_change",
-    "status_at_snapshot_write": "implemented_on_branch_pending_exact_head_ci_and_merge"
+    "status": "no_active_workstream_observed_on_main_at_snapshot",
+    "branch": null,
+    "pull_request": null,
+    "objective": null,
+    "permitted_paths": [],
+    "capability_boundary": "no_active_workstream_recorded_in_merged_snapshot_live_github_supersedes",
+    "snapshot_note": "This merged snapshot intentionally does not self-reference the corrective-sync branch or pull request. Live GitHub owns active branch/PR lifecycle after snapshot capture."
   },
   "trusted_baseline": {
     "historical_role": "Preserved PR 37/38 repository and runtime evidence. This is no longer the current overall repository head.",
@@ -97,7 +167,10 @@
       "pull_request_ci": {
         "run_id": 30516440394,
         "conclusion": "success",
-        "python_versions": ["3.11", "3.12"],
+        "python_versions": [
+          "3.11",
+          "3.12"
+        ],
         "checkout_provenance": "literal_pull_request_head_sha",
         "test_summary": "74_passed_0_xfailed"
       },
@@ -113,7 +186,10 @@
       "pull_request_ci": {
         "run_id": 30509312378,
         "conclusion": "success",
-        "python_versions": ["3.11", "3.12"],
+        "python_versions": [
+          "3.11",
+          "3.12"
+        ],
         "checkout_provenance": "literal_pull_request_head_sha",
         "test_summary": "72_passed_2_xfailed"
       },
@@ -144,16 +220,56 @@
     ],
     "workflow_summary": "Synthetic plant state can progress from normal production through concern, bounded diagnostic action, explicit restore/repeat/retain discipline, production verification, recovery observation, maintenance observe-only, post-maintenance observation, and evolving investigation views.",
     "recent_merged_increments": [
-      {"pull_request": 104, "title": "Require explicit restore before stacking troubleshooting changes", "role": "one_material_change_restore_repeat_retain_discipline"},
-      {"pull_request": 105, "title": "Add synchronized plant Event Log and recorded changeover context", "role": "append_only_style_synthetic_chronology_and_context"},
-      {"pull_request": 106, "title": "Add physics-informed synthetic roll-change signature", "role": "illustrative_physics_informed_signature"},
-      {"pull_request": 107, "title": "Use physics signature to weight roll-change investigation", "role": "bounded_investigation_evidence_not_causal_probability"},
-      {"pull_request": 108, "title": "Fix fast-forward after recovery verification", "role": "clean_post_recovery_handoff"},
-      {"pull_request": 109, "title": "Decouple diagnostic mode from maintenance response", "role": "diagnostic_state_not_maintenance_dispatch"},
-      {"pull_request": 110, "title": "Suspend normal interpretation during asset maintenance", "role": "asset_scoped_maintenance_observe_gate"},
-      {"pull_request": 112, "title": "Fix maintenance quiet-state lifecycle in demo", "role": "reachable_synthetic_maintenance_and_post_maintenance_observation"},
-      {"pull_request": 113, "title": "Harden maintenance lifecycle fast-forward and guide state", "role": "maintenance_event_fast_forward_and_guide_overlay_hardening"},
-      {"pull_request": 114, "title": "Add evolving investigation workspace", "role": "qualitative_evolving_working_explanations_and_evidence_workspace"}
+      {
+        "pull_request": 104,
+        "title": "Require explicit restore before stacking troubleshooting changes",
+        "role": "one_material_change_restore_repeat_retain_discipline"
+      },
+      {
+        "pull_request": 105,
+        "title": "Add synchronized plant Event Log and recorded changeover context",
+        "role": "append_only_style_synthetic_chronology_and_context"
+      },
+      {
+        "pull_request": 106,
+        "title": "Add physics-informed synthetic roll-change signature",
+        "role": "illustrative_physics_informed_signature"
+      },
+      {
+        "pull_request": 107,
+        "title": "Use physics signature to weight roll-change investigation",
+        "role": "bounded_investigation_evidence_not_causal_probability"
+      },
+      {
+        "pull_request": 108,
+        "title": "Fix fast-forward after recovery verification",
+        "role": "clean_post_recovery_handoff"
+      },
+      {
+        "pull_request": 109,
+        "title": "Decouple diagnostic mode from maintenance response",
+        "role": "diagnostic_state_not_maintenance_dispatch"
+      },
+      {
+        "pull_request": 110,
+        "title": "Suspend normal interpretation during asset maintenance",
+        "role": "asset_scoped_maintenance_observe_gate"
+      },
+      {
+        "pull_request": 112,
+        "title": "Fix maintenance quiet-state lifecycle in demo",
+        "role": "reachable_synthetic_maintenance_and_post_maintenance_observation"
+      },
+      {
+        "pull_request": 113,
+        "title": "Harden maintenance lifecycle fast-forward and guide state",
+        "role": "maintenance_event_fast_forward_and_guide_overlay_hardening"
+      },
+      {
+        "pull_request": 114,
+        "title": "Add evolving investigation workspace",
+        "role": "qualitative_evolving_working_explanations_and_evidence_workspace"
+      }
     ],
     "maintenance_lifecycle": {
       "sequence": [
@@ -173,9 +289,14 @@
     },
     "event_log_boundary": "Recorded event order and temporal proximity are context evidence, not causal proof.",
     "investigation_workspace": {
-      "state": "merged_and_deployed_static_demo",
+      "state": "merged_static_demo_previous_pages_deployment_not_reverified_in_this_sync",
       "behavior": "Keeps a best-supported working explanation plus credible alternatives visible, with evidence consistent with, evidence against or limiting, and missing or discriminating evidence. The view evolves from the shared synthetic session and event journal.",
-      "standing_model": ["most_supported", "plausible", "lower_priority", "less_supported"],
+      "standing_model": [
+        "most_supported",
+        "plausible",
+        "lower_priority",
+        "less_supported"
+      ],
       "boundaries": [
         "working_explanation != diagnosis",
         "investigation_priority != causal_probability",
@@ -211,7 +332,10 @@
       "physics_roll_profile": "illustrative_non_oem",
       "cmms_history": "synthetic_demo_only",
       "plant_event_log": "synthetic_demo_only",
-      "investigation_profile": "profiles/synthetic-labeler2-investigation-v1.json"
+      "investigation_profile": "profiles/synthetic-labeler2-investigation-v1.json",
+      "reasoning_context_bundle": "controlled_synthetic_software_contract",
+      "reasoning_historian_retrieval": "controlled_read_only_local_historian_contract",
+      "reasoning_live_timescale_acceptance": "controlled_synthetic_local_acceptance"
     },
     "boundary": "Synthetic profiles, screenshots, event chronology, working explanations, and physics-informed illustrative models do not establish OEM configuration, commissioned machine truth, verified physical state, or safe production authority."
   },
@@ -320,7 +444,9 @@
     "green_check_scope": "declared_ci_checks_on_inspected_commit_only"
   },
   "repository_lineage": {
-    "authoritative": ["anthonyedgar30000/linealert-core"],
+    "authoritative": [
+      "anthonyedgar30000/linealert-core"
+    ],
     "active_related_boundaries": {
       "anthonyedgar30000/helix-protocol-kernel": "governed_protocol_boundary",
       "anthonyedgar30000/ContextOS": "execution_containment_boundary"
@@ -338,7 +464,7 @@
     "network_listener": "not_observed",
     "equipment_control_path": "not_observed"
   },
-  "deployment_state_scope": "production_runtime_and_equipment_path_only; public GitHub Pages demo deployment is recorded separately under live_observation.public_pages",
+  "deployment_state_scope": "production_runtime_and_equipment_path_only; a static GitHub Pages demo was previously observed separately but was not freshly reverified by the 2026-09-28 state sync",
   "governance_and_provenance": {
     "historical_detail": "Earlier governance incidents and exact historical records remain preserved in prior revisions and Git history; this current snapshot does not rewrite them.",
     "historical_governance_issue": 27,
@@ -369,6 +495,73 @@
     "post_maintenance_observation != return_to_service_authorization",
     "working_explanation != diagnosis",
     "investigation_priority != causal_probability",
-    "github_pages_demo != production_runtime"
-  ]
+    "github_pages_demo != production_runtime",
+    "retrieval != diagnosis",
+    "semantic_similarity != evidentiary_authority",
+    "generated_summary != source_evidence",
+    "clock_evidence_present != clock_synchronization_proven"
+  ],
+  "reasoning_node_reality": {
+    "classification": "controlled_synthetic_local_reasoning_substrate",
+    "latest_merged_pull_request": 150,
+    "context_bundle": {
+      "pull_request": 145,
+      "merge_commit": "430b83448a6f5c69ec0a6b1ee71838dc0b0e0c15",
+      "schema": "linealert.reasoning-context-bundle.v1",
+      "semantic_discovery_confers_authority": false,
+      "generated_content_confers_authority": false,
+      "model_invoked_by_bundle": false
+    },
+    "historian_retrieval": {
+      "pull_request": 147,
+      "merge_commit": "7e486310efb51cf253151b82d2e4bc22f2027d00",
+      "database_session_boundary": "verified_default_transaction_read_only",
+      "writes_or_schema_mutation": false
+    },
+    "live_timescale_acceptance": {
+      "pull_request": 150,
+      "merge_commit": "d4f26be57d87258ea92d61f4f11db2dc25ef1a0f",
+      "scope": "controlled_synthetic_local_historian",
+      "result": "passed_14_of_14",
+      "candidate_count": 10,
+      "refusal_count": 0,
+      "truncated": false,
+      "clock_evidence_nonempty_count": 10,
+      "bundle_sha256": "2d54fe7869b8cfed6bd96e5e278868fe016b1c6f8bca0f35abe905ed8de6f900",
+      "current_configuration_applicability": "UNASSESSED",
+      "model_invoked": false,
+      "authorized_action": false,
+      "diagnosis_established": false
+    },
+    "document_retrieval": "not_implemented",
+    "embeddings_or_vector_retrieval": "not_implemented",
+    "local_model_integration": "not_implemented",
+    "production_equipment_authority": "not_granted"
+  },
+  "clock_integrity_reality": {
+    "classification": "bounded_synthetic_clock_evidence_and_lab_projection",
+    "latest_merged_pull_request": 149,
+    "increments": [
+      {
+        "pull_request": 144,
+        "role": "bounded_clock_evidence_and_temporal_uncertainty_gate"
+      },
+      {
+        "pull_request": 146,
+        "role": "synthetic_lab_clock_telemetry_projection"
+      },
+      {
+        "pull_request": 148,
+        "role": "step_boundary_invalidation"
+      },
+      {
+        "pull_request": 149,
+        "role": "synthetic_step_monitor_coverage_gate"
+      }
+    ],
+    "physical_device_clock_source": "not_established",
+    "production_clock_synchronization_authority": "not_granted",
+    "physical_equipment_timing_limits": "not_established",
+    "boundary": "Synthetic clock evidence and step-monitor declarations do not establish PLC/SCADA clock truth, physical event ordering, or production timing authority."
+  }
 }

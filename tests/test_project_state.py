@@ -22,6 +22,9 @@ PR37_MERGE = "97256907cd428a8a0ba3dfb7d4020fa19a2485ee"
 PR38_HEAD = "0d5d8180a5edffaeca8a9822800d7e729ef96327"
 PR38_MERGE = "06f795e760c7ad360bc51e264f8c55238a2a60da"
 PR114_MERGE = "4037c2c0bcadce3e3e6e414735c0045b65db6027"
+CURRENT_MAIN = "d4f26be57d87258ea92d61f4f11db2dc25ef1a0f"
+CURRENT_TREE = "1416286f085ac7340c0442779abb8effb5367669"
+PR150_HEAD = "d300af099fe493f5e6c727c66f2f0371d2ccbf86"
 
 
 def load_project_state() -> dict[str, Any]:
@@ -33,22 +36,30 @@ def load_project_state() -> dict[str, Any]:
 def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
     state = load_project_state()
     assert state["schema_version"] == "project.active-work.v1"
+    assert state["updated_on"] == "2026-09-28"
     assert state["repository"]["full_name"] == (
         "anthonyedgar30000/linealert-core"
     )
-    assert state["state_model"]["captured_from_main"] == PR114_MERGE
+    assert state["state_model"]["captured_from_main"] == CURRENT_MAIN
 
     policy = state["state_model"]["publication_policy"]
     assert policy["state_only_merge_requires_immediate_self_sync"] is False
     assert policy["publication_pr_self_reference_required"] is False
     assert "substantive external lifecycle" in policy["rule"]
-    assert "PR 38" in policy["current_correction_reason"]
+    assert "PR #150" in policy["current_correction_reason"]
 
     observation = state["live_observation"]
-    assert observation["default_branch_head"] == PR114_MERGE
+    assert observation["default_branch_head"] == CURRENT_MAIN
+    assert observation["default_branch_tree"] == CURRENT_TREE
     assert observation["open_pull_requests_before_branch_creation"] == []
-    assert observation["active_sync_pull_request"] == 115
+    assert observation["active_sync_pull_request"] is None
     assert observation["open_issues"] == [31]
+    assert observation["latest_merged_pull_request"] == {
+        "pull_request": 150,
+        "title": "Add live Reasoning Node Timescale acceptance",
+        "source_head": PR150_HEAD,
+        "merge_commit": CURRENT_MAIN,
+    }
     assert observation["recently_closed_issues"]["23"] == {
         "state": "closed_completed",
         "closed_by_pull_request": 38,
@@ -58,18 +69,28 @@ def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
         "closed_completed"
     )
     assert observation["visibility"]["status"] == "verified_public"
-    assert observation["main_ci"] == {
-        "run_id": 34447779672,
-        "head_sha": PR114_MERGE,
-        "conclusion": "success",
-    }
+
+    ci = observation["main_ci"]
+    assert ci["verification_scope"] == "latest_verified_pull_request_head"
+    assert ci["pull_request"] == 150
+    assert ci["run_id"] == 36482787357
+    assert ci["head_sha"] == PR150_HEAD
+    assert ci["merge_commit"] == CURRENT_MAIN
+    assert ci["conclusion"] == "success"
+    assert ci["jobs"] == ["test (3.11)", "test (3.12)", "ui-build"]
+    assert ci["merge_commit_ci"] == (
+        "not_observed_via_connected_pr_run_endpoint"
+    )
 
     pages = observation["public_pages"]
-    assert pages["status"] == "deployed"
+    assert pages["status"] == (
+        "previously_observed_deployed_not_reverified_in_2026_09_28_sync"
+    )
     assert pages["workflow_run"] == 34447779687
     assert pages["source_commit"] == PR114_MERGE
+    assert pages["fresh_verification_in_this_sync"] is False
     assert pages["investigation_workspace"].endswith("/investigation/")
-    assert "static controlled synthetic demo" in pages["note"]
+    assert "not a production LineAlert runtime" in pages["note"]
 
 
 def test_pr38_runtime_atomicity_is_preserved_and_bounded() -> None:
@@ -203,11 +224,64 @@ def test_current_demo_boundaries_include_investigation_and_maintenance() -> None
     assert demo["trial_discipline"]["stack_unverified_changes"] is False
 
     investigation = demo["investigation_workspace"]
-    assert investigation["state"] == "merged_and_deployed_static_demo"
+    assert investigation["state"] == (
+        "merged_static_demo_previous_pages_deployment_not_reverified_in_this_sync"
+    )
     assert "working_explanation != diagnosis" in investigation["boundaries"]
     assert "investigation_priority != causal_probability" in investigation["boundaries"]
     assert "llm_hypothesis_generation" in investigation["not_implemented"]
     assert "equipment_control" in investigation["not_implemented"]
+
+
+def test_snapshot_does_not_self_reference_state_sync_as_active_work() -> None:
+    state = load_project_state()
+    active = state["active_work"]
+    assert active["status"] == "no_active_workstream_observed_on_main_at_snapshot"
+    assert active["branch"] is None
+    assert active["pull_request"] is None
+    assert active["objective"] is None
+    assert active["permitted_paths"] == []
+    assert "live_github_supersedes" in active["capability_boundary"]
+
+
+def test_reasoning_node_reality_tracks_merged_bounded_substrate() -> None:
+    state = load_project_state()
+    reasoning = state["reasoning_node_reality"]
+    assert reasoning["latest_merged_pull_request"] == 150
+    assert reasoning["context_bundle"]["pull_request"] == 145
+    assert reasoning["context_bundle"]["semantic_discovery_confers_authority"] is False
+    assert reasoning["historian_retrieval"]["pull_request"] == 147
+    assert reasoning["historian_retrieval"]["writes_or_schema_mutation"] is False
+
+    acceptance = reasoning["live_timescale_acceptance"]
+    assert acceptance["pull_request"] == 150
+    assert acceptance["result"] == "passed_14_of_14"
+    assert acceptance["candidate_count"] == 10
+    assert acceptance["refusal_count"] == 0
+    assert acceptance["truncated"] is False
+    assert acceptance["current_configuration_applicability"] == "UNASSESSED"
+    assert acceptance["model_invoked"] is False
+    assert acceptance["authorized_action"] is False
+    assert acceptance["diagnosis_established"] is False
+
+    assert reasoning["document_retrieval"] == "not_implemented"
+    assert reasoning["embeddings_or_vector_retrieval"] == "not_implemented"
+    assert reasoning["local_model_integration"] == "not_implemented"
+    assert reasoning["production_equipment_authority"] == "not_granted"
+
+
+def test_clock_integrity_reality_remains_synthetic_and_bounded() -> None:
+    clock = load_project_state()["clock_integrity_reality"]
+    assert clock["latest_merged_pull_request"] == 149
+    assert [item["pull_request"] for item in clock["increments"]] == [
+        144,
+        146,
+        148,
+        149,
+    ]
+    assert clock["physical_device_clock_source"] == "not_established"
+    assert clock["production_clock_synchronization_authority"] == "not_granted"
+    assert clock["physical_equipment_timing_limits"] == "not_established"
 
 
 def test_current_equipment_reality_does_not_claim_commissioning() -> None:
@@ -223,6 +297,15 @@ def test_current_equipment_reality_does_not_claim_commissioning() -> None:
     ]
     assert material["speedway_route_scope"] == "synthetic_demo"
     assert material["physics_roll_profile"] == "illustrative_non_oem"
+    assert material["reasoning_context_bundle"] == (
+        "controlled_synthetic_software_contract"
+    )
+    assert material["reasoning_historian_retrieval"] == (
+        "controlled_read_only_local_historian_contract"
+    )
+    assert material["reasoning_live_timescale_acceptance"] == (
+        "controlled_synthetic_local_acceptance"
+    )
 
 
 def test_net_zero_sync_probe_history_is_preserved_transparently() -> None:
@@ -301,6 +384,6 @@ def test_production_deployment_and_equipment_reality_remain_bounded() -> None:
         "network_listener": "not_observed",
         "equipment_control_path": "not_observed",
     }
-    assert "public GitHub Pages demo deployment is recorded separately" in (
-        state["deployment_state_scope"]
-    )
+    scope = state["deployment_state_scope"]
+    assert "static GitHub Pages demo was previously observed separately" in scope
+    assert "not freshly reverified by the 2026-09-28 state sync" in scope
