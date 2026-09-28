@@ -114,7 +114,7 @@ The response includes:
 - echoed `from_time` and `to_time`;
 - chronological measurements.
 
-No localization endpoint is added in this increment.
+A later read-only historian endpoint now consumes this selection contract and delegates admitted selections to the existing persistent localizer. The selector semantics in this document remain unchanged; HTTP does not replace or reinterpret them.
 
 ## Authority boundary
 

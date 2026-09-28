@@ -76,6 +76,7 @@ The sidecar serves:
 ```text
 GET  http://127.0.0.1:8767/api/status
 GET  http://127.0.0.1:8767/api/history/conditions
+GET  http://127.0.0.1:8767/api/history/conditions/localize
 GET  http://127.0.0.1:8767/api/history/functional-temporal
 GET  http://127.0.0.1:8767/api/history/functional-temporal/compare
 GET  http://127.0.0.1:8767/api/history/observations
@@ -96,6 +97,8 @@ POST /api/historian/outcomes
 ```
 
 `/api/history/conditions` accepts `asset_id`, `relationship_id`, `episode_id`, `cycle_id`, `phase_id`, inclusive timezone-aware `from_time` / `to_time`, and bounded `limit` filters. Condition-history reads now query one row beyond the requested limit and report explicit `truncated` / `older_matching_records_omitted` state. `/api/history/functional-temporal` accepts `asset_id`, `episode_id`, `cycle_id`, `phase_id`, `record_kind`, inclusive timezone-aware `from_time` / `to_time`, and bounded `limit` filters with the same visible truncation rule.
+
+The read-only `/api/history/conditions/localize` endpoint accepts an exact asset, explicit selection label, target relationship, bounded episode/cycle/time selection, and explicit N-of-M persistence rule. It requires the historian service to be started with an asset-bound `--condition-config`; topology is loaded from that declared configuration rather than reconstructed from observed rows. Successful and bounded results retain the topology asset/profile identity and SHA-256 of the config used. A relationship-only filter is rejected because it would hide dependency evidence.
 
 The read-only `/api/history/functional-temporal/compare` endpoint accepts one exact asset plus separately prefixed `reference_*` and `selected_*` selection fields. Each side must supply an explicit label and a bounded episode, cycle, or timezone-aware time window. The endpoint executes the governed historian selector and commissioned-vs-selected comparator; it does not infer which record set should be treated as commissioned truth.
 
