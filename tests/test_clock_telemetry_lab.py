@@ -11,6 +11,7 @@ import pytest
 from linealert_core.clock_evidence import assess_clock_drift
 from linealert_core.clock_telemetry_lab import (
     ClockStepBoundary,
+    ClockStepCoverage,
     ClockTelemetryLabAdapter,
     ClockTelemetryLabError,
     load_clock_telemetry_lab,
@@ -72,6 +73,8 @@ def test_fixture_projects_exact_source_clock_with_holdover_uncertainty() -> None
     assert provenance.configuration_version == "synthetic-config-1"
     assert provenance.source_classification == "synthetic_lab_telemetry"
     assert provenance.drift_allowance_ms > 0
+    assert provenance.step_coverage_id == "lab-step-monitor-a-1"
+    assert provenance.step_coverage_method == "SYNTHETIC_COMPLETE_STEP_NOTICE_FEED"
     assert start_env.clock_observation.uncertainty_ms > 2
 
     core = LineAlertCore(
@@ -113,6 +116,12 @@ def test_fixture_projects_exact_source_clock_with_holdover_uncertainty() -> None
     provenance["drift_allowance_ms"] = 0
     with pytest.raises(ValueError, match="invalid condition clock"):
         measurement_from_payload(tampered)
+    tampered_coverage = copy.deepcopy(report["condition_signals"]["observations"][0])
+    tampered_coverage["clock_evidence"]["interval_assessment"]["start_observation"][
+        "telemetry_provenance"
+    ]["step_coverage_until_reference"] = BASE.isoformat()
+    with pytest.raises(ValueError, match="invalid condition clock"):
+        measurement_from_payload(tampered_coverage)
 
 
 @pytest.mark.parametrize(
@@ -344,6 +353,102 @@ def test_step_boundary_identity_and_fixture_validation(tmp_path: Path) -> None:
         "CLOCK.STEP_WINDOW_UNQUALIFIED"
     )
     raw["step_boundaries"][0]["source_classification"] = "physical_plant"
+    fixture.write_text(json.dumps(raw), encoding="utf-8")
+    with pytest.raises(ClockTelemetryLabError, match="invalid lab clock fixture"):
+        load_clock_telemetry_lab(fixture)
+
+
+def test_strict_step_coverage_refuses_missing_gap_degraded_overlap_and_conflict() -> None:
+    base = load_clock_telemetry_lab(FIXTURE)
+    bindings = tuple(base._bindings.values())
+    sample = base._samples[0]
+    covered = base._step_coverages[0]
+    target = event("start", "plc-a", "Start", 2)
+
+    def refusal(*coverages: ClockStepCoverage) -> str:
+        adapter = ClockTelemetryLabAdapter(
+            bindings, (sample,), step_coverages=coverages, require_step_coverage=True
+        )
+        result = adapter.project(target)
+        assert result.observation is None and result.refusal is not None
+        return result.refusal.reason_code
+
+    assert refusal() == "CLOCK.STEP_COVERAGE_MISSING"
+    assert refusal(replace(covered, coverage_start_reference=BASE)) == (
+        "CLOCK.STEP_COVERAGE_GAP"
+    )
+    assert refusal(replace(covered, coverage_until_reference=BASE + timedelta(milliseconds=1))) == (
+        "CLOCK.STEP_COVERAGE_GAP"
+    )
+    assert refusal(replace(covered, monitor_state="DEGRADED")) == (
+        "CLOCK.STEP_COVERAGE_UNQUALIFIED"
+    )
+    assert refusal(covered, replace(covered, coverage_id="overlapping-monitor")) == (
+        "CLOCK.STEP_COVERAGE_AMBIGUOUS"
+    )
+    overlapping = ClockTelemetryLabAdapter(
+        bindings,
+        (sample,),
+        step_coverages=(covered, replace(covered, coverage_id="overlapping-monitor")),
+        require_step_coverage=True,
+    ).project(target)
+    assert overlapping.refusal is not None
+    assert overlapping.refusal.step_coverage_ids == (
+        "lab-step-monitor-a-1",
+        "overlapping-monitor",
+    )
+    assert refusal(replace(covered, configuration_version="other-config")) == (
+        "CLOCK.STEP_COVERAGE_BINDING_CONFLICT"
+    )
+    assert refusal(replace(covered, calibration_id="other-calibration")) == (
+        "CLOCK.STEP_COVERAGE_BINDING_CONFLICT"
+    )
+    with pytest.raises(ClockTelemetryLabError, match="unique"):
+        ClockTelemetryLabAdapter(
+            bindings,
+            (sample,),
+            step_coverages=(covered, covered),
+            require_step_coverage=True,
+        )
+    with pytest.raises(ClockTelemetryLabError, match="explicit strict mode"):
+        ClockTelemetryLabAdapter(bindings, (sample,), step_coverages=(covered,))
+
+
+def test_strict_step_coverage_and_fresh_sample_after_boundary() -> None:
+    base = load_clock_telemetry_lab(FIXTURE)
+    boundary = step_boundary()
+    fresh = replace(
+        base._samples[0],
+        sample_id="fresh-after-step",
+        sampled_at_reference=BASE + timedelta(milliseconds=1100),
+        offset_ms=20,
+    )
+    adapter = ClockTelemetryLabAdapter(
+        tuple(base._bindings.values()),
+        (*base._samples, fresh),
+        step_boundaries=(boundary,),
+        step_coverages=base._step_coverages,
+        require_step_coverage=True,
+    )
+    result = adapter.project(event("after", "plc-a", "Start", 1220))
+    assert result.refusal is None and result.observation is not None
+    provenance = result.observation.telemetry_provenance
+    assert provenance is not None
+    assert provenance.sample_id == fresh.sample_id
+    assert provenance.last_step_boundary_id == boundary.boundary_id
+    assert provenance.step_coverage_id == "lab-step-monitor-a-1"
+
+
+def test_strict_lab_fixture_requires_explicit_coverage(tmp_path: Path) -> None:
+    raw = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    raw["step_coverages"] = []
+    fixture = tmp_path / "no-coverage.json"
+    fixture.write_text(json.dumps(raw), encoding="utf-8")
+    result = load_clock_telemetry_lab(fixture).project(event("start", "plc-a", "Start", 2))
+    assert result.refusal is not None
+    assert result.refusal.reason_code == "CLOCK.STEP_COVERAGE_MISSING"
+    covered = json.loads(FIXTURE.read_text(encoding="utf-8"))["step_coverages"][0]
+    raw["step_coverages"] = [{**covered, "source_classification": "physical_plant"}]
     fixture.write_text(json.dumps(raw), encoding="utf-8")
     with pytest.raises(ClockTelemetryLabError, match="invalid lab clock fixture"):
         load_clock_telemetry_lab(fixture)

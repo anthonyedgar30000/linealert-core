@@ -181,6 +181,51 @@ class ClockStepBoundary:
 
 
 @dataclass(frozen=True, slots=True)
+class ClockStepCoverage:
+    """Synthetic assertion that step notices cover one bounded source-clock interval."""
+
+    coverage_id: str
+    binding_id: str
+    source_id: str
+    clock_id: str
+    reference_clock_id: str
+    reference_path: tuple[str, ...]
+    firmware_version: str
+    configuration_version: str
+    calibration_id: str
+    sampling_profile_id: str
+    coverage_start_reference: datetime
+    coverage_until_reference: datetime
+    monitor_method: str
+    monitor_state: str
+    source_classification: str = "synthetic_lab_telemetry"
+
+    def __post_init__(self) -> None:
+        for name in (
+            "coverage_id",
+            "binding_id",
+            "source_id",
+            "clock_id",
+            "reference_clock_id",
+            "firmware_version",
+            "configuration_version",
+            "calibration_id",
+            "sampling_profile_id",
+            "monitor_method",
+        ):
+            _text(getattr(self, name), name)
+        _path(self.reference_path, self.reference_clock_id, self.clock_id)
+        if self.monitor_state not in {"COMPLETE", "DEGRADED", "UNKNOWN"}:
+            raise ClockTelemetryLabError("unsupported step monitor_state")
+        if self.source_classification != "synthetic_lab_telemetry":
+            raise ClockTelemetryLabError("step coverage must be synthetic_lab_telemetry")
+        _time(self.coverage_start_reference, "coverage_start_reference")
+        _time(self.coverage_until_reference, "coverage_until_reference")
+        if self.coverage_until_reference <= self.coverage_start_reference:
+            raise ClockTelemetryLabError("step coverage reference interval must be positive")
+
+
+@dataclass(frozen=True, slots=True)
 class ClockProjectionRefusal:
     event_id: str
     source_id: str
@@ -188,6 +233,7 @@ class ClockProjectionRefusal:
     sample_ids: tuple[str, ...]
     retained_uncertainty: str
     step_boundary_ids: tuple[str, ...] = ()
+    step_coverage_ids: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -204,6 +250,8 @@ class ClockTelemetryLabAdapter:
         bindings: tuple[ClockSourceBinding, ...],
         samples: tuple[ClockTelemetrySample, ...],
         step_boundaries: tuple[ClockStepBoundary, ...] = (),
+        step_coverages: tuple[ClockStepCoverage, ...] = (),
+        require_step_coverage: bool = False,
     ) -> None:
         if not bindings or len({b.source_id for b in bindings}) != len(bindings):
             raise ClockTelemetryLabError("one exact binding per source is required")
@@ -211,11 +259,19 @@ class ClockTelemetryLabAdapter:
             raise ClockTelemetryLabError("sample IDs must be unique")
         if len({b.boundary_id for b in step_boundaries}) != len(step_boundaries):
             raise ClockTelemetryLabError("step boundary IDs must be unique")
+        if len({c.coverage_id for c in step_coverages}) != len(step_coverages):
+            raise ClockTelemetryLabError("step coverage IDs must be unique")
+        if not isinstance(require_step_coverage, bool):
+            raise ClockTelemetryLabError("require_step_coverage must be boolean")
+        if step_coverages and not require_step_coverage:
+            raise ClockTelemetryLabError("step coverage requires explicit strict mode")
         self._bindings = {b.source_id: b for b in bindings}
-        if any(b.source_id not in self._bindings for b in step_boundaries):
-            raise ClockTelemetryLabError("step boundary needs an exact source binding")
+        if any(b.source_id not in self._bindings for b in (*step_boundaries, *step_coverages)):
+            raise ClockTelemetryLabError("step evidence needs an exact source binding")
         self._samples = tuple(sorted(samples, key=lambda s: s.sample_id))
         self._step_boundaries = tuple(sorted(step_boundaries, key=lambda b: b.boundary_id))
+        self._step_coverages = tuple(sorted(step_coverages, key=lambda c: c.coverage_id))
+        self._require_step_coverage = require_step_coverage
 
     @staticmethod
     def _refuse(
@@ -224,6 +280,7 @@ class ClockTelemetryLabAdapter:
         samples: tuple[ClockTelemetrySample, ...],
         detail: str,
         boundaries: tuple[ClockStepBoundary, ...] = (),
+        coverages: tuple[ClockStepCoverage, ...] = (),
     ) -> ClockProjection:
         return ClockProjection(
             None,
@@ -234,6 +291,7 @@ class ClockTelemetryLabAdapter:
                 sample_ids=tuple(s.sample_id for s in samples),
                 retained_uncertainty=detail,
                 step_boundary_ids=tuple(b.boundary_id for b in boundaries),
+                step_coverage_ids=tuple(c.coverage_id for c in coverages),
             ),
         )
 
@@ -243,6 +301,7 @@ class ClockTelemetryLabAdapter:
             return self._refuse(event, "CLOCK.BINDING_MISSING", (), "No lab source clock binding.")
         samples = tuple(s for s in self._samples if s.source_id == event.source_id)
         boundaries = tuple(b for b in self._step_boundaries if b.source_id == event.source_id)
+        coverages = tuple(c for c in self._step_coverages if c.source_id == event.source_id)
         if any(
             b.binding_id != binding.binding_id
             or b.clock_id != binding.clock_id
@@ -256,6 +315,24 @@ class ClockTelemetryLabAdapter:
                 samples,
                 "Step boundary conflicts with the exact source clock or reference path.",
                 boundaries,
+            )
+        if any(
+            c.binding_id != binding.binding_id
+            or c.clock_id != binding.clock_id
+            or c.reference_clock_id != binding.reference_clock_id
+            or c.reference_path != binding.reference_path
+            or c.firmware_version != binding.firmware_version
+            or c.configuration_version != binding.configuration_version
+            or c.calibration_id != binding.calibration_id
+            or c.sampling_profile_id != binding.sampling_profile_id
+            for c in coverages
+        ):
+            return self._refuse(
+                event,
+                "CLOCK.STEP_COVERAGE_BINDING_CONFLICT",
+                samples,
+                "Step coverage conflicts with the exact source clock binding.",
+                coverages=coverages,
             )
         if not samples:
             return self._refuse(event, "CLOCK.SAMPLE_MISSING", (), "No source offset sample.")
@@ -280,8 +357,13 @@ class ClockTelemetryLabAdapter:
                 "sampling identity conflicts with the exact lab binding.",
             )
 
-        eligible: list[tuple[ClockTelemetrySample, datetime, float, float, float]] = []
+        eligible: list[
+            tuple[ClockTelemetrySample, datetime, float, float, float, ClockStepCoverage | None]
+        ] = []
         blocked: list[tuple[ClockTelemetrySample, tuple[ClockStepBoundary, ...]]] = []
+        coverage_blocked: list[
+            tuple[str, ClockTelemetrySample, tuple[ClockStepCoverage, ...]]
+        ] = []
         for sample in samples:
             try:
                 candidate = event.timestamp - timedelta(milliseconds=sample.offset_ms)
@@ -316,10 +398,63 @@ class ClockTelemetryLabAdapter:
             if crossed:
                 blocked.append((sample, crossed))
                 continue
+            coverage: ClockStepCoverage | None = None
+            if self._require_step_coverage:
+                intersecting = tuple(
+                    c
+                    for c in coverages
+                    if c.coverage_start_reference <= upper
+                    and c.coverage_until_reference > sample.sampled_at_reference
+                )
+                if len(intersecting) > 1:
+                    coverage_blocked.append(("CLOCK.STEP_COVERAGE_AMBIGUOUS", sample, intersecting))
+                    continue
+                if not intersecting:
+                    coverage_blocked.append(("CLOCK.STEP_COVERAGE_MISSING", sample, ()))
+                    continue
+                coverage = intersecting[0]
+                if (
+                    coverage.coverage_start_reference > sample.sampled_at_reference
+                    or coverage.coverage_until_reference <= upper
+                ):
+                    coverage_blocked.append(("CLOCK.STEP_COVERAGE_GAP", sample, intersecting))
+                    continue
+                if coverage.monitor_state != "COMPLETE":
+                    coverage_blocked.append(
+                        ("CLOCK.STEP_COVERAGE_UNQUALIFIED", sample, intersecting)
+                    )
+                    continue
             eligible.append(
-                (sample, candidate, age, uncertainty, uncertainty - sample.uncertainty_ms)
+                (
+                    sample,
+                    candidate,
+                    age,
+                    uncertainty,
+                    uncertainty - sample.uncertainty_ms,
+                    coverage,
+                )
             )
         if not eligible:
+            if coverage_blocked:
+                code = next(
+                    code
+                    for code in (
+                        "CLOCK.STEP_COVERAGE_AMBIGUOUS",
+                        "CLOCK.STEP_COVERAGE_UNQUALIFIED",
+                        "CLOCK.STEP_COVERAGE_GAP",
+                        "CLOCK.STEP_COVERAGE_MISSING",
+                    )
+                    if any(reason == code for reason, _, _ in coverage_blocked)
+                )
+                return self._refuse(
+                    event,
+                    code,
+                    tuple(s for _, s, _ in coverage_blocked),
+                    "No unambiguous complete step-monitoring coverage spans sample to event.",
+                    coverages=tuple(
+                        {c.coverage_id: c for _, _, cs in coverage_blocked for c in cs}.values()
+                    ),
+                )
             if blocked:
                 return self._refuse(
                     event,
@@ -341,7 +476,7 @@ class ClockTelemetryLabAdapter:
                 tuple(item[0] for item in eligible),
                 "Multiple source samples qualify; no latest-wins selection is permitted.",
             )
-        sample, candidate, age, uncertainty, drift_allowance = eligible[0]
+        sample, candidate, age, uncertainty, drift_allowance, coverage = eligible[0]
         lower = candidate - timedelta(milliseconds=uncertainty)
         if sample.synchronization_state != "LOCKED":
             return self._refuse(
@@ -378,6 +513,14 @@ class ClockTelemetryLabAdapter:
             last_step_earliest_reference=last_step.earliest_reference if last_step else None,
             last_step_latest_reference=last_step.latest_reference if last_step else None,
             last_step_observation_method=last_step.observation_method if last_step else None,
+            step_coverage_id=coverage.coverage_id if coverage else None,
+            step_coverage_start_reference=(
+                coverage.coverage_start_reference if coverage else None
+            ),
+            step_coverage_until_reference=(
+                coverage.coverage_until_reference if coverage else None
+            ),
+            step_coverage_method=coverage.monitor_method if coverage else None,
         )
         return ClockProjection(
             ClockObservation(
@@ -420,8 +563,12 @@ def load_clock_telemetry_lab(path: str | Path) -> ClockTelemetryLabAdapter:
         raise ClockTelemetryLabError("lab fixture must declare synthetic_lab_only")
     bindings_raw, samples_raw = raw.get("bindings"), raw.get("samples")
     boundaries_raw = raw.get("step_boundaries", [])
-    if not all(isinstance(value, list) for value in (bindings_raw, samples_raw, boundaries_raw)):
-        raise ClockTelemetryLabError("bindings, samples and step_boundaries must be arrays")
+    coverages_raw = raw.get("step_coverages", [])
+    if not all(
+        isinstance(value, list)
+        for value in (bindings_raw, samples_raw, boundaries_raw, coverages_raw)
+    ):
+        raise ClockTelemetryLabError("bindings, samples and step evidence must be arrays")
     try:
         bindings = tuple(
             ClockSourceBinding(**{**item, "reference_path": tuple(item["reference_path"])})
@@ -449,6 +596,27 @@ def load_clock_telemetry_lab(path: str | Path) -> ClockTelemetryLabAdapter:
             )
             for item in boundaries_raw
         )
+        coverages = tuple(
+            ClockStepCoverage(
+                **{
+                    **item,
+                    "reference_path": tuple(item["reference_path"]),
+                    "coverage_start_reference": datetime.fromisoformat(
+                        item["coverage_start_reference"]
+                    ),
+                    "coverage_until_reference": datetime.fromisoformat(
+                        item["coverage_until_reference"]
+                    ),
+                }
+            )
+            for item in coverages_raw
+        )
     except (KeyError, TypeError, ValueError) as exc:
         raise ClockTelemetryLabError("invalid lab clock fixture record") from exc
-    return ClockTelemetryLabAdapter(bindings, samples, boundaries)
+    return ClockTelemetryLabAdapter(
+        bindings,
+        samples,
+        boundaries,
+        coverages,
+        raw.get("require_step_coverage", False),
+    )
