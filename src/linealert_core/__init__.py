@@ -86,9 +86,16 @@ from .functional_temporal import (
     TransitionDisposition,
     TransitionEvaluation,
 )
+from .functional_temporal_orchestration import (
+    FunctionalTemporalOrchestrationError,
+    FunctionalTemporalOrchestrationResult,
+    FunctionalTemporalOrchestrator,
+    OrchestrationDisposition,
+)
 from .functional_temporal_runtime import (
     FunctionalTemporalPhaseAssessment,
     FunctionalTemporalRuntime,
+    FunctionalTemporalRuntimeCheckpoint,
     FunctionalTemporalRuntimeError,
     FunctionalTemporalRuntimeResult,
 )
@@ -215,8 +222,12 @@ __all__ = [
     "FunctionalTemporalEvidenceBinder",
     "FunctionalTemporalEvaluator",
     "FunctionalTemporalModel",
+    "FunctionalTemporalOrchestrationError",
+    "FunctionalTemporalOrchestrationResult",
+    "FunctionalTemporalOrchestrator",
     "FunctionalTemporalPhaseAssessment",
     "FunctionalTemporalRuntime",
+    "FunctionalTemporalRuntimeCheckpoint",
     "FunctionalTemporalRuntimeError",
     "FunctionalTemporalRuntimeResult",
     "FunctionalTemporalSourceBindingError",
@@ -235,6 +246,7 @@ __all__ = [
     "MachineProfile",
     "MachineProfileError",
     "OperatorReport",
+    "OrchestrationDisposition",
     "PipelineResult",
     "PhaseDefinition",
     "PhaseEvaluation",

@@ -494,6 +494,22 @@ class TimescaleHistorian:
             "state": record.state.value,
         }
 
+    def record_functional_temporal_evidence_batch(
+        self,
+        records: tuple[FunctionalTemporalHistoryRecord, ...],
+    ) -> tuple[dict[str, Any], ...]:
+        """Persist one deterministic record batch atomically.
+
+        The connection runs in autocommit mode for ordinary historian writes. An explicit
+        transaction is opened here so an orchestration unit cannot leave a partial
+        functional-temporal record set behind.
+        """
+
+        if not records:
+            return ()
+        with self._lock, self._connection.transaction():
+            return tuple(self.record_functional_temporal_evidence(record) for record in records)
+
     def record_outcome(self, payload: dict[str, Any]) -> dict[str, Any]:
         required = ("episode_id", "asset_id", "relationship_id", "outcome_type", "status")
         missing = [name for name in required if not str(payload.get(name, "")).strip()]

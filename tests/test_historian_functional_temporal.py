@@ -182,13 +182,31 @@ class _FakeCursor:
         return list(self.connection.rows)
 
 
+class _FakeTransaction:
+    def __init__(self, connection: _FakeConnection) -> None:
+        self.connection = connection
+
+    def __enter__(self) -> _FakeTransaction:
+        self.connection.transaction_entries += 1
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        self.connection.transaction_exits += 1
+        return None
+
+
 class _FakeConnection:
     def __init__(self) -> None:
         self.executions: list[tuple[str, tuple[object, ...] | None]] = []
         self.rows: list[tuple[object, ...]] = []
+        self.transaction_entries = 0
+        self.transaction_exits = 0
 
     def cursor(self) -> _FakeCursor:
         return _FakeCursor(self)
+
+    def transaction(self) -> _FakeTransaction:
+        return _FakeTransaction(self)
 
 
 def fake_historian() -> tuple[TimescaleHistorian, _FakeConnection]:
@@ -307,3 +325,41 @@ def test_condition_measurement_write_preserves_cycle_phase_and_context() -> None
         '{"configuration_version": "plc-config-4.2.1", "firmware_version": "servo-fw-3.7"}'
         in params
     )
+
+
+def test_functional_temporal_batch_uses_one_explicit_transaction() -> None:
+    historian, connection = fake_historian()
+    first = guard_record()
+    second = FunctionalTemporalHistoryRecord(
+        observed_at=first.observed_at,
+        record_id="FT:cycle-42:guard-second",
+        episode_id=first.episode_id,
+        cycle_id=first.cycle_id,
+        record_kind=FunctionalTemporalRecordKind.GUARD,
+        state=first.state,
+        validity=first.validity,
+        coverage=first.coverage,
+        source_id=first.source_id,
+        operating_context=first.operating_context,
+        phase_id=first.phase_id,
+        requirement_id="GUARD_SECOND",
+        evidence_ids=("E:second",),
+    )
+
+    written = historian.record_functional_temporal_evidence_batch((first, second))
+
+    assert connection.transaction_entries == 1
+    assert connection.transaction_exits == 1
+    assert len(connection.executions) == 2
+    assert [item["record_id"] for item in written] == [
+        first.record_id,
+        second.record_id,
+    ]
+
+
+def test_empty_functional_temporal_batch_is_noop() -> None:
+    historian, connection = fake_historian()
+
+    assert historian.record_functional_temporal_evidence_batch(()) == ()
+    assert connection.transaction_entries == 0
+    assert connection.executions == []
