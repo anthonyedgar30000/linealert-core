@@ -54,6 +54,16 @@ class FunctionalTemporalPhaseAssessment:
     history_records: tuple[FunctionalTemporalHistoryRecord, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class FunctionalTemporalRuntimeCheckpoint:
+    """Detached runtime state used only for bounded orchestration rollback."""
+
+    phase_by_cycle: Mapping[str, str]
+    phase_entered_at: Mapping[str, datetime]
+    phase_trigger_event_id: Mapping[str, str]
+    context_identity_by_cycle: Mapping[str, tuple[object, ...]]
+
+
 class FunctionalTemporalRuntime:
     """Track admitted phases while projecting evaluator outputs into history records.
 
@@ -99,6 +109,30 @@ class FunctionalTemporalRuntime:
         _require_text(cycle_id, "cycle_id")
         with self._lock:
             return self._phase_by_cycle.get(cycle_id, self.initial_phase_id)
+
+    def snapshot_state(self) -> FunctionalTemporalRuntimeCheckpoint:
+        """Return detached state so an outer persistence boundary can roll back safely."""
+
+        with self._lock:
+            return FunctionalTemporalRuntimeCheckpoint(
+                phase_by_cycle=MappingProxyType(dict(self._phase_by_cycle)),
+                phase_entered_at=MappingProxyType(dict(self._phase_entered_at)),
+                phase_trigger_event_id=MappingProxyType(dict(self._phase_trigger_event_id)),
+                context_identity_by_cycle=MappingProxyType(dict(self._context_identity_by_cycle)),
+            )
+
+    def restore_state(self, checkpoint: FunctionalTemporalRuntimeCheckpoint) -> None:
+        """Restore a checkpoint after an outer orchestration step fails."""
+
+        if not isinstance(checkpoint, FunctionalTemporalRuntimeCheckpoint):
+            raise FunctionalTemporalRuntimeError(
+                "checkpoint must be FunctionalTemporalRuntimeCheckpoint"
+            )
+        with self._lock:
+            self._phase_by_cycle = dict(checkpoint.phase_by_cycle)
+            self._phase_entered_at = dict(checkpoint.phase_entered_at)
+            self._phase_trigger_event_id = dict(checkpoint.phase_trigger_event_id)
+            self._context_identity_by_cycle = dict(checkpoint.context_identity_by_cycle)
 
     def process_event(
         self,
