@@ -1,0 +1,31 @@
+{
+  "schema_version": "linealert.plant-reported-context.v1",
+  "context_id": "plant-context-001",
+  "service_case_id": "svc-2026-0042",
+  "asset_id": "LABELER-02",
+  "entered_at": "2026-09-27T17:25:00+00:00",
+  "entered_by": "speedway-technician",
+  "reported_source_class": "cmms",
+  "reported_source": "Plant CMMS work-order history",
+  "original_wording_or_bounded_summary": "Guide rail adjusted after intermittent bottle backup.",
+  "source_verification_state": "technician_viewed_source",
+  "reported_time_kind": "window",
+  "reported_clock_quality": "unknown",
+  "reported_event_start": "2026-09-27T13:40:00+00:00",
+  "reported_event_end": "2026-09-27T13:55:00+00:00",
+  "source_record_reference": "WO-1842",
+  "plant_contact_role": "Plant maintenance",
+  "provenance": [
+    "plant-maintenance-contact",
+    "CMMS work order WO-1842 viewed by Speedway technician"
+  ],
+  "direct_system_observation": false,
+  "verified_source_record": false,
+  "causal_claim_established": false,
+  "claim_boundaries": [
+    "plant_reported_context != verified_source_record",
+    "technician_entry != direct_system_observation",
+    "reported_event_time != verified_machine_timestamp",
+    "temporal_proximity != causation"
+  ]
+}

@@ -8,6 +8,8 @@ Plant operators and plant internal-maintenance staff are not required LineAlert 
 
 First detected departure is not root-cause proof. Plant-reported context is not silently promoted to a verified source record. Temporal precedence does not establish causation, and a LineAlert recommendation does not authorize an equipment action. See `docs/architecture/speedway-service-workflow-scope-v1.md` for the current product boundary.
 
+The executable v1 service-case and plant-reported-context contracts are documented in `docs/architecture/service-case-data-contract-v1.md`, with canonical synthetic wire examples in `examples/speedway_service_case_v1.json` and `examples/plant_reported_context_v1.json`.
+
 For the live read-only Microsoft OPC PLC dashboard lab, see
 [docs/opcua-local-demo.md](docs/opcua-local-demo.md).
 
