@@ -317,6 +317,7 @@ export default function PlantCanvas() {
           <button className={view === "canvas" ? styles.activeView : ""} onClick={() => setView("canvas")}>Plant canvas</button>
           <button className={view === "board" ? styles.activeView : ""} onClick={() => setView("board")}>Triage board</button>
           <Link href="/health">Evidence</Link>
+          <Link href="/reasoning">Reasoning inputs</Link>
         </nav>
       </header>
 
