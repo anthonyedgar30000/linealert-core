@@ -1,0 +1,74 @@
+{
+  "schema_version": "linealert.clock-telemetry-lab.v1",
+  "classification": "synthetic_lab_only",
+  "bindings": [
+    {
+      "binding_id": "lab-clock-a-v1",
+      "source_id": "plc-a",
+      "clock_id": "clock-plc-a",
+      "reference_clock_id": "lab-reference-1",
+      "reference_path": ["lab-reference-1", "lab-switch-1", "clock-plc-a"],
+      "firmware_version": "synthetic-fw-1",
+      "configuration_version": "synthetic-config-1",
+      "calibration_id": "lab-cal-1",
+      "sampling_profile_id": "lab-sample-1",
+      "max_sample_age_seconds": 5
+    },
+    {
+      "binding_id": "lab-clock-b-v1",
+      "source_id": "scada-b",
+      "clock_id": "clock-scada-b",
+      "reference_clock_id": "lab-reference-1",
+      "reference_path": ["lab-reference-1", "lab-switch-2", "clock-scada-b"],
+      "firmware_version": "synthetic-fw-1",
+      "configuration_version": "synthetic-config-1",
+      "calibration_id": "lab-cal-1",
+      "sampling_profile_id": "lab-sample-1",
+      "max_sample_age_seconds": 5
+    }
+  ],
+  "samples": [
+    {
+      "sample_id": "lab-offset-a-1",
+      "binding_id": "lab-clock-a-v1",
+      "source_id": "plc-a",
+      "clock_id": "clock-plc-a",
+      "reference_clock_id": "lab-reference-1",
+      "reference_path": ["lab-reference-1", "lab-switch-1", "clock-plc-a"],
+      "firmware_version": "synthetic-fw-1",
+      "configuration_version": "synthetic-config-1",
+      "calibration_id": "lab-cal-1",
+      "sampling_profile_id": "lab-sample-1",
+      "synchronization_method": "SYNTHETIC_LAB_REFERENCE",
+      "synchronization_state": "LOCKED",
+      "measurement_method": "SYNTHETIC_OFFSET_INJECTION",
+      "sampled_at_reference": "2026-09-28T18:59:59+00:00",
+      "valid_until_reference": "2026-09-28T19:00:05+00:00",
+      "offset_ms": 2,
+      "uncertainty_ms": 2,
+      "maximum_drift_ppm": 10,
+      "source_classification": "synthetic_lab_telemetry"
+    },
+    {
+      "sample_id": "lab-offset-b-1",
+      "binding_id": "lab-clock-b-v1",
+      "source_id": "scada-b",
+      "clock_id": "clock-scada-b",
+      "reference_clock_id": "lab-reference-1",
+      "reference_path": ["lab-reference-1", "lab-switch-2", "clock-scada-b"],
+      "firmware_version": "synthetic-fw-1",
+      "configuration_version": "synthetic-config-1",
+      "calibration_id": "lab-cal-1",
+      "sampling_profile_id": "lab-sample-1",
+      "synchronization_method": "SYNTHETIC_LAB_REFERENCE",
+      "synchronization_state": "LOCKED",
+      "measurement_method": "SYNTHETIC_OFFSET_INJECTION",
+      "sampled_at_reference": "2026-09-28T18:59:59+00:00",
+      "valid_until_reference": "2026-09-28T19:00:05+00:00",
+      "offset_ms": -3,
+      "uncertainty_ms": 2,
+      "maximum_drift_ppm": 10,
+      "source_classification": "synthetic_lab_telemetry"
+    }
+  ]
+}
