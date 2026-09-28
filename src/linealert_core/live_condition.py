@@ -6,6 +6,14 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Any
 
+from .clock_evidence import (
+    ClockEvidenceError,
+    ClockIntervalAssessment,
+    ClockObservation,
+    IntervalDisposition,
+    assess_cross_clock_interval,
+    interval_assessment_to_dict,
+)
 from .condition_projection import (
     ConditionProjectionError,
     ConditionSignalObservation,
@@ -33,6 +41,21 @@ class LiveClockEvidence:
     end_clock_quality: str
     basis: str
     retained_uncertainty: str
+    interval_assessment: ClockIntervalAssessment | None = None
+
+
+def live_clock_evidence_to_dict(clock: LiveClockEvidence) -> dict[str, Any]:
+    """Serialize clock provenance consistently for reports and historian writes."""
+
+    payload: dict[str, Any] = {
+        "start_clock_quality": clock.start_clock_quality,
+        "end_clock_quality": clock.end_clock_quality,
+        "basis": clock.basis,
+        "retained_uncertainty": clock.retained_uncertainty,
+    }
+    if clock.interval_assessment is not None:
+        payload["interval_assessment"] = interval_assessment_to_dict(clock.interval_assessment)
+    return payload
 
 
 @dataclass(frozen=True, slots=True)
@@ -57,6 +80,8 @@ class LiveConditionRefusal:
     end_clock_quality: str | None
     reason_code: str
     retained_uncertainty: str
+    start_clock_evidence_id: str | None = None
+    end_clock_evidence_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,11 +103,7 @@ class LiveConditionSummary:
 
     @property
     def measurements(self) -> tuple[LiveConditionMeasurement, ...]:
-        return tuple(
-            measurement
-            for result in self.results
-            for measurement in result.measurements
-        )
+        return tuple(measurement for result in self.results for measurement in result.measurements)
 
     @property
     def refusals(self) -> tuple[LiveConditionRefusal, ...]:
@@ -117,7 +138,7 @@ class LiveConditionConsumer:
         self._stream = StreamConsumer(core)
         self._bindings = bindings
         self._bindings_by_rule = by_rule
-        self._event_transport: dict[str, tuple[str, str]] = {}
+        self._event_transport: dict[str, tuple[str, str, ClockObservation | None]] = {}
         self._results: list[LiveConditionResult] = []
 
     def consume(self, envelope: StreamEnvelope) -> LiveConditionResult:
@@ -134,6 +155,7 @@ class LiveConditionConsumer:
             self._event_transport[envelope.event.event_id] = (
                 envelope.event.source_id,
                 envelope.clock_quality,
+                envelope.clock_observation,
             )
 
         measurements: list[LiveConditionMeasurement] = []
@@ -142,7 +164,9 @@ class LiveConditionConsumer:
             binding = self._bindings_by_rule.get(finding.rule_id)
             if binding is None:
                 continue
-            clock_evidence, refusal = self._qualify_clock_basis(finding)
+            clock_evidence, refusal = self._qualify_clock_basis(
+                finding, binding.max_combined_uncertainty_ms
+            )
             if refusal is not None:
                 refusals.append(refusal)
                 continue
@@ -178,6 +202,7 @@ class LiveConditionConsumer:
     def _qualify_clock_basis(
         self,
         finding: TimingFinding,
+        max_combined_uncertainty_ms: float | None,
     ) -> tuple[LiveClockEvidence | None, LiveConditionRefusal | None]:
         start = self._event_transport.get(finding.start_event_id or "")
         end = self._event_transport.get(finding.end_event_id or "")
@@ -198,8 +223,8 @@ class LiveConditionConsumer:
                 ),
             )
 
-        start_source, start_clock = start
-        end_source, end_clock = end
+        start_source, start_clock, _ = start
+        end_source, end_clock, _ = end
         if start_source != end_source and (
             start_clock != "synchronized" or end_clock != "synchronized"
         ):
@@ -221,6 +246,15 @@ class LiveConditionConsumer:
             )
 
         if start_source == end_source:
+            if max_combined_uncertainty_ms is not None:
+                return None, self._clock_refusal(
+                    finding,
+                    start,
+                    end,
+                    "EVIDENCE.RELATIONSHIP_QUANTIFIED_SAME_SOURCE_NOT_SUPPORTED",
+                    "A same-source interval needs a bounded rate/elapsed-time assessment; "
+                    "per-event offset uncertainty is not substituted for relative clock rate.",
+                )
             return LiveClockEvidence(
                 start_clock_quality=start_clock,
                 end_clock_quality=end_clock,
@@ -231,6 +265,48 @@ class LiveConditionConsumer:
                 ),
             ), None
 
+        assessment = None
+        if max_combined_uncertainty_ms is not None:
+            if start[2] is None or end[2] is None:
+                return None, self._clock_refusal(
+                    finding,
+                    start,
+                    end,
+                    "EVIDENCE.RELATIONSHIP_CLOCK_OBSERVATION_MISSING",
+                    "The timing requirement needs exact event-bound offset observations "
+                    "for both sources.",
+                )
+            try:
+                assessment = assess_cross_clock_interval(
+                    start=start[2],
+                    end=end[2],
+                    raw_delay_ms=finding.delay_seconds * 1000,
+                    min_delay_ms=finding.min_delay_seconds * 1000,
+                    max_delay_ms=finding.max_delay_seconds * 1000,
+                    max_combined_uncertainty_ms=max_combined_uncertainty_ms,
+                )
+            except ClockEvidenceError as exc:
+                return None, self._clock_refusal(
+                    finding,
+                    start,
+                    end,
+                    "EVIDENCE.RELATIONSHIP_CLOCK_REFERENCE_MISMATCH",
+                    str(exc),
+                )
+            if (
+                assessment.disposition is IntervalDisposition.INDETERMINATE
+                or assessment.disposition.value != finding.status.value
+            ):
+                return None, self._clock_refusal(
+                    finding,
+                    start,
+                    end,
+                    "EVIDENCE.RELATIONSHIP_TEMPORAL_UNCERTAINTY",
+                    "The bounded reference interval does not support the raw timestamp "
+                    "classification. "
+                    f"Estimated interval [{assessment.lower_delay_ms}, "
+                    f"{assessment.upper_delay_ms}] ms; raw status {finding.status.value}.",
+                )
         return LiveClockEvidence(
             start_clock_quality=start_clock,
             end_clock_quality=end_clock,
@@ -238,8 +314,35 @@ class LiveConditionConsumer:
             retained_uncertainty=(
                 "Both source transports declared synchronized clocks. External clock "
                 "correctness is not independently proven by LineAlert."
+                if assessment is None else
+                "Both transports declared synchronized; event-bound offset limits support "
+                "the timing classification, conditional on the supplied clock evidence."
             ),
+            interval_assessment=assessment,
         ), None
+
+    @staticmethod
+    def _clock_refusal(
+        finding: TimingFinding,
+        start: tuple[str, str, ClockObservation | None],
+        end: tuple[str, str, ClockObservation | None],
+        reason_code: str,
+        uncertainty: str,
+    ) -> LiveConditionRefusal:
+        return LiveConditionRefusal(
+            rule_id=finding.rule_id,
+            correlation_id=finding.correlation_id,
+            start_event_id=finding.start_event_id,
+            end_event_id=finding.end_event_id,
+            start_source_id=start[0],
+            end_source_id=end[0],
+            start_clock_quality=start[1],
+            end_clock_quality=end[1],
+            reason_code=reason_code,
+            retained_uncertainty=uncertainty,
+            start_clock_evidence_id=start[2].evidence_id if start[2] else None,
+            end_clock_evidence_id=end[2].evidence_id if end[2] else None,
+        )
 
 
 def consume_live_condition_stream(
@@ -257,9 +360,7 @@ def live_condition_summary_to_dict(summary: LiveConditionSummary) -> dict[str, A
 
     projection = ConditionSignalProjection(
         bindings=summary.bindings,
-        observations=tuple(
-            measurement.observation for measurement in summary.measurements
-        ),
+        observations=tuple(measurement.observation for measurement in summary.measurements),
     )
     condition_payload = condition_signal_projection_to_dict(projection)
     clock_by_observation = {
@@ -268,12 +369,7 @@ def live_condition_summary_to_dict(summary: LiveConditionSummary) -> dict[str, A
     }
     for observation in condition_payload["observations"]:
         clock = clock_by_observation[observation["observation_id"]]
-        observation["clock_evidence"] = {
-            "start_clock_quality": clock.start_clock_quality,
-            "end_clock_quality": clock.end_clock_quality,
-            "basis": clock.basis,
-            "retained_uncertainty": clock.retained_uncertainty,
-        }
+        observation["clock_evidence"] = live_clock_evidence_to_dict(clock)
 
     return {
         "schema_version": "linealert.live-condition-stream.v1",
@@ -296,6 +392,16 @@ def live_condition_summary_to_dict(summary: LiveConditionSummary) -> dict[str, A
                 "end_clock_quality": refusal.end_clock_quality,
                 "reason_code": refusal.reason_code,
                 "retained_uncertainty": refusal.retained_uncertainty,
+                **(
+                    {"start_clock_evidence_id": refusal.start_clock_evidence_id}
+                    if refusal.start_clock_evidence_id is not None
+                    else {}
+                ),
+                **(
+                    {"end_clock_evidence_id": refusal.end_clock_evidence_id}
+                    if refusal.end_clock_evidence_id is not None
+                    else {}
+                ),
             }
             for refusal in summary.refusals
         ],

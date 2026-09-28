@@ -10,6 +10,7 @@ from enum import StrEnum
 from types import MappingProxyType
 from typing import Any
 
+from .clock_evidence import ClockObservation
 from .events import MachineEvent
 from .machine import MachineProfile
 from .pipeline import LineAlertCore, PipelineResult
@@ -105,6 +106,7 @@ class StreamEnvelope:
     event: MachineEvent
     clock_quality: str = "unknown"
     transport_attributes: Mapping[str, Any] = field(default_factory=dict)
+    clock_observation: ClockObservation | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.session_id, str) or not self.session_id.strip():
@@ -127,6 +129,18 @@ class StreamEnvelope:
             "transport_attributes",
             _freeze_transport_attributes(self.transport_attributes),
         )
+        if self.clock_observation is not None:
+            observation = self.clock_observation
+            if not isinstance(observation, ClockObservation):
+                raise StreamInputError("clock_observation must be a ClockObservation")
+            if (
+                observation.event_id != self.event.event_id
+                or observation.source_id != self.event.source_id
+                or observation.source_timestamp != self.event.timestamp
+            ):
+                raise StreamInputError(
+                    "clock_observation must bind the exact event, source and timestamp"
+                )
 
 
 @dataclass(frozen=True, slots=True)

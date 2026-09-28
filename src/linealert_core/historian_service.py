@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import threading
 import time
 from dataclasses import dataclass
@@ -21,6 +22,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, unquote, urlparse
 from urllib.request import Request, urlopen
 
+from .clock_evidence import ClockEvidenceError, interval_assessment_from_dict
 from .condition_history_selection import (
     ConditionHistorianSelector,
     ConditionHistorySelectionSpec,
@@ -219,11 +221,29 @@ def measurement_from_payload(raw: dict[str, Any]) -> LiveConditionMeasurement:
         start_source_id=raw.get("start_source_id"),
         end_source_id=raw.get("end_source_id"),
     )
+    interval_raw = clock_raw.get("interval_assessment")
+    if interval_raw is not None and not isinstance(interval_raw, dict):
+        raise ValueError("clock interval_assessment must be an object")
+    try:
+        interval = interval_assessment_from_dict(interval_raw) if interval_raw is not None else None
+    except ClockEvidenceError as exc:
+        raise ValueError("invalid condition clock interval assessment") from exc
+    if interval is not None:
+        raw_delay_ms = observation.value * (1000 if observation.unit == "s" else 1)
+        if (clock_raw.get("basis") != "synchronized_cross_source_interval"
+            or interval.disposition.value != observation.temporal_rule_status
+            or not math.isclose(interval.raw_delay_ms, raw_delay_ms, abs_tol=1e-6)
+            or interval.start_observation.event_id != observation.start_event_id
+            or interval.end_observation.event_id != observation.end_event_id
+            or interval.start_observation.source_id != observation.start_source_id
+            or interval.end_observation.source_id != observation.end_source_id):
+            raise ValueError("clock interval assessment does not match condition observation")
     clock = LiveClockEvidence(
         start_clock_quality=str(clock_raw.get("start_clock_quality", "unknown")),
         end_clock_quality=str(clock_raw.get("end_clock_quality", "unknown")),
         basis=str(clock_raw.get("basis", "unknown")),
         retained_uncertainty=str(clock_raw.get("retained_uncertainty", "")),
+        interval_assessment=interval,
     )
     return LiveConditionMeasurement(observation=observation, clock_evidence=clock)
 

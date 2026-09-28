@@ -23,7 +23,7 @@ from .functional_temporal import (
     TemporalCoverage,
     TransitionDisposition,
 )
-from .live_condition import LiveConditionMeasurement
+from .live_condition import LiveConditionMeasurement, live_clock_evidence_to_dict
 
 
 class HistorianError(RuntimeError):
@@ -493,15 +493,7 @@ class TimescaleHistorian:
                         if evidence_authority is not None
                         else None
                     ),
-                    json.dumps(
-                        {
-                            "start_clock_quality": clock.start_clock_quality,
-                            "end_clock_quality": clock.end_clock_quality,
-                            "basis": clock.basis,
-                            "retained_uncertainty": clock.retained_uncertainty,
-                        },
-                        sort_keys=True,
-                    ),
+                    json.dumps(live_clock_evidence_to_dict(clock), sort_keys=True),
                 ),
             )
 
