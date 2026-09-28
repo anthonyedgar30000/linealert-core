@@ -12,25 +12,25 @@
   "updated_on": "2026-09-28",
   "state_model": {
     "record_type": "repository_coordination_snapshot",
-    "captured_from_main": "29072f410717cb26b266bd8387ee422c7310a3b0",
+    "captured_from_main": "741790bec2179b4e6ba09f54d1e9d65d22345809",
     "current_reality_source": "live_github_and_explicit_user_direction",
     "semantics": "This is a time-bounded coordination snapshot. Live GitHub lifecycle, exact current branch head, CI, deployment, equipment documentation, and equipment evidence supersede cached claims.",
     "publication_policy": {
       "state_only_merge_requires_immediate_self_sync": false,
       "publication_pr_self_reference_required": false,
       "rule": "A state-only publication does not require another pull request merely to record its own merge. Create a corrective sync only when a substantive external lifecycle, authority, deployment, equipment, or scope fact changes or contradicts the published snapshot.",
-      "current_correction_reason": "PR #154 merged the Speedway service-case and plant-reported-context data contracts. This snapshot advances repository reality to that merged main before the Speedway Service Workspace increment."
+      "current_correction_reason": "PR #155 merged the Speedway Service Workspace as the primary local frontend. This snapshot advances repository reality to that merged main before the bounded local service-case persistence increment."
     }
   },
   "live_observation": {
-    "observed_at": "2026-09-28T22:34:42Z",
+    "observed_at": "2026-09-28T22:52:48Z",
     "default_branch": "main",
-    "default_branch_head": "29072f410717cb26b266bd8387ee422c7310a3b0",
-    "default_branch_tree": "bbdeebe0f5a5b36cc7510da7439fe6993dfdc610",
+    "default_branch_head": "741790bec2179b4e6ba09f54d1e9d65d22345809",
+    "default_branch_tree": "bb9540a81ae4f564a63b17cb8fa1cd9def3c664a",
     "latest_functional_merge": {
-      "pull_request": 154,
-      "title": "Add Speedway service case data contracts",
-      "merge_commit": "29072f410717cb26b266bd8387ee422c7310a3b0"
+      "pull_request": 155,
+      "title": "Add Speedway Service Workspace",
+      "merge_commit": "741790bec2179b4e6ba09f54d1e9d65d22345809"
     },
     "open_pull_requests_before_branch_creation": [],
     "active_sync_pull_request": null,
@@ -56,10 +56,10 @@
     },
     "main_ci": {
       "verification_scope": "merged_main_push",
-      "pull_request": 154,
-      "run_id": 36491980754,
-      "head_sha": "29072f410717cb26b266bd8387ee422c7310a3b0",
-      "merge_commit": "29072f410717cb26b266bd8387ee422c7310a3b0",
+      "pull_request": 155,
+      "run_id": 36493836811,
+      "head_sha": "741790bec2179b4e6ba09f54d1e9d65d22345809",
+      "merge_commit": "741790bec2179b4e6ba09f54d1e9d65d22345809",
       "conclusion": "success",
       "jobs": [
         "test (3.11)",
@@ -71,9 +71,9 @@
     },
     "public_pages": {
       "status": "observed_deployed_2026_09_28",
-      "workflow_run": 36491980757,
-      "source_commit": "29072f410717cb26b266bd8387ee422c7310a3b0",
-      "source_tree": "bbdeebe0f5a5b36cc7510da7439fe6993dfdc610",
+      "workflow_run": 36493836802,
+      "source_commit": "741790bec2179b4e6ba09f54d1e9d65d22345809",
+      "source_tree": "bb9540a81ae4f564a63b17cb8fa1cd9def3c664a",
       "plant_canvas": "https://anthonyedgar30000.github.io/linealert-core/triage/",
       "troubleshooting_guide": "https://anthonyedgar30000.github.io/linealert-core/troubleshooting-guide.html",
       "event_log": "https://anthonyedgar30000.github.io/linealert-core/event-log/",
@@ -89,10 +89,10 @@
     "equipment_control_path": "not_observed",
     "equipment_documentation": "synthetic demo profiles and planning material observed; no Labeler 2 OEM manual or commissioned machine package observed",
     "latest_merged_pull_request": {
-      "pull_request": 154,
-      "title": "Add Speedway service case data contracts",
-      "source_head": "0e3fb70c7a424cec41515c4e30dbccca27001e08",
-      "merge_commit": "29072f410717cb26b266bd8387ee422c7310a3b0"
+      "pull_request": 155,
+      "title": "Add Speedway Service Workspace",
+      "source_head": "777bededd4cb0d6a9405d87ee43f15246d634792",
+      "merge_commit": "741790bec2179b4e6ba09f54d1e9d65d22345809"
     },
     "recent_repository_increments": [
       {
@@ -159,6 +159,11 @@
         "pull_request": 154,
         "title": "Add Speedway service case data contracts",
         "merge_commit": "29072f410717cb26b266bd8387ee422c7310a3b0"
+      },
+      {
+        "pull_request": 155,
+        "title": "Add Speedway Service Workspace",
+        "merge_commit": "741790bec2179b4e6ba09f54d1e9d65d22345809"
       }
     ]
   },
@@ -334,13 +339,13 @@
     },
     "product_scope_relationship": "The existing Plant Canvas and operator/shift-supervisor workflow remain preserved synthetic demo behavior, but they are not the initial commercial LineAlert user workflow after the Speedway service-scope reset.",
     "speedway_service_workspace": {
-      "state": "implemented_on_branch_pending_merge",
+      "state": "merged_primary_surface_with_local_persistence_increment",
       "route": "/",
       "legacy_operator_demo_route": "/plant-canvas",
       "classification": "synthetic_browser_session_service_workspace",
       "service_case_source": "controlled_synthetic_fixture_aligned_to_v1_contract",
       "historian_status": "read_only_same_origin_status_only",
-      "plant_context_entry": "browser_session_only_not_persisted",
+      "plant_context_entry": "local_persistent_v1_in_current_increment",
       "manual_verification_states": [
         "plant_relay_only",
         "technician_viewed_source",
@@ -364,8 +369,12 @@
         "plant_reported_context != verified_source_record",
         "technician_entry != direct_system_observation",
         "recommendation != authorized_action",
-        "browser_session_entry != persisted_service_record"
-      ]
+        "local_persistence != plant_cmms_record",
+        "local_persistence != production_service_database"
+      ],
+      "persistence_status": "local_atomic_json_single_process_v1",
+      "persistence_backend": "loopback_127_0_0_1_8768",
+      "failure_behavior": "display synthetic fallback read-only; disable plant-context entry when local persistence is unavailable"
     }
   },
   "equipment_and_source_reality": {
@@ -559,7 +568,14 @@
     "reported_event_time != verified_machine_timestamp",
     "technician_viewed_source != direct_system_ingestion",
     "browser_session_entry != persisted_service_record",
-    "service_workspace_display != production_service_case"
+    "service_workspace_display != production_service_case",
+    "local_persistence != plant_cmms_record",
+    "local_persistence != production_service_database",
+    "persisted_technician_entry != direct_system_observation",
+    "persisted_plant_reported_context != verified_source_record",
+    "single_process_atomic_replace != distributed_transaction",
+    "service_case_persistence != equipment_authority",
+    "service_case_persistence != return_to_service_authority"
   ],
   "reasoning_node_reality": {
     "classification": "controlled_synthetic_local_reasoning_substrate",
@@ -701,7 +717,7 @@
   },
   "service_case_contract_reality": {
     "status": "executable_v1_contract_defined",
-    "source_baseline_main": "29072f410717cb26b266bd8387ee422c7310a3b0",
+    "source_baseline_main": "741790bec2179b4e6ba09f54d1e9d65d22345809",
     "schema_versions": [
       "linealert.service-case.v1",
       "linealert.plant-reported-context.v1"
@@ -742,9 +758,9 @@
       "technician_retained_copy"
     ],
     "direct_source_retrieval_state_available": false,
-    "persistence": "not_implemented",
-    "api": "not_implemented",
-    "speedway_service_workspace_ui": "implemented_on_branch_pending_merge",
+    "persistence": "local_atomic_json_single_process_v1",
+    "api": "loopback_local_service_v1",
+    "speedway_service_workspace_ui": "merged_primary_surface",
     "automatic_first_departure_selection": "not_implemented",
     "reasoning_node_consumption": "not_implemented",
     "direct_cmms_integration": "not_implemented",
@@ -762,6 +778,61 @@
       "service_case_id_match",
       "asset_id_match",
       "context_id_referenced_by_service_case"
+    ],
+    "local_persistence_seed": "examples/speedway_service_case_workspace_seed_v1.json",
+    "local_persistence_failure_mode": "fail_closed_for_writes"
+  },
+  "service_case_persistence_reality": {
+    "status": "implemented_in_current_increment",
+    "classification": "local_synthetic_development_persistence",
+    "source_baseline_main": "741790bec2179b4e6ba09f54d1e9d65d22345809",
+    "service": {
+      "host": "127.0.0.1",
+      "port": 8768,
+      "lan_binding": false,
+      "next_same_origin_proxy": true
+    },
+    "storage": {
+      "format": "validated_json_bundle_per_service_case",
+      "default_windows_path": "%LOCALAPPDATA%\\LineAlert\\service-cases-v1",
+      "plaintext": true,
+      "write_strategy": "temporary_file_fsync_then_os_replace",
+      "locking": "single_process_reentrant_lock",
+      "multi_process_transaction_claim": false,
+      "distributed_transaction_claim": false
+    },
+    "seed": {
+      "path": "examples/speedway_service_case_workspace_seed_v1.json",
+      "behavior": "seed_only_if_service_case_identity_absent",
+      "overwrites_existing_case": false,
+      "unresolved_context_references": false
+    },
+    "write_contract": {
+      "accepted_record": "linealert.plant-reported-context.v1",
+      "direct_source_retrieval_state_available": false,
+      "identity_binding_required": true,
+      "timezone_aware_reported_time_required_when_present": true,
+      "reported_clock_quality_required": true,
+      "provenance_required": true
+    },
+    "not_implemented": [
+      "production_authentication",
+      "encryption_at_rest",
+      "multi_user_concurrency",
+      "remote_cloud_sync",
+      "backup_retention_policy",
+      "direct_cmms_integration",
+      "equipment_control",
+      "return_to_service_authority"
+    ],
+    "boundaries": [
+      "local_persistence != plant_cmms_record",
+      "local_persistence != production_service_database",
+      "persisted_technician_entry != direct_system_observation",
+      "persisted_plant_reported_context != verified_source_record",
+      "single_process_atomic_replace != distributed_transaction",
+      "service_case_persistence != equipment_authority",
+      "service_case_persistence != return_to_service_authority"
     ]
   }
 }

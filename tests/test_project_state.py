@@ -25,16 +25,19 @@ SERVICE_CASE_CONTRACT = (
 SPEEDWAY_WORKSPACE = (
     PROJECT_ROOT / "docs" / "architecture" / "speedway-service-workspace-v1.md"
 )
+SERVICE_CASE_PERSISTENCE = (
+    PROJECT_ROOT / "docs" / "architecture" / "service-case-local-persistence-v1.md"
+)
 
 PR37_HEAD = "fc22177e1b855fd6f416f648330cd3416215a96c"
 PR37_MERGE = "97256907cd428a8a0ba3dfb7d4020fa19a2485ee"
 PR38_HEAD = "0d5d8180a5edffaeca8a9822800d7e729ef96327"
 PR38_MERGE = "06f795e760c7ad360bc51e264f8c55238a2a60da"
 PR114_MERGE = "4037c2c0bcadce3e3e6e414735c0045b65db6027"
-CURRENT_MAIN = "29072f410717cb26b266bd8387ee422c7310a3b0"
-CURRENT_TREE = "bbdeebe0f5a5b36cc7510da7439fe6993dfdc610"
+CURRENT_MAIN = "741790bec2179b4e6ba09f54d1e9d65d22345809"
+CURRENT_TREE = "bb9540a81ae4f564a63b17cb8fa1cd9def3c664a"
 PR150_HEAD = "d300af099fe493f5e6c727c66f2f0371d2ccbf86"
-PR154_HEAD = "0e3fb70c7a424cec41515c4e30dbccca27001e08"
+PR155_HEAD = "777bededd4cb0d6a9405d87ee43f15246d634792"
 
 
 def load_project_state() -> dict[str, Any]:
@@ -56,10 +59,12 @@ def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
     assert policy["state_only_merge_requires_immediate_self_sync"] is False
     assert policy["publication_pr_self_reference_required"] is False
     assert "substantive external lifecycle" in policy["rule"]
-    assert "PR #154 merged the Speedway service-case" in (
+    assert "PR #155 merged the Speedway Service Workspace" in (
         policy["current_correction_reason"]
     )
-    assert "Speedway Service Workspace increment" in policy["current_correction_reason"]
+    assert "local service-case persistence increment" in (
+        policy["current_correction_reason"]
+    )
 
     observation = state["live_observation"]
     assert observation["default_branch_head"] == CURRENT_MAIN
@@ -68,9 +73,9 @@ def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
     assert observation["active_sync_pull_request"] is None
     assert observation["open_issues"] == [31]
     assert observation["latest_merged_pull_request"] == {
-        "pull_request": 154,
-        "title": "Add Speedway service case data contracts",
-        "source_head": PR154_HEAD,
+        "pull_request": 155,
+        "title": "Add Speedway Service Workspace",
+        "source_head": PR155_HEAD,
         "merge_commit": CURRENT_MAIN,
     }
     assert observation["recently_closed_issues"]["23"] == {
@@ -85,8 +90,8 @@ def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
 
     ci = observation["main_ci"]
     assert ci["verification_scope"] == "merged_main_push"
-    assert ci["pull_request"] == 154
-    assert ci["run_id"] == 36491980754
+    assert ci["pull_request"] == 155
+    assert ci["run_id"] == 36493836811
     assert ci["head_sha"] == CURRENT_MAIN
     assert ci["merge_commit"] == CURRENT_MAIN
     assert ci["conclusion"] == "success"
@@ -96,7 +101,7 @@ def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
 
     pages = observation["public_pages"]
     assert pages["status"] == "observed_deployed_2026_09_28"
-    assert pages["workflow_run"] == 36491980757
+    assert pages["workflow_run"] == 36493836802
     assert pages["source_commit"] == CURRENT_MAIN
     assert pages["source_tree"] == CURRENT_TREE
     assert pages["fresh_verification_in_this_sync"] is True
@@ -315,9 +320,13 @@ def test_service_case_contract_reality_is_bounded_and_non_authoritative() -> Non
         "asset_id_match",
         "context_id_referenced_by_service_case",
     ]
-    assert contract["persistence"] == "not_implemented"
-    assert contract["api"] == "not_implemented"
-    assert contract["speedway_service_workspace_ui"] == "implemented_on_branch_pending_merge"
+    assert contract["persistence"] == "local_atomic_json_single_process_v1"
+    assert contract["api"] == "loopback_local_service_v1"
+    assert contract["speedway_service_workspace_ui"] == "merged_primary_surface"
+    assert contract["local_persistence_seed"] == (
+        "examples/speedway_service_case_workspace_seed_v1.json"
+    )
+    assert contract["local_persistence_failure_mode"] == "fail_closed_for_writes"
     assert contract["automatic_first_departure_selection"] == "not_implemented"
     assert contract["reasoning_node_consumption"] == "not_implemented"
     assert contract["direct_cmms_integration"] == "not_implemented"
@@ -331,6 +340,7 @@ def test_service_case_contract_reality_is_bounded_and_non_authoritative() -> Non
     assert "There is intentionally no direct_source_retrieval state" in architecture
     assert "reported_clock_quality" in architecture
     assert "first_detected_departure != root_cause" in architecture
+    assert "service-case-local-persistence-v1.md" in architecture
 
 
 def test_speedway_service_workspace_reality_is_primary_and_bounded() -> None:
@@ -343,10 +353,12 @@ def test_speedway_service_workspace_reality_is_primary_and_bounded() -> None:
     assert "Machine Health / Evidence" in demo["supporting_surfaces"]
 
     workspace = demo["speedway_service_workspace"]
-    assert workspace["state"] == "implemented_on_branch_pending_merge"
+    assert workspace["state"] == "merged_primary_surface_with_local_persistence_increment"
     assert workspace["route"] == "/"
     assert workspace["legacy_operator_demo_route"] == "/plant-canvas"
-    assert workspace["plant_context_entry"] == "browser_session_only_not_persisted"
+    assert workspace["plant_context_entry"] == "local_persistent_v1_in_current_increment"
+    assert workspace["persistence_status"] == "local_atomic_json_single_process_v1"
+    assert workspace["persistence_backend"] == "loopback_127_0_0_1_8768"
     assert workspace["direct_source_retrieval_state"] is False
     assert workspace["manual_verification_states"] == [
         "plant_relay_only",
@@ -357,7 +369,8 @@ def test_speedway_service_workspace_reality_is_primary_and_bounded() -> None:
     assert "missing_discriminating_context" in workspace["displayed_workflow"]
     assert "plant_reported_context_entry" in workspace["displayed_workflow"]
     assert "next_bounded_technician_check" in workspace["displayed_workflow"]
-    assert "browser_session_entry != persisted_service_record" in (
+    assert "local_persistence != plant_cmms_record" in workspace["boundaries"]
+    assert "local_persistence != production_service_database" in (
         workspace["boundaries"]
     )
 
@@ -365,7 +378,57 @@ def test_speedway_service_workspace_reality_is_primary_and_bounded() -> None:
     assert "Speedway Service Workspace" in architecture
     assert "/plant-canvas" in architecture
     assert "direct_source_retrieval" in architecture
-    assert "browser_session_entry != persisted_service_record" in architecture
+    assert "local_persistence != plant_cmms_record" in architecture
+
+
+def test_service_case_local_persistence_reality_is_bounded() -> None:
+    state = load_project_state()
+    persistence = state["service_case_persistence_reality"]
+
+    assert persistence["status"] == "implemented_in_current_increment"
+    assert persistence["classification"] == "local_synthetic_development_persistence"
+    assert persistence["source_baseline_main"] == CURRENT_MAIN
+
+    service = persistence["service"]
+    assert service["host"] == "127.0.0.1"
+    assert service["port"] == 8768
+    assert service["lan_binding"] is False
+    assert service["next_same_origin_proxy"] is True
+
+    storage = persistence["storage"]
+    assert storage["format"] == "validated_json_bundle_per_service_case"
+    assert storage["plaintext"] is True
+    assert storage["write_strategy"] == "temporary_file_fsync_then_os_replace"
+    assert storage["locking"] == "single_process_reentrant_lock"
+    assert storage["multi_process_transaction_claim"] is False
+    assert storage["distributed_transaction_claim"] is False
+
+    seed = persistence["seed"]
+    assert seed["path"] == "examples/speedway_service_case_workspace_seed_v1.json"
+    assert seed["overwrites_existing_case"] is False
+    assert seed["unresolved_context_references"] is False
+
+    write_contract = persistence["write_contract"]
+    assert write_contract["accepted_record"] == "linealert.plant-reported-context.v1"
+    assert write_contract["direct_source_retrieval_state_available"] is False
+    assert write_contract["identity_binding_required"] is True
+    assert write_contract["reported_clock_quality_required"] is True
+    assert write_contract["provenance_required"] is True
+
+    assert "production_authentication" in persistence["not_implemented"]
+    assert "encryption_at_rest" in persistence["not_implemented"]
+    assert "direct_cmms_integration" in persistence["not_implemented"]
+    assert "equipment_control" in persistence["not_implemented"]
+    assert "local_persistence != plant_cmms_record" in persistence["boundaries"]
+    assert "single_process_atomic_replace != distributed_transaction" in (
+        persistence["boundaries"]
+    )
+
+    architecture = SERVICE_CASE_PERSISTENCE.read_text(encoding="utf-8")
+    assert "127.0.0.1:8768" in architecture
+    assert "%LOCALAPPDATA%\\LineAlert\\service-cases-v1" in architecture
+    assert "plaintext local data" in architecture
+    assert "local_persistence != plant_cmms_record" in architecture
 
 
 def test_current_demo_boundaries_include_investigation_and_maintenance() -> None:
@@ -531,6 +594,9 @@ def test_publication_and_readme_guidance_remain_current() -> None:
     assert "examples/speedway_service_case_v1.json" in readme
     assert "synthetic Speedway Service Workspace" in readme
     assert "/plant-canvas" in readme
+    assert "loopback-only local persistence service on port 8768" in readme
+    assert "plaintext atomic JSON" in readme
+    assert "service-case-local-persistence-v1.md" in readme
 
     lineage = LINEAGE_GUIDANCE.read_text(encoding="utf-8")
     assert "green_ci != authorized_merge" in lineage

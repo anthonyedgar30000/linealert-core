@@ -33,9 +33,11 @@ future customer-facing work. It is not the initial commercial workflow.
 
 ## Service-case display
 
-The current v1 UI uses a controlled synthetic browser fixture aligned to the
-`linealert.service-case.v1` and `linealert.plant-reported-context.v1`
-contracts. It displays:
+The current v1 UI uses a controlled synthetic service-case fixture aligned to
+`linealert.service-case.v1` and `linealert.plant-reported-context.v1`.
+The seed and technician-entered plant context are retained through the local
+service-case persistence service described in
+`docs/architecture/service-case-local-persistence-v1.md`. It displays:
 
 - service-case identity;
 - customer/site/asset identity;
@@ -49,12 +51,15 @@ contracts. It displays:
 - working explanations and their qualitative standing;
 - one low-disturbance bounded technician check.
 
-The display is not persistence. The synthetic workspace is not a production
-service record.
+Local persistence makes the synthetic service-case state durable across browser
+refresh and local process restart. That retained local JSON is still not a
+production service record or a plant CMMS record.
 
 ## Plant-context entry
 
-The technician can enter returned plant context in the browser session.
+The technician can enter returned plant context through the workspace. Accepted
+records are validated by the Python v1 contracts and persisted on the local
+LineAlert host.
 
 The form preserves:
 
@@ -75,7 +80,9 @@ There is no `direct_source_retrieval` option. A technician viewing a CMMS
 record still does not transform the manual entry into a directly ingested
 verified source record.
 
-Browser-session entries are not yet persisted or sent to an API.
+Entries are sent through same-origin Next.js API routes to the loopback-only
+service-case persistence service. If that service is unavailable, entry is
+disabled rather than silently retained only in browser memory.
 
 ## Historian relationship
 
@@ -90,7 +97,8 @@ records, or claim that historian availability establishes a diagnosis.
 - temporal_precedence != causation
 - plant_reported_context != verified_source_record
 - technician_entry != direct_system_observation
-- browser_session_entry != persisted_service_record
+- persisted_technician_entry != direct_system_observation
+- local_persistence != plant_cmms_record
 - service_workspace_display != production_service_case
 - recommendation != authorized_action
 
@@ -102,10 +110,10 @@ safety, or authorize return to service.
 
 This increment does not add:
 
-- service-case persistence;
-- plant-context persistence;
-- service-case API endpoints;
 - direct customer CMMS access;
+- production-grade authenticated multi-user persistence;
+- encrypted-at-rest local records;
+- remote/cloud service-case synchronization;
 - automatic first-departure selection;
 - automatic ingestion of plant reports into reasoning context;
 - equipment control;
