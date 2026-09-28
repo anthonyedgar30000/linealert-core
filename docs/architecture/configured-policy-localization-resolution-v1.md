@@ -59,27 +59,27 @@ The topology authority and policy binding originate from the same loaded configu
 
 The original v1 condition-history rows preserved operating-context JSON such as configuration version, firmware, recipe, cycle, and phase when supplied, but did not retain the machine-config SHA used by persistence-policy authority.
 
-Newer condition-history writes can retain nullable historian write-time configuration/policy authority provenance, while pre-existing rows remain without it. The configured-localization endpoint in this version does not yet verify or consume that retained authority.
+Newer condition-history writes can retain nullable historian write-time configuration/policy authority provenance, while pre-existing rows remain without it.
 
-Therefore it still explicitly reports:
+After the selector admits a complete condition-history evidence set, the configured-localization endpoint compares retained authority with the currently applied policy and reports one of:
 
 ```text
-policy_application.mode =
-  CURRENT_CONFIG_APPLIED_TO_SELECTED_HISTORY
-
-historical_policy_equivalence =
-  UNVERIFIED
+historical_policy_equivalence = VERIFIED
+historical_policy_equivalence = UNVERIFIED
+historical_policy_equivalence = CONFLICT
 ```
 
-This means:
+Verification requires:
 
-- the exact current configured policy used for the analysis is known;
-- the exact selected historical measurements are known;
-- it is **not** proven that the same config SHA/policy revision was in force when those historical measurements were produced.
+- matching asset/profile/config SHA across every selected row;
+- complete retained authority on every selected row; and
+- on every target-relationship row, the exact current policy ID, revision, relationship, N-of-M values, authority class, and matching binding config SHA.
 
-This prevents a later configuration from silently masquerading as historical policy truth.
+Missing legacy provenance remains `UNVERIFIED`. A concrete retained mismatch is `CONFLICT`. A selector refusal such as truncation or context ambiguity also remains `UNVERIFIED` because equivalence is not evaluated from an inadmissible selection.
 
-A later verifier can compare the retained per-row authority with the policy applied by localization and only upgrade historical policy equivalence when the selected evidence supports that conclusion.
+This prevents a later configuration from silently masquerading as historical write-time policy truth.
+
+The result is still bounded to historian write-time authority. It does **not** prove that the upstream condition-runtime process used identical config bytes at the physical observation timestamp.
 
 ## Ad-hoc analysis boundary
 

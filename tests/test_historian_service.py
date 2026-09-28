@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import json
 import threading
 from datetime import UTC, datetime, timedelta
@@ -215,6 +216,7 @@ def _localization_record(
     *,
     offset_seconds: int,
     value: float,
+    evidence_authority: dict[str, object] | None = None,
 ) -> ConditionHistoryRecord:
     observed_at = datetime(2026, 9, 14, 11, 37, tzinfo=UTC) + timedelta(seconds=offset_seconds)
     outside = value > 350.0
@@ -242,13 +244,20 @@ def _localization_record(
             "firmware_version": "demo-fw-v1",
             "recipe_id": "500ml-round",
         },
+        evidence_authority=evidence_authority,
         clock_evidence={"basis": "same_source_relative_interval"},
     )
 
 
-def _localization_records() -> tuple[ConditionHistoryRecord, ...]:
+def _localization_records(
+    evidence_authority: dict[str, object] | None = None,
+) -> tuple[ConditionHistoryRecord, ...]:
     return tuple(
-        _localization_record(offset_seconds=index * 60, value=value)
+        _localization_record(
+            offset_seconds=index * 60,
+            value=value,
+            evidence_authority=evidence_authority,
+        )
         for index, value in enumerate([200.0, 500.0, 510.0, 520.0])
     )
 
@@ -351,6 +360,8 @@ def test_historian_condition_localization_returns_bounded_result_and_topology_pr
     assert isinstance(policy_application, dict)
     assert policy_application["mode"] == "CURRENT_CONFIG_APPLIED_TO_SELECTED_HISTORY"
     assert policy_application["historical_policy_equivalence"] == "UNVERIFIED"
+    assert policy_application["reason_code"] == "POLICY.HISTORICAL_AUTHORITY_INCOMPLETE"
+    assert policy_application["missing_authority_count"] == 4
     topology_authority = payload["topology_authority"]
     assert isinstance(topology_authority, dict)
     assert topology_authority["asset_id"] == "LABELER-DEMO-01"
@@ -663,3 +674,105 @@ def test_persist_published_evidence_attaches_write_time_authority(
     policy_payload = policy["policy"]
     assert isinstance(policy_payload, dict)
     assert policy_payload["policy_id"] == "label-presentation-persistence-v1"
+
+
+def test_historian_condition_localization_verifies_retained_write_time_policy_authority() -> None:
+    authority = load_localization_topology_authority(
+        PROJECT_ROOT / "examples" / "labeler_demo_config.json"
+    )
+    retained = condition_evidence_authority_payload(
+        authority,
+        asset_id="LABELER-DEMO-01",
+        relationship_id="relationship:label-presentation-delay",
+    )
+    assert retained is not None
+    historian = _LocalizationHistorian(_localization_records(retained))
+
+    payload = historian_condition_localization_from_query(
+        historian,  # type: ignore[arg-type]
+        _localization_query(),
+        authority,
+    )
+
+    policy_application = payload["policy_application"]
+    assert isinstance(policy_application, dict)
+    assert policy_application["historical_policy_equivalence"] == "VERIFIED"
+    assert policy_application["reason_code"] == ("POLICY.HISTORICAL_AUTHORITY_EQUIVALENT")
+    assert policy_application["selected_record_count"] == 4
+    assert policy_application["target_record_count"] == 4
+    assert policy_application["retained_authority_count"] == 4
+    assert policy_application["missing_authority_count"] == 0
+    assert policy_application["conflict_count"] == 0
+
+
+def test_historian_condition_localization_reports_retained_policy_conflict() -> None:
+    authority = load_localization_topology_authority(
+        PROJECT_ROOT / "examples" / "labeler_demo_config.json"
+    )
+    retained = condition_evidence_authority_payload(
+        authority,
+        asset_id="LABELER-DEMO-01",
+        relationship_id="relationship:label-presentation-delay",
+    )
+    assert retained is not None
+    conflicting = copy.deepcopy(retained)
+    retained_binding = conflicting["persistence_policy"]
+    assert isinstance(retained_binding, dict)
+    retained_policy = retained_binding["policy"]
+    assert isinstance(retained_policy, dict)
+    retained_policy["window_size"] = 5
+
+    records = tuple(
+        _localization_record(
+            offset_seconds=index * 60,
+            value=value,
+            evidence_authority=(conflicting if index == 2 else retained),
+        )
+        for index, value in enumerate([200.0, 500.0, 510.0, 520.0])
+    )
+    historian = _LocalizationHistorian(records)
+
+    payload = historian_condition_localization_from_query(
+        historian,  # type: ignore[arg-type]
+        _localization_query(),
+        authority,
+    )
+
+    assert payload["disposition"] == "READY"
+    assert payload["localization"] is not None
+    policy_application = payload["policy_application"]
+    assert isinstance(policy_application, dict)
+    assert policy_application["historical_policy_equivalence"] == "CONFLICT"
+    assert policy_application["reason_code"] == "POLICY.HISTORICAL_AUTHORITY_CONFLICT"
+    assert policy_application["conflict_count"] == 1
+    assert policy_application["first_conflict_observation_id"] == "obs-120"
+
+
+def test_selector_refusal_keeps_historical_policy_equivalence_unverified() -> None:
+    authority = load_localization_topology_authority(
+        PROJECT_ROOT / "examples" / "labeler_demo_config.json"
+    )
+    retained = condition_evidence_authority_payload(
+        authority,
+        asset_id="LABELER-DEMO-01",
+        relationship_id="relationship:label-presentation-delay",
+    )
+    assert retained is not None
+    historian = _LocalizationHistorian(
+        _localization_records(retained),
+        truncated=True,
+    )
+
+    payload = historian_condition_localization_from_query(
+        historian,  # type: ignore[arg-type]
+        _localization_query(),
+        authority,
+    )
+
+    assert payload["disposition"] == "REFUSED_TRUNCATED"
+    policy_application = payload["policy_application"]
+    assert isinstance(policy_application, dict)
+    assert policy_application["historical_policy_equivalence"] == "UNVERIFIED"
+    assert policy_application["reason_code"] == (
+        "POLICY.HISTORICAL_AUTHORITY_SELECTION_NOT_ADMITTED"
+    )

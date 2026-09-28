@@ -100,18 +100,21 @@ evidence_authority = null
 
 No read-time inference fills that field.
 
-## Current localization boundary
+## Localization consumption
 
-The configured localization endpoint from PR #139 still resolves the currently loaded configured persistence policy and reports:
+The configured localization endpoint can now compare this retained write-time authority with the currently applied configured policy after the condition-history selector admits a complete evidence set.
+
+The verifier reports:
 
 ```text
-CURRENT_CONFIG_APPLIED_TO_SELECTED_HISTORY
-historical_policy_equivalence = UNVERIFIED
+VERIFIED
+UNVERIFIED
+CONFLICT
 ```
 
-This increment intentionally does not alter that result.
+Legacy rows with `evidence_authority = null` remain `UNVERIFIED`. No read-time inference or backfill upgrades them.
 
-The next bounded increment can compare retained row authority across the selected history with the currently applied policy and only upgrade historical policy equivalence when the retained evidence supports it.
+A `VERIFIED` result means historian write-time configuration/policy authority equivalence only. It does not prove that the upstream condition-runtime process used identical config bytes at the physical observation timestamp.
 
 ## Authority boundary
 
