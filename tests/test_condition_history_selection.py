@@ -9,6 +9,7 @@ from linealert_core.condition_history_selection import (
     ConditionHistorySelectionError,
     ConditionHistorySelectionSpec,
     ConditionLocalizationHandoffDisposition,
+    selected_condition_localization_to_dict,
 )
 from linealert_core.condition_localization import (
     LocalizationDisposition,
@@ -369,3 +370,31 @@ def test_localization_refuses_when_target_relationship_is_not_present() -> None:
     )
     assert result.localization is None
     assert result.reason_code == "SELECTION.TARGET_RELATIONSHIP_NOT_PRESENT"
+
+
+def test_selected_condition_localization_serializer_preserves_result() -> None:
+    target = target_records()
+    selector = ConditionHistorianSelector(FakeRepository([(target, False)]))
+
+    result = selector.localize(
+        spec(),
+        target_relationship_id="relationship:label-presentation-delay",
+        persistence_rule=PersistenceRule(required_outside=3, window_size=4),
+        topology=topology(),
+    )
+    payload = selected_condition_localization_to_dict(result)
+
+    assert payload["schema_version"] == "linealert.selected-condition-localization.v1"
+    assert payload["disposition"] == "READY"
+    selection = payload["selection"]
+    assert isinstance(selection, dict)
+    assert selection["asset_id"] == "LABELER-DEMO-01"
+    assert selection["record_count"] == 4
+    assert selection["truncated"] is False
+    localization = payload["localization"]
+    assert isinstance(localization, dict)
+    assert localization["disposition"] == "PERSISTENCE_ESTABLISHED"
+    onset = localization["onset"]
+    assert isinstance(onset, dict)
+    assert onset["outside_count"] == 3
+    assert onset["window_count"] == 4

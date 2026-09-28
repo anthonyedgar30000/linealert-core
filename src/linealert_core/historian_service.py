@@ -8,16 +8,25 @@ in the deterministic core transaction.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import threading
 import time
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, unquote, urlparse
 from urllib.request import Request, urlopen
 
+from .condition_history_selection import (
+    ConditionHistorianSelector,
+    ConditionHistorySelectionSpec,
+    selected_condition_localization_to_dict,
+)
+from .condition_localization import PersistenceRule
 from .condition_projection import ConditionSignalObservation
 from .functional_temporal import (
     EpistemicState,
@@ -39,6 +48,8 @@ from .historian import (
     TimescaleHistorian,
 )
 from .live_condition import LiveClockEvidence, LiveConditionMeasurement
+from .replay import ReplayInputError, build_core_from_config
+from .topology import TopologyGraph
 
 
 class HistorianServiceStatus:
@@ -61,6 +72,41 @@ class HistorianServiceStatus:
     def get(self) -> dict[str, Any]:
         with self._lock:
             return json.loads(json.dumps(self._payload))
+
+
+@dataclass(frozen=True, slots=True)
+class LocalizationTopologyAuthority:
+    """Exact configured topology source used for historian-backed localization."""
+
+    topology: TopologyGraph
+    source_name: str
+    source_sha256: str
+    asset_id: str
+    profile_id: str
+
+
+def load_localization_topology_authority(
+    config_path: str | Path,
+) -> LocalizationTopologyAuthority:
+    """Load an asset-bound topology authority from the existing machine config."""
+
+    path = Path(config_path)
+    try:
+        source_bytes = path.read_bytes()
+    except OSError as exc:
+        raise ValueError(f"cannot read condition config: {path}") from exc
+    core = build_core_from_config(path)
+    if core.machine_profile is None:
+        raise ValueError(
+            "condition config must define a machine_profile for asset-bound localization"
+        )
+    return LocalizationTopologyAuthority(
+        topology=core.topology,
+        source_name=path.name,
+        source_sha256=hashlib.sha256(source_bytes).hexdigest(),
+        asset_id=core.machine_profile.asset_id,
+        profile_id=core.machine_profile.profile_id,
+    )
 
 
 def _fetch_json(url: str, *, timeout: float = 1.5) -> dict[str, Any]:
@@ -307,6 +353,101 @@ def functional_temporal_selection_spec_from_query(
     )
 
 
+def condition_localization_request_from_query(
+    query: dict[str, list[str]],
+    *,
+    default_limit: int,
+) -> tuple[ConditionHistorySelectionSpec, str, PersistenceRule]:
+    """Parse an explicit historian-backed persistence-localization request."""
+
+    if _query_text(query, "relationship_id") is not None:
+        raise ValueError(
+            "relationship_id is not accepted for persistent localization; "
+            "dependency evidence must remain visible"
+        )
+
+    asset_id = _required_query_text(query, "asset_id")
+    target_relationship_id = _required_query_text(query, "target_relationship_id")
+    label = _required_query_text(query, "selection_label")
+    limit = _query_int(query, "limit", default=default_limit)
+    required_outside = _query_int(query, "required_outside")
+    window_size = _query_int(query, "window_size")
+
+    spec = ConditionHistorySelectionSpec(
+        label=label,
+        asset_id=asset_id,
+        limit=limit,
+        episode_id=_query_text(query, "episode_id"),
+        cycle_id=_query_text(query, "cycle_id"),
+        phase_id=_query_text(query, "phase_id"),
+        from_time=history_time_from_query(
+            _query_text(query, "from_time"),
+            "from_time",
+        ),
+        to_time=history_time_from_query(
+            _query_text(query, "to_time"),
+            "to_time",
+        ),
+    )
+    return (
+        spec,
+        target_relationship_id,
+        PersistenceRule(
+            required_outside=required_outside,
+            window_size=window_size,
+        ),
+    )
+
+
+def historian_condition_localization_from_query(
+    historian: TimescaleHistorian,
+    query: dict[str, list[str]],
+    authority: LocalizationTopologyAuthority,
+    *,
+    default_limit: int = 240,
+) -> dict[str, object]:
+    """Execute one governed read-only localization from persisted history."""
+
+    spec, target_relationship_id, persistence_rule = condition_localization_request_from_query(
+        query,
+        default_limit=default_limit,
+    )
+    if spec.asset_id != authority.asset_id:
+        raise ValueError("asset_id does not match the configured localization topology authority")
+
+    selected = ConditionHistorianSelector(historian).localize(
+        spec,
+        target_relationship_id=target_relationship_id,
+        persistence_rule=persistence_rule,
+        topology=authority.topology,
+    )
+    payload = selected_condition_localization_to_dict(selected)
+    payload["topology_authority"] = {
+        "asset_id": authority.asset_id,
+        "profile_id": authority.profile_id,
+        "source_name": authority.source_name,
+        "source_sha256": authority.source_sha256,
+    }
+    return payload
+
+
+def _query_int(
+    query: dict[str, list[str]],
+    name: str,
+    *,
+    default: int | None = None,
+) -> int:
+    value = _query_text(query, name)
+    if value is None:
+        if default is None:
+            raise ValueError(f"{name} is required")
+        return default
+    try:
+        return int(value)
+    except ValueError as exc:
+        raise ValueError(f"{name} must be an integer") from exc
+
+
 def _query_text(query: dict[str, list[str]], name: str) -> str | None:
     value = query.get(name, [None])[0]
     if value is None:
@@ -391,6 +532,8 @@ def poll_published_evidence(
 def handler_for(
     historian: TimescaleHistorian,
     status: HistorianServiceStatus,
+    *,
+    localization_authority: LocalizationTopologyAuthority | None = None,
 ) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
         def _send_json(self, payload: dict[str, Any], *, status_code: int = 200) -> None:
@@ -412,6 +555,31 @@ def handler_for(
             try:
                 if request.path == "/api/status":
                     self._send_json(status.get())
+                    return
+                if request.path == "/api/history/conditions/localize":
+                    if localization_authority is None:
+                        self._send_json(
+                            {
+                                "schema_version": ("linealert.selected-condition-localization.v1"),
+                                "disposition": "UNAVAILABLE",
+                                "reason_code": ("EVIDENCE.LOCALIZATION_TOPOLOGY_UNAVAILABLE"),
+                                "detail": (
+                                    "The historian service was not started with an "
+                                    "asset-bound condition topology configuration."
+                                ),
+                                "localization": None,
+                            },
+                            status_code=503,
+                        )
+                        return
+                    self._send_json(
+                        historian_condition_localization_from_query(
+                            historian,
+                            query,
+                            localization_authority,
+                            default_limit=limit,
+                        )
+                    )
                     return
                 if request.path == "/api/history/conditions":
                     self._send_json(
@@ -552,13 +720,41 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=8767)
     parser.add_argument("--poll-seconds", type=float, default=0.5)
     parser.add_argument("--episode-id", default="condition-runtime-replay")
+    parser.add_argument(
+        "--condition-config",
+        type=Path,
+        help=(
+            "asset-bound LineAlert machine config used as topology authority for "
+            "read-only persistent localization"
+        ),
+    )
     args = parser.parse_args()
     if args.poll_seconds <= 0:
         parser.error("--poll-seconds must be greater than zero")
 
+    localization_authority: LocalizationTopologyAuthority | None = None
+    if args.condition_config is not None:
+        try:
+            localization_authority = load_localization_topology_authority(args.condition_config)
+        except (ReplayInputError, ValueError) as exc:
+            parser.error(str(exc))
+
     historian = TimescaleHistorian(args.dsn)
     status = HistorianServiceStatus()
-    status.update(connected=True, reason_code="EVIDENCE.HISTORIAN_CONNECTED")
+    status.update(
+        connected=True,
+        reason_code="EVIDENCE.HISTORIAN_CONNECTED",
+        localization_topology_configured=localization_authority is not None,
+        localization_topology_asset_id=(
+            localization_authority.asset_id if localization_authority is not None else None
+        ),
+        localization_topology_profile_id=(
+            localization_authority.profile_id if localization_authority is not None else None
+        ),
+        localization_topology_source_sha256=(
+            localization_authority.source_sha256 if localization_authority is not None else None
+        ),
+    )
     poll_thread = threading.Thread(
         target=poll_published_evidence,
         args=(args.source_base_url, historian, status),
@@ -567,9 +763,21 @@ def main() -> None:
     )
     poll_thread.start()
 
-    server = ThreadingHTTPServer((args.host, args.port), handler_for(historian, status))
+    server = ThreadingHTTPServer(
+        (args.host, args.port),
+        handler_for(
+            historian,
+            status,
+            localization_authority=localization_authority,
+        ),
+    )
     print(f"LineAlert shared historian: http://{args.host}:{args.port}")
     print(f"Condition history: http://{args.host}:{args.port}/api/history/conditions")
+    if localization_authority is not None:
+        print(
+            "Persistent localization: "
+            f"http://{args.host}:{args.port}/api/history/conditions/localize"
+        )
     print(f"Observation history: http://{args.host}:{args.port}/api/history/observations")
     try:
         server.serve_forever()

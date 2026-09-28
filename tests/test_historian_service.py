@@ -1,11 +1,24 @@
 from __future__ import annotations
 
+import json
+import threading
+from datetime import UTC, datetime, timedelta
+from http.client import HTTPConnection
+from http.server import ThreadingHTTPServer
+from pathlib import Path
+from urllib.parse import urlencode
+
 import pytest
 
+from linealert_core.historian import ConditionHistoryRecord
 from linealert_core.historian_service import (
     HistorianServiceStatus,
+    condition_localization_request_from_query,
     functional_temporal_selection_spec_from_query,
+    handler_for,
+    historian_condition_localization_from_query,
     history_time_from_query,
+    load_localization_topology_authority,
     measurement_from_payload,
 )
 
@@ -153,3 +166,273 @@ def test_functional_temporal_selection_spec_from_query_rejects_invalid_kind_and_
             asset_id="LABELER-DEMO-01",
             default_limit=1000,
         )
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
+class _LocalizationHistorian:
+    def __init__(
+        self,
+        records: tuple[ConditionHistoryRecord, ...],
+        *,
+        truncated: bool = False,
+    ) -> None:
+        self.records = records
+        self.truncated = truncated
+        self.calls: list[dict[str, object]] = []
+
+    def select_condition_history_records(
+        self,
+        *,
+        limit: int = 240,
+        asset_id: str | None = None,
+        relationship_id: str | None = None,
+        episode_id: str | None = None,
+        cycle_id: str | None = None,
+        phase_id: str | None = None,
+        from_time: datetime | None = None,
+        to_time: datetime | None = None,
+    ) -> tuple[tuple[ConditionHistoryRecord, ...], bool]:
+        self.calls.append(
+            {
+                "limit": limit,
+                "asset_id": asset_id,
+                "relationship_id": relationship_id,
+                "episode_id": episode_id,
+                "cycle_id": cycle_id,
+                "phase_id": phase_id,
+                "from_time": from_time,
+                "to_time": to_time,
+            }
+        )
+        return self.records, self.truncated
+
+
+def _localization_record(
+    *,
+    offset_seconds: int,
+    value: float,
+) -> ConditionHistoryRecord:
+    observed_at = datetime(2026, 9, 14, 11, 37, tzinfo=UTC) + timedelta(seconds=offset_seconds)
+    outside = value > 350.0
+    return ConditionHistoryRecord(
+        observed_at=observed_at,
+        observation_id=f"obs-{offset_seconds}",
+        episode_id="incident-42",
+        asset_id="LABELER-DEMO-01",
+        relationship_id="relationship:label-presentation-delay",
+        signal="label_presentation_delay_ms",
+        value=value,
+        unit="ms",
+        min_value=50.0,
+        max_value=350.0,
+        temporal_rule_status="late" if outside else "within",
+        quality="good",
+        reason_code="EVIDENCE.RELATIONSHIP_DELAY_MEASURED",
+        correlation_id=f"cycle-{offset_seconds}",
+        topology_from="LabelFeedCommand",
+        topology_to="LabelAtPeelPoint",
+        source_mode="replay",
+        cycle_id=f"cycle-{offset_seconds}",
+        operating_context={
+            "configuration_version": "demo-config-v1",
+            "firmware_version": "demo-fw-v1",
+            "recipe_id": "500ml-round",
+        },
+        clock_evidence={"basis": "same_source_relative_interval"},
+    )
+
+
+def _localization_records() -> tuple[ConditionHistoryRecord, ...]:
+    return tuple(
+        _localization_record(offset_seconds=index * 60, value=value)
+        for index, value in enumerate([200.0, 500.0, 510.0, 520.0])
+    )
+
+
+def _localization_query() -> dict[str, list[str]]:
+    return {
+        "asset_id": ["LABELER-DEMO-01"],
+        "selection_label": ["Incident persistence window"],
+        "episode_id": ["incident-42"],
+        "target_relationship_id": ["relationship:label-presentation-delay"],
+        "required_outside": ["3"],
+        "window_size": ["4"],
+        "limit": ["250"],
+    }
+
+
+def test_localization_topology_authority_binds_demo_asset_profile_and_hash() -> None:
+    authority = load_localization_topology_authority(
+        PROJECT_ROOT / "examples" / "labeler_demo_config.json"
+    )
+
+    assert authority.asset_id == "LABELER-DEMO-01"
+    assert authority.profile_id == "generic-pressure-sensitive-labeler-demo-v1"
+    assert authority.source_name == "labeler_demo_config.json"
+    assert len(authority.source_sha256) == 64
+    assert authority.topology.has_edge("LabelFeedCommand", "LabelAtPeelPoint")
+
+
+def test_condition_localization_request_parser_preserves_scope_and_rule() -> None:
+    query = _localization_query()
+    query["from_time"] = ["2026-09-14T11:37:00Z"]
+    query["to_time"] = ["2026-09-14T11:40:00Z"]
+
+    selection, target, rule = condition_localization_request_from_query(
+        query,
+        default_limit=240,
+    )
+
+    assert selection.label == "Incident persistence window"
+    assert selection.asset_id == "LABELER-DEMO-01"
+    assert selection.episode_id == "incident-42"
+    assert selection.limit == 250
+    assert selection.from_time is not None
+    assert selection.from_time.isoformat() == "2026-09-14T11:37:00+00:00"
+    assert selection.to_time is not None
+    assert selection.to_time.isoformat() == "2026-09-14T11:40:00+00:00"
+    assert target == "relationship:label-presentation-delay"
+    assert rule.required_outside == 3
+    assert rule.window_size == 4
+
+
+def test_condition_localization_request_parser_rejects_hidden_dependency_filter() -> None:
+    query = _localization_query()
+    query["relationship_id"] = ["relationship:label-presentation-delay"]
+
+    with pytest.raises(ValueError, match="dependency evidence must remain visible"):
+        condition_localization_request_from_query(query, default_limit=240)
+
+
+def test_condition_localization_request_parser_requires_explicit_persistence_rule() -> None:
+    query = _localization_query()
+    del query["required_outside"]
+
+    with pytest.raises(ValueError, match="required_outside is required"):
+        condition_localization_request_from_query(query, default_limit=240)
+
+
+def test_historian_condition_localization_returns_bounded_result_and_topology_provenance() -> None:
+    historian = _LocalizationHistorian(_localization_records())
+    authority = load_localization_topology_authority(
+        PROJECT_ROOT / "examples" / "labeler_demo_config.json"
+    )
+
+    payload = historian_condition_localization_from_query(
+        historian,  # type: ignore[arg-type]
+        _localization_query(),
+        authority,
+    )
+
+    assert payload["disposition"] == "READY"
+    localization = payload["localization"]
+    assert isinstance(localization, dict)
+    assert localization["disposition"] == "PERSISTENCE_ESTABLISHED"
+    onset = localization["onset"]
+    assert isinstance(onset, dict)
+    assert onset["outside_count"] == 3
+    assert onset["window_count"] == 4
+    topology_authority = payload["topology_authority"]
+    assert isinstance(topology_authority, dict)
+    assert topology_authority["asset_id"] == "LABELER-DEMO-01"
+    assert topology_authority["profile_id"] == ("generic-pressure-sensitive-labeler-demo-v1")
+    assert topology_authority["source_name"] == "labeler_demo_config.json"
+    assert len(topology_authority["source_sha256"]) == 64
+    assert historian.calls[0]["relationship_id"] is None
+
+
+def test_historian_condition_localization_rejects_asset_topology_mismatch() -> None:
+    historian = _LocalizationHistorian(_localization_records())
+    authority = load_localization_topology_authority(
+        PROJECT_ROOT / "examples" / "labeler_demo_config.json"
+    )
+    query = _localization_query()
+    query["asset_id"] = ["OTHER-ASSET"]
+
+    with pytest.raises(ValueError, match="does not match"):
+        historian_condition_localization_from_query(
+            historian,  # type: ignore[arg-type]
+            query,
+            authority,
+        )
+
+
+def _request_localization_endpoint(
+    historian: _LocalizationHistorian,
+    *,
+    with_authority: bool,
+) -> tuple[int, dict[str, object]]:
+    status = HistorianServiceStatus()
+    authority = (
+        load_localization_topology_authority(PROJECT_ROOT / "examples" / "labeler_demo_config.json")
+        if with_authority
+        else None
+    )
+    server = ThreadingHTTPServer(
+        ("127.0.0.1", 0),
+        handler_for(
+            historian,  # type: ignore[arg-type]
+            status,
+            localization_authority=authority,
+        ),
+    )
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    connection = HTTPConnection("127.0.0.1", server.server_port, timeout=3)
+    try:
+        flat_query = {key: values[0] for key, values in _localization_query().items()}
+        connection.request(
+            "GET",
+            "/api/history/conditions/localize?" + urlencode(flat_query),
+        )
+        response = connection.getresponse()
+        body = json.loads(response.read().decode("utf-8"))
+        return response.status, body
+    finally:
+        connection.close()
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=3)
+
+
+def test_localization_endpoint_executes_selector_and_localizer() -> None:
+    status_code, payload = _request_localization_endpoint(
+        _LocalizationHistorian(_localization_records()),
+        with_authority=True,
+    )
+
+    assert status_code == 200
+    assert payload["schema_version"] == "linealert.selected-condition-localization.v1"
+    assert payload["disposition"] == "READY"
+    localization = payload["localization"]
+    assert isinstance(localization, dict)
+    assert localization["disposition"] == "PERSISTENCE_ESTABLISHED"
+
+
+def test_localization_endpoint_refuses_when_topology_authority_is_unconfigured() -> None:
+    status_code, payload = _request_localization_endpoint(
+        _LocalizationHistorian(_localization_records()),
+        with_authority=False,
+    )
+
+    assert status_code == 503
+    assert payload["disposition"] == "UNAVAILABLE"
+    assert payload["reason_code"] == "EVIDENCE.LOCALIZATION_TOPOLOGY_UNAVAILABLE"
+    assert payload["localization"] is None
+
+
+def test_localization_endpoint_preserves_selector_truncation_refusal() -> None:
+    status_code, payload = _request_localization_endpoint(
+        _LocalizationHistorian(_localization_records(), truncated=True),
+        with_authority=True,
+    )
+
+    assert status_code == 200
+    assert payload["disposition"] == "REFUSED_TRUNCATED"
+    assert payload["reason_code"] == "SELECTION.CONDITION_HISTORY_TRUNCATED"
+    assert payload["localization"] is None
+    topology_authority = payload["topology_authority"]
+    assert isinstance(topology_authority, dict)
+    assert topology_authority["asset_id"] == "LABELER-DEMO-01"

@@ -14,6 +14,7 @@ from .condition_localization import (
     DependencyLocalizationResult,
     PersistenceRule,
     PersistentDependencyLocalizer,
+    dependency_localization_to_dict,
 )
 from .historian import ConditionHistoryRecord
 from .topology import TopologyGraph
@@ -280,3 +281,35 @@ def _require_aware(value: datetime | None, field_name: str) -> None:
         return
     if value.tzinfo is None or value.utcoffset() is None:
         raise ConditionHistorySelectionError(f"{field_name} must be timezone-aware")
+
+
+def selected_condition_localization_to_dict(
+    value: SelectedConditionLocalization,
+) -> dict[str, object]:
+    """Serialize selection and #135 localization without reinterpretation."""
+
+    spec = value.selection.spec
+    return {
+        "schema_version": "linealert.selected-condition-localization.v1",
+        "disposition": value.disposition.value,
+        "reason_code": value.reason_code,
+        "detail": value.detail,
+        "selection": {
+            "label": spec.label,
+            "asset_id": spec.asset_id,
+            "relationship_id": spec.relationship_id,
+            "episode_id": spec.episode_id,
+            "cycle_id": spec.cycle_id,
+            "phase_id": spec.phase_id,
+            "from_time": (spec.from_time.isoformat() if spec.from_time is not None else None),
+            "to_time": spec.to_time.isoformat() if spec.to_time is not None else None,
+            "limit": spec.limit,
+            "record_count": len(value.selection.records),
+            "truncated": value.selection.truncated,
+        },
+        "localization": (
+            dependency_localization_to_dict(value.localization)
+            if value.localization is not None
+            else None
+        ),
+    }

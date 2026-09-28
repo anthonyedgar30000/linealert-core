@@ -66,7 +66,8 @@ if (-not $SkipHistorian) {
                 "-m", "linealert_core.historian_service", `
                 "--dsn", $historianDsn, `
                 "--source-base-url", "http://127.0.0.1:8765", `
-                "--episode-id", "condition-runtime-replay" `
+                "--episode-id", "condition-runtime-replay", `
+                "--condition-config", $conditionConfig `
             -WorkingDirectory $repoRoot `
             -PassThru
         Start-Sleep -Seconds 2
@@ -84,6 +85,7 @@ try {
     if (-not $SkipHistorian) {
         Write-Host "Shared historian: http://localhost:8767/api/status" -ForegroundColor DarkGreen
         Write-Host "Condition history: http://localhost:8767/api/history/conditions" -ForegroundColor DarkGreen
+        Write-Host "Persistent localization: http://localhost:8767/api/history/conditions/localize" -ForegroundColor DarkGreen
     }
     npm run dev
 }
