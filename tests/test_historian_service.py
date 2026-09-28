@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import pytest
 
-from linealert_core.historian_service import HistorianServiceStatus, measurement_from_payload
+from linealert_core.historian_service import (
+    HistorianServiceStatus,
+    functional_temporal_selection_spec_from_query,
+    history_time_from_query,
+    measurement_from_payload,
+)
 
 
 def _condition_payload() -> dict[str, object]:
@@ -68,3 +73,83 @@ def test_historian_service_status_returns_detached_payload() -> None:
 
     assert status.get()["connected"] is True
     assert status.get()["latest_condition_count"] == 10
+
+
+def test_history_time_from_query_requires_timezone_aware_iso8601() -> None:
+    parsed = history_time_from_query("2026-09-14T15:42:00Z", "from_time")
+
+    assert parsed is not None
+    assert parsed.isoformat() == "2026-09-14T15:42:00+00:00"
+    assert history_time_from_query(None, "to_time") is None
+
+    with pytest.raises(ValueError, match="timezone-aware"):
+        history_time_from_query("2026-09-14T15:42:00", "from_time")
+    with pytest.raises(ValueError, match="ISO 8601"):
+        history_time_from_query("not-a-time", "from_time")
+
+
+def test_functional_temporal_selection_spec_from_query_preserves_explicit_scope() -> None:
+    query = {
+        "reference_label": ["Approved reference cycle"],
+        "reference_cycle_id": ["commissioned-cycle-42"],
+        "reference_phase_id": ["LABEL_PRESENTED"],
+        "reference_record_kind": ["GUARD"],
+        "reference_from_time": ["2026-03-12T14:29:00Z"],
+        "reference_to_time": ["2026-03-12T14:31:00Z"],
+        "reference_limit": ["250"],
+    }
+
+    spec = functional_temporal_selection_spec_from_query(
+        query,
+        prefix="reference",
+        asset_id="LABELER-DEMO-01",
+        default_limit=1000,
+    )
+
+    assert spec.label == "Approved reference cycle"
+    assert spec.asset_id == "LABELER-DEMO-01"
+    assert spec.cycle_id == "commissioned-cycle-42"
+    assert spec.phase_id == "LABEL_PRESENTED"
+    assert spec.record_kind is not None
+    assert spec.record_kind.value == "GUARD"
+    assert spec.limit == 250
+    assert spec.from_time is not None
+    assert spec.from_time.isoformat() == "2026-03-12T14:29:00+00:00"
+    assert spec.to_time is not None
+    assert spec.to_time.isoformat() == "2026-03-12T14:31:00+00:00"
+
+
+def test_functional_temporal_selection_spec_from_query_rejects_missing_label() -> None:
+    with pytest.raises(ValueError, match="reference_label is required"):
+        functional_temporal_selection_spec_from_query(
+            {"reference_cycle_id": ["cycle-42"]},
+            prefix="reference",
+            asset_id="LABELER-DEMO-01",
+            default_limit=1000,
+        )
+
+
+def test_functional_temporal_selection_spec_from_query_rejects_invalid_kind_and_limit() -> None:
+    with pytest.raises(ValueError, match="reference_record_kind is invalid"):
+        functional_temporal_selection_spec_from_query(
+            {
+                "reference_label": ["Reference"],
+                "reference_cycle_id": ["cycle-42"],
+                "reference_record_kind": ["UNKNOWN_KIND"],
+            },
+            prefix="reference",
+            asset_id="LABELER-DEMO-01",
+            default_limit=1000,
+        )
+
+    with pytest.raises(ValueError, match="reference_limit must be an integer"):
+        functional_temporal_selection_spec_from_query(
+            {
+                "reference_label": ["Reference"],
+                "reference_cycle_id": ["cycle-42"],
+                "reference_limit": ["many"],
+            },
+            prefix="reference",
+            asset_id="LABELER-DEMO-01",
+            default_limit=1000,
+        )

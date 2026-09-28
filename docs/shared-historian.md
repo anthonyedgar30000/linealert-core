@@ -77,6 +77,7 @@ The sidecar serves:
 GET  http://127.0.0.1:8767/api/status
 GET  http://127.0.0.1:8767/api/history/conditions
 GET  http://127.0.0.1:8767/api/history/functional-temporal
+GET  http://127.0.0.1:8767/api/history/functional-temporal/compare
 GET  http://127.0.0.1:8767/api/history/observations
 GET  http://127.0.0.1:8767/api/history/episodes/{episode_id}
 POST http://127.0.0.1:8767/api/functional-temporal
@@ -87,12 +88,16 @@ The UI proxies the shared-history paths through:
 
 ```text
 GET  /api/historian/conditions
+GET  /api/historian/functional-temporal
+GET  /api/historian/functional-temporal/compare
 GET  /api/historian/status
 GET  /api/historian/episodes/{episode_id}
 POST /api/historian/outcomes
 ```
 
-`/api/history/conditions` accepts optional `asset_id`, `relationship_id`, `episode_id`, and bounded `limit` query parameters. `/api/history/functional-temporal` accepts `asset_id`, `episode_id`, `cycle_id`, `phase_id`, `record_kind`, and bounded `limit` filters.
+`/api/history/conditions` accepts optional `asset_id`, `relationship_id`, `episode_id`, and bounded `limit` query parameters. `/api/history/functional-temporal` accepts `asset_id`, `episode_id`, `cycle_id`, `phase_id`, `record_kind`, inclusive timezone-aware `from_time` / `to_time`, and bounded `limit` filters. Functional-temporal history reads report explicit `truncated` state by querying one row beyond the requested limit; a truncated selection means older matching records were omitted.
+
+The read-only `/api/history/functional-temporal/compare` endpoint accepts one exact asset plus separately prefixed `reference_*` and `selected_*` selection fields. Each side must supply an explicit label and a bounded episode, cycle, or timezone-aware time window. The endpoint executes the governed historian selector and commissioned-vs-selected comparator; it does not infer which record set should be treated as commissioned truth.
 
 Functional-temporal writes require exact `asset_id`, component/profile identity, operating mode, configuration version, firmware version, calibration ID, and sampling profile. Recipe/product identity and context tags are preserved when supplied. A transition record additionally requires exact from/to phase IDs, transition ID, trigger event ID, and transition disposition.
 

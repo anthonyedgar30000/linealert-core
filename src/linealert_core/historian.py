@@ -30,6 +30,10 @@ class HistorianError(RuntimeError):
     """Raised when the optional historian cannot be configured or queried."""
 
 
+class HistorianQueryError(HistorianError):
+    """Raised when a read-only historian query is malformed or unsafe to execute."""
+
+
 class FunctionalTemporalRecordKind(StrEnum):
     """Historian record class for functional-temporal evidence."""
 
@@ -622,7 +626,7 @@ class TimescaleHistorian:
             "measurements": measurements,
         }
 
-    def functional_temporal_history(
+    def select_functional_temporal_records(
         self,
         *,
         limit: int = 240,
@@ -631,10 +635,20 @@ class TimescaleHistorian:
         cycle_id: str | None = None,
         phase_id: str | None = None,
         record_kind: str | None = None,
-    ) -> dict[str, Any]:
-        """Return bounded functional-temporal evidence in chronological order."""
+        from_time: datetime | None = None,
+        to_time: datetime | None = None,
+    ) -> tuple[tuple[FunctionalTemporalHistoryRecord, ...], bool]:
+        """Return typed functional-temporal evidence plus explicit truncation state."""
 
-        bounded_limit = max(1, min(limit, 5000))
+        if limit < 1 or limit > 5000:
+            raise HistorianQueryError(
+                "functional-temporal history limit must be between 1 and 5000"
+            )
+        _validate_optional_history_time(from_time, "from_time")
+        _validate_optional_history_time(to_time, "to_time")
+        if from_time is not None and to_time is not None and from_time > to_time:
+            raise HistorianQueryError("from_time must be less than or equal to to_time")
+
         where: list[str] = []
         params: list[Any] = []
         for column, value in (
@@ -647,8 +661,14 @@ class TimescaleHistorian:
             if value:
                 where.append(f"{column} = %s")
                 params.append(value)
+        if from_time is not None:
+            where.append("observed_at >= %s")
+            params.append(from_time)
+        if to_time is not None:
+            where.append("observed_at <= %s")
+            params.append(to_time)
         predicate = f"WHERE {' AND '.join(where)}" if where else ""
-        params.append(bounded_limit)
+        params.append(limit + 1)
         query = f"""
             SELECT observed_at, record_id, episode_id, asset_id, cycle_id, record_kind,
                    phase_id, transition_id, from_phase_id, to_phase_id, trigger_event_id,
@@ -659,55 +679,53 @@ class TimescaleHistorian:
                    reasons, clock_evidence, details
             FROM functional_temporal_evidence
             {predicate}
-            ORDER BY observed_at DESC
+            ORDER BY observed_at DESC, record_id DESC
             LIMIT %s
         """
         with self._lock, self._connection.cursor() as cursor:
             cursor.execute(query, tuple(params))
             rows = cursor.fetchall()
-        records = [
-            {
-                "observed_at": row[0].isoformat(),
-                "record_id": row[1],
-                "episode_id": row[2],
-                "asset_id": row[3],
-                "cycle_id": row[4],
-                "record_kind": row[5],
-                "phase_id": row[6],
-                "transition_id": row[7],
-                "from_phase_id": row[8],
-                "to_phase_id": row[9],
-                "trigger_event_id": row[10],
-                "requirement_id": row[11],
-                "transition_disposition": row[12],
-                "epistemic_state": row[13],
-                "evidence_validity": row[14],
-                "temporal_coverage": row[15],
-                "source_id": row[16],
-                "operating_context": {
-                    "component_id": row[17],
-                    "profile_id": row[18],
-                    "operating_mode": row[19],
-                    "configuration_version": row[20],
-                    "firmware_version": row[21],
-                    "calibration_id": row[22],
-                    "sampling_profile_id": row[23],
-                    "recipe_id": row[24],
-                    "product_id": row[25],
-                    "context_tags": row[26],
-                },
-                "evidence_ids": row[27],
-                "reasons": row[28],
-                "clock_evidence": row[29],
-                "details": row[30],
-            }
-            for row in reversed(rows)
-        ]
+
+        truncated = len(rows) > limit
+        selected_rows = rows[:limit]
+        records = tuple(
+            _functional_temporal_record_from_row(row) for row in reversed(selected_rows)
+        )
+        return records, truncated
+
+    def functional_temporal_history(
+        self,
+        *,
+        limit: int = 240,
+        asset_id: str | None = None,
+        episode_id: str | None = None,
+        cycle_id: str | None = None,
+        phase_id: str | None = None,
+        record_kind: str | None = None,
+        from_time: datetime | None = None,
+        to_time: datetime | None = None,
+    ) -> dict[str, Any]:
+        """Return bounded functional-temporal evidence in chronological order."""
+
+        records, truncated = self.select_functional_temporal_records(
+            limit=limit,
+            asset_id=asset_id,
+            episode_id=episode_id,
+            cycle_id=cycle_id,
+            phase_id=phase_id,
+            record_kind=record_kind,
+            from_time=from_time,
+            to_time=to_time,
+        )
         return {
             "schema_version": "linealert.historian.functional-temporal-history.v1",
             "persistence": "timescaledb",
             "count": len(records),
-            "records": records,
+            "truncated": truncated,
+            "truncation_semantic": ("older_matching_records_omitted" if truncated else None),
+            "from_time": from_time.isoformat() if from_time is not None else None,
+            "to_time": to_time.isoformat() if to_time is not None else None,
+            "records": [_functional_temporal_record_to_payload(record) for record in records],
         }
 
     def observation_history(
@@ -784,3 +802,96 @@ class TimescaleHistorian:
                 "prove physical root cause or predictive validity."
             ),
         }
+
+
+def _validate_optional_history_time(value: datetime | None, field_name: str) -> None:
+    if value is None:
+        return
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise HistorianQueryError(f"{field_name} must be timezone-aware")
+
+
+def _functional_temporal_record_from_row(
+    row: tuple[Any, ...],
+) -> FunctionalTemporalHistoryRecord:
+    transition_disposition = TransitionDisposition(row[12]) if row[12] is not None else None
+    return FunctionalTemporalHistoryRecord(
+        observed_at=row[0],
+        record_id=row[1],
+        episode_id=row[2],
+        cycle_id=row[4],
+        record_kind=FunctionalTemporalRecordKind(row[5]),
+        state=EpistemicState(row[13]),
+        validity=EvidenceValidity(row[14]),
+        coverage=TemporalCoverage(row[15]),
+        source_id=row[16],
+        operating_context=HistorianOperatingContext(
+            asset_id=row[3],
+            component_id=row[17],
+            profile_id=row[18],
+            operating_mode=row[19],
+            configuration_version=row[20],
+            firmware_version=row[21],
+            calibration_id=row[22],
+            sampling_profile_id=row[23],
+            recipe_id=row[24],
+            product_id=row[25],
+            context_tags=row[26],
+        ),
+        phase_id=row[6],
+        transition_id=row[7],
+        from_phase_id=row[8],
+        to_phase_id=row[9],
+        trigger_event_id=row[10],
+        requirement_id=row[11],
+        transition_disposition=transition_disposition,
+        evidence_ids=tuple(row[27]),
+        reasons=tuple(row[28]),
+        clock_evidence=row[29],
+        details=row[30],
+    )
+
+
+def _functional_temporal_record_to_payload(
+    record: FunctionalTemporalHistoryRecord,
+) -> dict[str, Any]:
+    context = record.operating_context
+    return {
+        "observed_at": record.observed_at.isoformat(),
+        "record_id": record.record_id,
+        "episode_id": record.episode_id,
+        "asset_id": context.asset_id,
+        "cycle_id": record.cycle_id,
+        "record_kind": record.record_kind.value,
+        "phase_id": record.phase_id,
+        "transition_id": record.transition_id,
+        "from_phase_id": record.from_phase_id,
+        "to_phase_id": record.to_phase_id,
+        "trigger_event_id": record.trigger_event_id,
+        "requirement_id": record.requirement_id,
+        "transition_disposition": (
+            record.transition_disposition.value
+            if record.transition_disposition is not None
+            else None
+        ),
+        "epistemic_state": record.state.value,
+        "evidence_validity": record.validity.value,
+        "temporal_coverage": record.coverage.value,
+        "source_id": record.source_id,
+        "operating_context": {
+            "component_id": context.component_id,
+            "profile_id": context.profile_id,
+            "operating_mode": context.operating_mode,
+            "configuration_version": context.configuration_version,
+            "firmware_version": context.firmware_version,
+            "calibration_id": context.calibration_id,
+            "sampling_profile_id": context.sampling_profile_id,
+            "recipe_id": context.recipe_id,
+            "product_id": context.product_id,
+            "context_tags": dict(context.context_tags),
+        },
+        "evidence_ids": list(record.evidence_ids),
+        "reasons": list(record.reasons),
+        "clock_evidence": dict(record.clock_evidence),
+        "details": dict(record.details),
+    }
