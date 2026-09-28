@@ -214,6 +214,11 @@ def test_within_timing_relationship_projects_verified_point_evidence() -> None:
     assert evidence.provenance["start_source_id"] == "plc-labeler-demo"
     assert evidence.provenance["end_source_id"] == "plc-labeler-demo"
     assert evidence.provenance["clock_basis"] == "same_source_relative_interval"
+    assert evidence.provenance["value"] == "155.0"
+    assert evidence.provenance["unit"] == "ms"
+    assert evidence.provenance["min_value"] == "50.0"
+    assert evidence.provenance["max_value"] == "350.0"
+    assert evidence.provenance["temporal_rule_status"] == "within"
 
 
 def test_late_timing_relationship_projects_violation_not_root_cause() -> None:
