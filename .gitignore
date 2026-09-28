@@ -13,3 +13,4 @@ coverage.xml
 ui/node_modules/
 ui/.next/
 evidence/**/*.jsonl
+.runtime/

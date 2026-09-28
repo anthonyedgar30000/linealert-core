@@ -11,10 +11,18 @@ $capture = Join-Path $repoRoot "evidence\opcua\microsoft-opc-plc.jsonl"
 $conditionEvents = Join-Path $repoRoot "examples\labeler_condition_drift_events.jsonl"
 $conditionConfig = Join-Path $repoRoot "examples\labeler_demo_config.json"
 $conditionBindings = Join-Path $repoRoot "examples\condition_signal_bindings.json"
+$serviceCaseSeed = Join-Path $repoRoot "examples\speedway_service_case_workspace_seed_v1.json"
+if ($env:LOCALAPPDATA) {
+    $serviceCaseDataDir = Join-Path $env:LOCALAPPDATA "LineAlert\service-cases-v1"
+}
+else {
+    $serviceCaseDataDir = Join-Path $repoRoot ".runtime\service-cases-v1"
+}
 $historianCompose = Join-Path $repoRoot "docker-compose.historian.yml"
 $historianDsn = "postgresql://linealert:linealert_dev@127.0.0.1:5433/linealert"
 $startedBridge = $null
 $startedHistorian = $null
+$startedServiceCase = $null
 
 if (-not (Test-Path $python)) {
     throw "Python environment missing. Run: py -m venv .venv; .\.venv\Scripts\python.exe -m pip install -e '.[opcua,historian]'"
@@ -58,6 +66,22 @@ if (-not $bridgeReady) {
     Start-Sleep -Seconds 2
 }
 
+$serviceCaseReady = Test-NetConnection -ComputerName 127.0.0.1 -Port 8768 -InformationLevel Quiet -WarningAction SilentlyContinue
+if (-not $serviceCaseReady) {
+    $startedServiceCase = Start-Process -FilePath $python `
+        -ArgumentList `
+            "-m", "linealert_core.service_case_service", `
+            "--data-dir", $serviceCaseDataDir, `
+            "--seed-service-case", $serviceCaseSeed `
+        -WorkingDirectory $repoRoot `
+        -PassThru
+    Start-Sleep -Seconds 1
+    $serviceCaseReady = Test-NetConnection -ComputerName 127.0.0.1 -Port 8768 -InformationLevel Quiet -WarningAction SilentlyContinue
+    if (-not $serviceCaseReady) {
+        throw "Service-case persistence did not become ready on localhost:8768."
+    }
+}
+
 if (-not $SkipHistorian) {
     $historianReady = Test-NetConnection -ComputerName 127.0.0.1 -Port 8767 -InformationLevel Quiet -WarningAction SilentlyContinue
     if (-not $historianReady) {
@@ -82,6 +106,8 @@ try {
     Write-Host "LineAlert hybrid interface: http://localhost:8766" -ForegroundColor Cyan
     Write-Host "Evidence bridge: http://localhost:8765/api/telemetry" -ForegroundColor DarkCyan
     Write-Host "Condition evidence: http://localhost:8765/api/condition" -ForegroundColor DarkCyan
+    Write-Host "Service-case persistence: http://localhost:8768/api/status" -ForegroundColor DarkMagenta
+    Write-Host "Service-case data: $serviceCaseDataDir" -ForegroundColor DarkMagenta
     if (-not $SkipHistorian) {
         Write-Host "Shared historian: http://localhost:8767/api/status" -ForegroundColor DarkGreen
         Write-Host "Condition history: http://localhost:8767/api/history/conditions" -ForegroundColor DarkGreen
@@ -93,6 +119,9 @@ finally {
     Pop-Location
     if ($null -ne $startedHistorian -and -not $startedHistorian.HasExited) {
         Stop-Process -Id $startedHistorian.Id
+    }
+    if ($null -ne $startedServiceCase -and -not $startedServiceCase.HasExited) {
+        Stop-Process -Id $startedServiceCase.Id
     }
     if ($null -ne $startedBridge -and -not $startedBridge.HasExited) {
         Stop-Process -Id $startedBridge.Id

@@ -159,6 +159,10 @@ claim booleans does not promote those claims on round-trip.
 - reported_event_time != verified_machine_timestamp
 - recommendation != authorized_action
 
+## Subsequent local persistence
+
+A later bounded increment adds single-host local JSON persistence and loopback API access for these exact v1 contracts. See `docs/architecture/service-case-local-persistence-v1.md`. That persistence does not change the contract authority boundaries below and is not a plant CMMS or production service database.
+
 ## Deferred from this increment
 
 The contract does not yet implement:

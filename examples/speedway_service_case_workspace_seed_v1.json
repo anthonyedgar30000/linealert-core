@@ -1,0 +1,60 @@
+{
+  "schema_version": "linealert.service-case.v1",
+  "service_case_id": "svc-2026-0042",
+  "customer_id": "customer-synthetic-01",
+  "site_id": "site-synthetic-01",
+  "asset_id": "LABELER-02",
+  "opened_at": "2026-09-27T16:55:00+00:00",
+  "opened_by": "speedway-technician",
+  "service_call_received_at": "2026-09-27T16:45:00+00:00",
+  "reported_symptom": "Labels intermittently skewing and bottle flow backing up.",
+  "reported_incident_at": "2026-09-27T16:00:00+00:00",
+  "service_call_reference": "CALL-0042",
+  "preincident_window_start": "2026-09-27T13:00:00+00:00",
+  "preincident_window_end": "2026-09-27T16:00:00+00:00",
+  "current_configuration_version": "cfg-2026-09-01",
+  "status": "evidence_gathering",
+  "evidence_ids": [
+    "ev-100",
+    "ev-101"
+  ],
+  "plant_reported_context_ids": [],
+  "working_explanation_ids": [
+    "working-explanation-01"
+  ],
+  "missing_evidence_request_ids": [
+    "request-plant-window-01"
+  ],
+  "first_detected_departure": {
+    "departure_id": "departure-001",
+    "asset_id": "LABELER-02",
+    "relationship_id": "relationship:photoeye-to-label-feed",
+    "observed_at": "2026-09-27T14:00:00+00:00",
+    "expected_reference_id": "baseline:labeler-02:v7",
+    "configuration_version": "cfg-2026-09-01",
+    "clock_quality": "synchronized_cross_source_interval",
+    "reason_code": "CONDITION.OUTSIDE_EXPECTED_ENVELOPE",
+    "evidence_ids": [
+      "ev-100",
+      "ev-101"
+    ],
+    "source_ids": [
+      "plc-labeler-02",
+      "camera-labeler-02"
+    ],
+    "calibration_id": "cal-2026-08",
+    "sampling_profile_id": "sampling-10hz",
+    "root_cause_established": false,
+    "incident_start_established": false,
+    "causation_established": false
+  },
+  "authorized_action": false,
+  "claim_boundaries": [
+    "first_detected_departure != root_cause",
+    "first_detected_departure != incident_start",
+    "temporal_precedence != causation",
+    "plant_reported_context != verified_source_record",
+    "technician_entry != direct_system_observation",
+    "recommendation != authorized_action"
+  ]
+}
