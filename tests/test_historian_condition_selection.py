@@ -54,6 +54,7 @@ def record(
     cycle_id: str | None = "cycle-42",
     phase_id: str | None = "LABEL_PRESENTED",
     operating_context: dict[str, object] | None = None,
+    evidence_authority: dict[str, object] | None = None,
 ) -> ConditionHistoryRecord:
     return ConditionHistoryRecord(
         observed_at=observed_at,
@@ -81,6 +82,7 @@ def record(
             "firmware_version": "servo-fw-3.7",
             "recipe_id": "500ml-round",
         },
+        evidence_authority=evidence_authority,
         clock_evidence={
             "basis": "same_source_relative_interval",
             "start_clock_quality": "synchronized",
@@ -111,6 +113,7 @@ def row(value: ConditionHistoryRecord) -> tuple[object, ...]:
         value.cycle_id,
         value.phase_id,
         dict(value.operating_context),
+        (dict(value.evidence_authority) if value.evidence_authority is not None else None),
         dict(value.clock_evidence),
     )
 
@@ -268,3 +271,40 @@ def test_condition_history_selection_rejects_bad_bounds_and_limit() -> None:
         )
     with pytest.raises(HistorianError, match="between 1 and 5000"):
         historian.select_condition_history_records(limit=5001)
+
+
+def test_condition_history_record_preserves_optional_evidence_authority() -> None:
+    authority = {
+        "schema_version": "linealert.condition-evidence-authority.v1",
+        "authority_scope": "HISTORIAN_WRITE_TIME_POLICY_AUTHORITY",
+        "configuration": {
+            "asset_id": "LABELER-DEMO-01",
+            "profile_id": "demo-v1",
+            "source_name": "labeler_demo_config.json",
+            "source_sha256": "a" * 64,
+        },
+        "persistence_policy": None,
+    }
+    value = record(evidence_authority=authority)
+
+    authority["authority_scope"] = "changed"
+
+    assert value.evidence_authority is not None
+    assert value.evidence_authority["authority_scope"] == ("HISTORIAN_WRITE_TIME_POLICY_AUTHORITY")
+    with pytest.raises(TypeError):
+        value.evidence_authority["authority_scope"] = "other"  # type: ignore[index]
+
+
+def test_condition_history_legacy_row_keeps_missing_authority_as_null() -> None:
+    historian, connection = fake_historian()
+    value = record(evidence_authority=None)
+    connection.rows = [row(value)]
+
+    payload = historian.condition_history(
+        asset_id="LABELER-DEMO-01",
+        episode_id="incident-2026-09-14",
+    )
+
+    assert payload["count"] == 1
+    measurement = payload["measurements"][0]
+    assert measurement["evidence_authority"] is None

@@ -162,6 +162,8 @@ def test_schema_adds_append_only_functional_temporal_history_and_condition_conte
     assert "ADD COLUMN IF NOT EXISTS cycle_id TEXT" in _SCHEMA_SQL
     assert "ADD COLUMN IF NOT EXISTS phase_id TEXT" in _SCHEMA_SQL
     assert "ADD COLUMN IF NOT EXISTS operating_context JSONB" in _SCHEMA_SQL
+    assert "ADD COLUMN IF NOT EXISTS evidence_authority JSONB;" in _SCHEMA_SQL
+    assert "evidence_authority JSONB NOT NULL" not in _SCHEMA_SQL
     assert "functional_temporal_cycle_time_idx" in _SCHEMA_SQL
 
 
@@ -313,10 +315,21 @@ def test_condition_measurement_write_preserves_cycle_phase_and_context() -> None
             "configuration_version": "plc-config-4.2.1",
             "firmware_version": "servo-fw-3.7",
         },
+        evidence_authority={
+            "schema_version": "linealert.condition-evidence-authority.v1",
+            "authority_scope": "HISTORIAN_WRITE_TIME_POLICY_AUTHORITY",
+            "configuration": {
+                "asset_id": "LABELER-DEMO-01",
+                "profile_id": "demo-v1",
+                "source_name": "labeler_demo_config.json",
+                "source_sha256": "a" * 64,
+            },
+            "persistence_policy": None,
+        },
     )
 
     query, params = connection.executions[-1]
-    assert "cycle_id, phase_id, operating_context" in query
+    assert "cycle_id, phase_id, operating_context, evidence_authority" in query
     assert params is not None
     assert query.count("%s") == len(params)
     assert "cycle-42" in params
@@ -324,6 +337,12 @@ def test_condition_measurement_write_preserves_cycle_phase_and_context() -> None
     assert (
         '{"configuration_version": "plc-config-4.2.1", "firmware_version": "servo-fw-3.7"}'
         in params
+    )
+    assert any(
+        isinstance(value, str)
+        and '"schema_version": "linealert.condition-evidence-authority.v1"' in value
+        and '"source_sha256": "' + ("a" * 64) + '"' in value
+        for value in params
     )
 
 

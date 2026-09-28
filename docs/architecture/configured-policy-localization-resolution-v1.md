@@ -57,9 +57,11 @@ The topology authority and policy binding originate from the same loaded configu
 
 ## Historical-policy limitation
 
-The current condition-history schema preserves operating-context JSON such as configuration version, firmware, recipe, cycle, and phase when supplied, but it does not retain the machine-config SHA used by persistence-policy authority.
+The original v1 condition-history rows preserved operating-context JSON such as configuration version, firmware, recipe, cycle, and phase when supplied, but did not retain the machine-config SHA used by persistence-policy authority.
 
-Therefore v1 explicitly reports:
+Newer condition-history writes can retain nullable historian write-time configuration/policy authority provenance, while pre-existing rows remain without it. The configured-localization endpoint in this version does not yet verify or consume that retained authority.
+
+Therefore it still explicitly reports:
 
 ```text
 policy_application.mode =
@@ -77,7 +79,7 @@ This means:
 
 This prevents a later configuration from silently masquerading as historical policy truth.
 
-A future increment may preserve config/policy binding directly alongside condition-history records if historical policy-in-force claims are needed.
+A later verifier can compare the retained per-row authority with the policy applied by localization and only upgrade historical policy equivalence when the selected evidence supports that conclusion.
 
 ## Ad-hoc analysis boundary
 
