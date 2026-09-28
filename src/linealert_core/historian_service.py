@@ -420,6 +420,16 @@ def handler_for(
                             asset_id=query.get("asset_id", [None])[0],
                             relationship_id=query.get("relationship_id", [None])[0],
                             episode_id=query.get("episode_id", [None])[0],
+                            cycle_id=query.get("cycle_id", [None])[0],
+                            phase_id=query.get("phase_id", [None])[0],
+                            from_time=history_time_from_query(
+                                query.get("from_time", [None])[0],
+                                "from_time",
+                            ),
+                            to_time=history_time_from_query(
+                                query.get("to_time", [None])[0],
+                                "to_time",
+                            ),
                         )
                     )
                     return

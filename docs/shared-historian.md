@@ -95,7 +95,7 @@ GET  /api/historian/episodes/{episode_id}
 POST /api/historian/outcomes
 ```
 
-`/api/history/conditions` accepts optional `asset_id`, `relationship_id`, `episode_id`, and bounded `limit` query parameters. `/api/history/functional-temporal` accepts `asset_id`, `episode_id`, `cycle_id`, `phase_id`, `record_kind`, inclusive timezone-aware `from_time` / `to_time`, and bounded `limit` filters. Functional-temporal history reads report explicit `truncated` state by querying one row beyond the requested limit; a truncated selection means older matching records were omitted.
+`/api/history/conditions` accepts `asset_id`, `relationship_id`, `episode_id`, `cycle_id`, `phase_id`, inclusive timezone-aware `from_time` / `to_time`, and bounded `limit` filters. Condition-history reads now query one row beyond the requested limit and report explicit `truncated` / `older_matching_records_omitted` state. `/api/history/functional-temporal` accepts `asset_id`, `episode_id`, `cycle_id`, `phase_id`, `record_kind`, inclusive timezone-aware `from_time` / `to_time`, and bounded `limit` filters with the same visible truncation rule.
 
 The read-only `/api/history/functional-temporal/compare` endpoint accepts one exact asset plus separately prefixed `reference_*` and `selected_*` selection fields. Each side must supply an explicit label and a bounded episode, cycle, or timezone-aware time window. The endpoint executes the governed historian selector and commissioned-vs-selected comparator; it does not infer which record set should be treated as commissioned truth.
 

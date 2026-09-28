@@ -37,6 +37,14 @@ from .causal_emulator import (
     EmulatorRun,
     LaneBDegradationEmulator,
 )
+from .condition_history_selection import (
+    ConditionHistorianSelector,
+    ConditionHistorySelection,
+    ConditionHistorySelectionError,
+    ConditionHistorySelectionSpec,
+    ConditionLocalizationHandoffDisposition,
+    SelectedConditionLocalization,
+)
 from .condition_localization import (
     ConditionHistorySample,
     ConditionLocalizationError,
@@ -220,6 +228,11 @@ __all__ = [
     "ComponentDependency",
     "ConditionHistorySample",
     "ConditionLocalizationError",
+    "ConditionHistorianSelector",
+    "ConditionHistorySelection",
+    "ConditionHistorySelectionError",
+    "ConditionHistorySelectionSpec",
+    "ConditionLocalizationHandoffDisposition",
     "ConditionProjectionError",
     "ConditionRuntimeSnapshot",
     "ConditionSignalObservation",
@@ -312,6 +325,7 @@ __all__ = [
     "RunDriftAssessment",
     "SampleEnvelopeState",
     "SelectionHandoffDisposition",
+    "SelectedConditionLocalization",
     "ReplayInputError",
     "ReplaySummary",
     "RelationshipWindowState",
