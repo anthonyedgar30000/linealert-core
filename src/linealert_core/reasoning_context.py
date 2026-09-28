@@ -110,8 +110,15 @@ class ReasoningContextRequest:
                     self.current_configuration_version,
                 ),
             )
-        if self.max_items < 1 or self.max_items > 256:
-            raise ReasoningContextError("max_items must be between 1 and 256")
+        for name in (
+            "include_historical",
+            "include_semantic_discovery",
+            "include_generated_context",
+        ):
+            if type(getattr(self, name)) is not bool:
+                raise ReasoningContextError(f"{name} must be a boolean")
+        if type(self.max_items) is not int or self.max_items < 1 or self.max_items > 256:
+            raise ReasoningContextError("max_items must be an integer between 1 and 256")
 
 
 @dataclass(frozen=True, slots=True)
@@ -140,6 +147,9 @@ class EvidenceCandidate:
             object.__setattr__(self, name, _required_text(name, getattr(self, name)))
         if not isinstance(self.content, Mapping) or not self.content:
             raise ReasoningContextError("content must be a non-empty mapping")
+        for name in ("semantic_admitted", "binding_verified", "invalidated"):
+            if type(getattr(self, name)) is not bool:
+                raise ReasoningContextError(f"{name} must be a boolean")
         if not self.provenance:
             raise ReasoningContextError("provenance must contain at least one source reference")
         normalized_provenance = tuple(
@@ -191,10 +201,10 @@ def reasoning_context_request_from_dict(payload: Mapping[str, Any]) -> Reasoning
         asset_id=payload.get("asset_id", ""),
         purpose=payload.get("purpose", ""),
         current_configuration_version=payload.get("current_configuration_version"),
-        include_historical=bool(payload.get("include_historical", True)),
-        include_semantic_discovery=bool(payload.get("include_semantic_discovery", True)),
-        include_generated_context=bool(payload.get("include_generated_context", True)),
-        max_items=int(payload.get("max_items", 32)),
+        include_historical=payload.get("include_historical", True),
+        include_semantic_discovery=payload.get("include_semantic_discovery", True),
+        include_generated_context=payload.get("include_generated_context", True),
+        max_items=payload.get("max_items", 32),
     )
 
 
@@ -228,9 +238,9 @@ def evidence_candidate_from_dict(payload: Mapping[str, Any]) -> EvidenceCandidat
         retrieval_method=method,
         content=content,
         provenance=tuple(provenance),
-        semantic_admitted=payload.get("semantic_admitted") is True,
-        binding_verified=payload.get("binding_verified") is True,
-        invalidated=payload.get("invalidated") is True,
+        semantic_admitted=payload.get("semantic_admitted", False),
+        binding_verified=payload.get("binding_verified", False),
+        invalidated=payload.get("invalidated", False),
         superseded_by=payload.get("superseded_by"),
         configuration_version=payload.get("configuration_version"),
         observed_at=payload.get("observed_at"),

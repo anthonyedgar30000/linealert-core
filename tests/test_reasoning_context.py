@@ -2,14 +2,19 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from linealert_core.reasoning_context import (
     ContextUse,
     EvidenceCandidate,
     EvidenceRole,
+    ReasoningContextError,
     ReasoningContextRequest,
     RetrievalMethod,
     assemble_reasoning_context,
+    evidence_candidate_from_dict,
     main,
+    reasoning_context_request_from_dict,
 )
 
 
@@ -236,6 +241,38 @@ def test_context_limit_refuses_excess_candidates() -> None:
 
     assert bundle["counts"]["evidence_count"] == 1
     assert "RETRIEVAL.CONTEXT_LIMIT_REACHED" in _refusal_codes(bundle)
+
+
+def test_request_parser_rejects_string_boolean() -> None:
+    with pytest.raises(ReasoningContextError, match="include_historical must be a boolean"):
+        reasoning_context_request_from_dict(
+            {
+                "asset_id": "LABELER-DEMO-01",
+                "purpose": "test",
+                "include_historical": "false",
+            }
+        )
+
+
+def test_candidate_parser_rejects_string_boolean() -> None:
+    with pytest.raises(ReasoningContextError, match="invalidated must be a boolean"):
+        evidence_candidate_from_dict(
+            {
+                "evidence_id": "obs-bad-bool",
+                "asset_id": "LABELER-DEMO-01",
+                "source_id": "historian",
+                "source_class": "historian_record",
+                "evidence_role": "CURRENT_OBSERVATION",
+                "retrieval_method": "DETERMINISTIC_SCOPE",
+                "content": {"value": 1},
+                "provenance": ["timescale:condition_measurements:obs-bad-bool"],
+                "semantic_admitted": True,
+                "binding_verified": True,
+                "invalidated": "false",
+                "configuration_version": "cfg-2",
+                "authority_class": "OBSERVED_EVIDENCE",
+            }
+        )
 
 
 def test_cli_builds_json_bundle(tmp_path, capsys) -> None:
