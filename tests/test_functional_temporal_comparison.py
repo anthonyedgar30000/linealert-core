@@ -419,3 +419,11 @@ def test_empty_reference_and_selected_are_explicit_refusals() -> None:
     assert comparator.compare(selected, ()).disposition is (
         ComparisonDisposition.REFUSED_EMPTY_SELECTED
     )
+
+
+def test_comparison_types_are_exported_from_public_api() -> None:
+    import linealert_core
+
+    assert linealert_core.FunctionalTemporalComparator is FunctionalTemporalComparator
+    assert linealert_core.ComparisonDisposition is ComparisonDisposition
+    assert linealert_core.ComparisonPointDisposition is ComparisonPointDisposition
