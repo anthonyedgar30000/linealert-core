@@ -30,16 +30,17 @@ The UI never connects directly to PostgreSQL. Next.js proxies the historian API 
 
 ## Stored evidence classes
 
-The local schema keeps three classes separate:
+The local schema keeps four classes separate:
 
 1. `machine_observations` — published telemetry/observation snapshots and their original evidence payload;
-2. `condition_measurements` — admitted measured relationships such as `LabelFeedCommand -> LabelAtPeelPoint`, including envelope, correlation, topology, source mode, quality, and clock evidence;
-3. `operational_outcomes` — operator/maintenance verification records associated with an episode.
+2. `condition_measurements` — admitted measured relationships such as `LabelFeedCommand -> LabelAtPeelPoint`, including envelope, correlation, topology, source mode, quality, clock evidence, and optional cycle/phase operating context;
+3. `functional_temporal_evidence` — append-only phase, transition, guard, and invariant evaluations with exact machine/configuration context, temporal coverage, evidence validity, and epistemic state;
+4. `operational_outcomes` — operator/maintenance verification records associated with an episode.
 
 This separation is intentional:
 
 ```text
-raw observation != interpreted condition != human outcome
+raw observation != relationship measurement != phase evidence != human outcome
 ```
 
 A shared timeline preserves association and sequence. It does not by itself establish causation or predictive validity.
@@ -75,8 +76,10 @@ The sidecar serves:
 ```text
 GET  http://127.0.0.1:8767/api/status
 GET  http://127.0.0.1:8767/api/history/conditions
+GET  http://127.0.0.1:8767/api/history/functional-temporal
 GET  http://127.0.0.1:8767/api/history/observations
 GET  http://127.0.0.1:8767/api/history/episodes/{episode_id}
+POST http://127.0.0.1:8767/api/functional-temporal
 POST http://127.0.0.1:8767/api/outcomes
 ```
 
@@ -89,7 +92,11 @@ GET  /api/historian/episodes/{episode_id}
 POST /api/historian/outcomes
 ```
 
-`/api/history/conditions` accepts optional `asset_id`, `relationship_id`, `episode_id`, and bounded `limit` query parameters.
+`/api/history/conditions` accepts optional `asset_id`, `relationship_id`, `episode_id`, and bounded `limit` query parameters. `/api/history/functional-temporal` accepts `asset_id`, `episode_id`, `cycle_id`, `phase_id`, `record_kind`, and bounded `limit` filters.
+
+Functional-temporal writes require exact `asset_id`, component/profile identity, operating mode, configuration version, firmware version, calibration ID, and sampling profile. Recipe/product identity and context tags are preserved when supplied. A transition record additionally requires exact from/to phase IDs, transition ID, trigger event ID, and transition disposition.
+
+The persistence boundary accepts only already-evaluated phase evidence. The current evidence bridge does **not** infer or synthesize functional-temporal records from raw PLC values in this increment; deterministic runtime projection remains separate work.
 
 ## Current demo episode
 

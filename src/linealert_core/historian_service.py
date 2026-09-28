@@ -19,7 +19,19 @@ from urllib.parse import parse_qs, unquote, urlparse
 from urllib.request import Request, urlopen
 
 from .condition_projection import ConditionSignalObservation
-from .historian import HistorianError, TimescaleHistorian
+from .functional_temporal import (
+    EpistemicState,
+    EvidenceValidity,
+    TemporalCoverage,
+    TransitionDisposition,
+)
+from .historian import (
+    FunctionalTemporalHistoryRecord,
+    FunctionalTemporalRecordKind,
+    HistorianError,
+    HistorianOperatingContext,
+    TimescaleHistorian,
+)
 from .live_condition import LiveClockEvidence, LiveConditionMeasurement
 
 
@@ -120,6 +132,117 @@ def measurement_from_payload(raw: dict[str, Any]) -> LiveConditionMeasurement:
     return LiveConditionMeasurement(observation=observation, clock_evidence=clock)
 
 
+def functional_temporal_record_from_payload(
+    raw: dict[str, Any],
+) -> FunctionalTemporalHistoryRecord:
+    """Validate one already-evaluated functional-temporal historian payload."""
+
+    context_raw = raw.get("operating_context")
+    if not isinstance(context_raw, dict):
+        raise ValueError("functional-temporal record requires operating_context")
+    required_context = (
+        "asset_id",
+        "component_id",
+        "profile_id",
+        "operating_mode",
+        "configuration_version",
+        "firmware_version",
+        "calibration_id",
+        "sampling_profile_id",
+    )
+    missing_context = [
+        name for name in required_context if not str(context_raw.get(name, "")).strip()
+    ]
+    if missing_context:
+        raise ValueError("operating_context missing fields: " + ", ".join(missing_context))
+
+    required = (
+        "observed_at",
+        "record_id",
+        "episode_id",
+        "cycle_id",
+        "record_kind",
+        "epistemic_state",
+        "evidence_validity",
+        "temporal_coverage",
+        "source_id",
+    )
+    missing = [name for name in required if not str(raw.get(name, "")).strip()]
+    if missing:
+        raise ValueError("functional-temporal record missing fields: " + ", ".join(missing))
+    try:
+        observed_at = datetime.fromisoformat(str(raw["observed_at"]).replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError("observed_at must be ISO 8601") from exc
+
+    context_tags = context_raw.get("context_tags", {})
+    if not isinstance(context_tags, dict):
+        raise ValueError("operating_context.context_tags must be an object")
+    clock_evidence = raw.get("clock_evidence", {})
+    details = raw.get("details", {})
+    if not isinstance(clock_evidence, dict) or not isinstance(details, dict):
+        raise ValueError("clock_evidence and details must be objects")
+
+    evidence_ids = raw.get("evidence_ids", [])
+    reasons = raw.get("reasons", [])
+    if not isinstance(evidence_ids, list) or not isinstance(reasons, list):
+        raise ValueError("evidence_ids and reasons must be arrays")
+    if any(not isinstance(item, str) or not item.strip() for item in evidence_ids):
+        raise ValueError("evidence_ids must contain non-empty strings")
+    if any(not isinstance(item, str) or not item.strip() for item in reasons):
+        raise ValueError("reasons must contain non-empty strings")
+    try:
+        return FunctionalTemporalHistoryRecord(
+            observed_at=observed_at,
+            record_id=raw["record_id"],
+            episode_id=raw["episode_id"],
+            cycle_id=raw["cycle_id"],
+            record_kind=FunctionalTemporalRecordKind(raw["record_kind"]),
+            state=EpistemicState(raw["epistemic_state"]),
+            validity=EvidenceValidity(raw["evidence_validity"]),
+            coverage=TemporalCoverage(raw["temporal_coverage"]),
+            source_id=raw["source_id"],
+            operating_context=HistorianOperatingContext(
+                asset_id=context_raw["asset_id"],
+                component_id=context_raw["component_id"],
+                profile_id=context_raw["profile_id"],
+                operating_mode=context_raw["operating_mode"],
+                configuration_version=context_raw["configuration_version"],
+                firmware_version=context_raw["firmware_version"],
+                calibration_id=context_raw["calibration_id"],
+                sampling_profile_id=context_raw["sampling_profile_id"],
+                recipe_id=_optional_text(context_raw.get("recipe_id")),
+                product_id=_optional_text(context_raw.get("product_id")),
+                context_tags=context_tags,
+            ),
+            phase_id=_optional_text(raw.get("phase_id")),
+            transition_id=_optional_text(raw.get("transition_id")),
+            from_phase_id=_optional_text(raw.get("from_phase_id")),
+            to_phase_id=_optional_text(raw.get("to_phase_id")),
+            trigger_event_id=_optional_text(raw.get("trigger_event_id")),
+            requirement_id=_optional_text(raw.get("requirement_id")),
+            transition_disposition=(
+                TransitionDisposition(raw["transition_disposition"])
+                if raw.get("transition_disposition") is not None
+                else None
+            ),
+            evidence_ids=tuple(evidence_ids),
+            reasons=tuple(reasons),
+            clock_evidence=clock_evidence,
+            details=details,
+        )
+    except (HistorianError, ValueError) as exc:
+        raise ValueError(str(exc)) from exc
+
+
+def _optional_text(value: Any) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError("optional identity fields must be strings when supplied")
+    return value if value.strip() else None
+
+
 def persist_published_evidence(
     source_base_url: str,
     historian: TimescaleHistorian,
@@ -141,10 +264,16 @@ def persist_published_evidence(
         if isinstance(signals, dict) and isinstance(signals.get("observations"), list):
             observations = [item for item in signals["observations"] if isinstance(item, dict)]
     for raw in observations:
+        operating_context = raw.get("operating_context")
+        if operating_context is not None and not isinstance(operating_context, dict):
+            raise ValueError("condition operating_context must be an object")
         historian.record_condition_measurement(
             measurement_from_payload(raw),
             episode_id=episode_id,
             source_mode=source_mode,
+            cycle_id=_optional_text(raw.get("cycle_id")),
+            phase_id=_optional_text(raw.get("phase_id")),
+            operating_context=operating_context,
         )
     status.update(
         connected=True,
@@ -224,6 +353,18 @@ def handler_for(
                         )
                     )
                     return
+                if request.path == "/api/history/functional-temporal":
+                    self._send_json(
+                        historian.functional_temporal_history(
+                            limit=limit,
+                            asset_id=query.get("asset_id", [None])[0],
+                            episode_id=query.get("episode_id", [None])[0],
+                            cycle_id=query.get("cycle_id", [None])[0],
+                            phase_id=query.get("phase_id", [None])[0],
+                            record_kind=query.get("record_kind", [None])[0],
+                        )
+                    )
+                    return
                 episode_prefix = "/api/history/episodes/"
                 if request.path.startswith(episode_prefix):
                     episode_id = unquote(request.path[len(episode_prefix) :])
@@ -237,7 +378,8 @@ def handler_for(
                 self._send_json({"error": str(exc)}, status_code=503)
 
         def do_POST(self) -> None:  # noqa: N802
-            if urlparse(self.path).path != "/api/outcomes":
+            request_path = urlparse(self.path).path
+            if request_path not in {"/api/outcomes", "/api/functional-temporal"}:
                 self._send_json({"error": "not found"}, status_code=404)
                 return
             try:
@@ -245,7 +387,24 @@ def handler_for(
                 raw = self.rfile.read(length)
                 payload = json.loads(raw.decode("utf-8"))
                 if not isinstance(payload, dict):
-                    raise ValueError("outcome body must be a JSON object")
+                    raise ValueError("request body must be a JSON object")
+                if request_path == "/api/functional-temporal":
+                    record = functional_temporal_record_from_payload(payload)
+                    persisted = historian.record_functional_temporal_evidence(record)
+                    self._send_json(
+                        {
+                            "schema_version": ("linealert.historian.functional-temporal-write.v1"),
+                            "persisted": True,
+                            "record": persisted,
+                            "claim_boundary": (
+                                "Persisted phase and requirement evidence does not by itself "
+                                "prove physical root cause, verified physical state, or "
+                                "authorized equipment action."
+                            ),
+                        },
+                        status_code=201,
+                    )
+                    return
                 outcome = historian.record_outcome(payload)
                 self._send_json(
                     {
