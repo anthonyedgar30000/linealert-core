@@ -16,15 +16,19 @@ TRANSACTION_INVENTORY = (
     / "current-dependency-and-transaction-inventory.md"
 )
 CI_WORKFLOW = PROJECT_ROOT / ".github" / "workflows" / "ci.yml"
+SPEEDWAY_SCOPE = (
+    PROJECT_ROOT / "docs" / "architecture" / "speedway-service-workflow-scope-v1.md"
+)
 
 PR37_HEAD = "fc22177e1b855fd6f416f648330cd3416215a96c"
 PR37_MERGE = "97256907cd428a8a0ba3dfb7d4020fa19a2485ee"
 PR38_HEAD = "0d5d8180a5edffaeca8a9822800d7e729ef96327"
 PR38_MERGE = "06f795e760c7ad360bc51e264f8c55238a2a60da"
 PR114_MERGE = "4037c2c0bcadce3e3e6e414735c0045b65db6027"
-CURRENT_MAIN = "d4f26be57d87258ea92d61f4f11db2dc25ef1a0f"
-CURRENT_TREE = "1416286f085ac7340c0442779abb8effb5367669"
+CURRENT_MAIN = "13d57e81164c28918d9959874348b498cb3b45e2"
+CURRENT_TREE = "9ab4f7b25e19d27482d5a9a5d78dd4f76006d00b"
 PR150_HEAD = "d300af099fe493f5e6c727c66f2f0371d2ccbf86"
+PR152_HEAD = "6d7d284008ca7e8ee1a7f4d03a67cdba2a79f87"
 
 
 def load_project_state() -> dict[str, Any]:
@@ -46,7 +50,12 @@ def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
     assert policy["state_only_merge_requires_immediate_self_sync"] is False
     assert policy["publication_pr_self_reference_required"] is False
     assert "substantive external lifecycle" in policy["rule"]
-    assert "PR #150" in policy["current_correction_reason"]
+    assert "initial commercial product scope changed materially" in (
+        policy["current_correction_reason"]
+    )
+    assert "Speedway service/maintenance technicians" in (
+        policy["current_correction_reason"]
+    )
 
     observation = state["live_observation"]
     assert observation["default_branch_head"] == CURRENT_MAIN
@@ -55,9 +64,9 @@ def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
     assert observation["active_sync_pull_request"] is None
     assert observation["open_issues"] == [31]
     assert observation["latest_merged_pull_request"] == {
-        "pull_request": 150,
-        "title": "Add live Reasoning Node Timescale acceptance",
-        "source_head": PR150_HEAD,
+        "pull_request": 152,
+        "title": "Add read-only Reasoning Inputs frontend",
+        "source_head": PR152_HEAD,
         "merge_commit": CURRENT_MAIN,
     }
     assert observation["recently_closed_issues"]["23"] == {
@@ -71,16 +80,15 @@ def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
     assert observation["visibility"]["status"] == "verified_public"
 
     ci = observation["main_ci"]
-    assert ci["verification_scope"] == "latest_verified_pull_request_head"
-    assert ci["pull_request"] == 150
-    assert ci["run_id"] == 36482787357
-    assert ci["head_sha"] == PR150_HEAD
+    assert ci["verification_scope"] == "merged_main_push"
+    assert ci["pull_request"] == 152
+    assert ci["run_id"] == 36485473903
+    assert ci["head_sha"] == CURRENT_MAIN
     assert ci["merge_commit"] == CURRENT_MAIN
     assert ci["conclusion"] == "success"
     assert ci["jobs"] == ["test (3.11)", "test (3.12)", "ui-build"]
-    assert ci["merge_commit_ci"] == (
-        "not_observed_via_connected_pr_run_endpoint"
-    )
+    assert ci["checkout_provenance"] == "literal_push_sha"
+    assert ci["merge_commit_ci"] == "verified_success"
 
     pages = observation["public_pages"]
     assert pages["status"] == (
@@ -215,6 +223,68 @@ def test_pr37_and_pr38_lifecycle_evidence_is_preserved() -> None:
     assert "not_observable" in pr38["classification"]
 
 
+
+def test_initial_commercial_scope_is_speedway_service_workflow() -> None:
+    state = load_project_state()
+    scope = state["product_scope"]
+
+    assert scope["scope_version"] == "speedway_service_workflow_v1"
+    assert scope["status"] == "authoritative_initial_commercial_scope"
+
+    user = scope["primary_user"]
+    assert user["role"] == "speedway_service_maintenance_technician"
+    assert user["organization_context"] == "Speedway"
+    assert user["plant_operator_required_as_linealert_user"] is False
+    assert user["plant_internal_maintenance_required_as_linealert_user"] is False
+
+    workflow = scope["service_case_workflow"]
+    assert workflow[0] == "service_call_received"
+    assert "identify_first_detected_departure_if_supported" in workflow
+    assert "technician_requests_targeted_plant_context" in workflow
+    assert "produce_bounded_service_evidence_package" in workflow
+
+    departure = scope["first_detected_departure"]
+    assert departure["requires_retained_evidence"] is True
+    assert departure["temporal_precedence_confers_causation"] is False
+    assert "root_cause" in departure["not_equivalent_to"]
+
+    plant = scope["plant_context_strategy"]
+    assert plant["plant_people_role"] == "external_context_and_evidence_source"
+    assert plant["direct_cmms_integration_required_for_v1"] is False
+    assert plant["reported_context_default_classification"] == "plant_reported_context"
+    assert plant["reported_context_is_verified_source_record"] is False
+    for field in {
+        "reported_event_time_or_window",
+        "entered_at",
+        "entered_by",
+        "reported_source",
+        "original_wording_or_bounded_summary",
+        "source_verification_state",
+        "asset_or_process_scope",
+    }:
+        assert field in plant["manual_entry_must_preserve"]
+
+    ui = scope["initial_ui_direction"]
+    assert ui["target_primary_surface"] == "Speedway Service Workspace"
+    assert ui["current_plant_canvas"] == (
+        "legacy_synthetic_demo_not_initial_commercial_target"
+    )
+    assert ui["customer_facing_operator_workflow"] == "deferred"
+
+    assert "direct_client_cmms_integration" in scope["deferred_from_initial_scope"]
+    assert "equipment_control" in scope["deferred_from_initial_scope"]
+
+    boundaries = scope["boundaries"]
+    assert "first_detected_departure != root_cause" in boundaries
+    assert "plant_reported_context != verified_source_record" in boundaries
+    assert "technician_entry != direct_system_observation" in boundaries
+
+    architecture = SPEEDWAY_SCOPE.read_text(encoding="utf-8")
+    assert "Speedway service / maintenance technician" in architecture
+    assert "plant_reported_context != verified_source_record" in architecture
+    assert "Temporal precedence" in architecture
+
+
 def test_current_demo_boundaries_include_investigation_and_maintenance() -> None:
     state = load_project_state()
     demo = state["current_demo_reality"]
@@ -222,6 +292,9 @@ def test_current_demo_boundaries_include_investigation_and_maintenance() -> None
     assert demo["maintenance_lifecycle"]["synthetic_post_maintenance_target_containers"] == 10
     assert demo["trial_discipline"]["automatic_restore"] is False
     assert demo["trial_discipline"]["stack_unverified_changes"] is False
+    assert "not the initial commercial LineAlert user workflow" in (
+        demo["product_scope_relationship"]
+    )
 
     investigation = demo["investigation_workspace"]
     assert investigation["state"] == (
@@ -368,6 +441,9 @@ def test_publication_and_readme_guidance_remain_current() -> None:
     assert "Issue #27 defines the risk-tiered workflow" in readme
     assert "Issue #15 acceptance evidence exists" not in readme
     assert "disposable Stage 1 simulator exception" in readme
+    assert "LineAlert v1 is centered on Speedway service / maintenance technicians" in readme
+    assert "Direct client CMMS integration is not required for v1" in readme
+    assert "First detected departure is not root-cause proof" in readme
 
     lineage = LINEAGE_GUIDANCE.read_text(encoding="utf-8")
     assert "green_ci != authorized_merge" in lineage

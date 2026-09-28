@@ -1,5 +1,13 @@
 # LineAlert Core
 
+## Initial commercial scope
+
+LineAlert v1 is centered on Speedway service / maintenance technicians responding to equipment service calls. The initial product workflow reconstructs the available pre-incident evidence window, identifies the earliest defensible departure from expected behavior when the retained evidence supports one, makes missing discriminating context explicit, and helps the technician preserve a bounded service evidence package.
+
+Plant operators and plant internal-maintenance staff are not required LineAlert users in this initial scope. Plant CMMS records, operator observations, maintenance notes, historian data, telemetry, and OEM/commissioned references may instead act as evidence or context sources. Direct client CMMS integration is not required for v1: a Speedway technician may request a targeted time window from the plant and manually record returned context with explicit provenance and source-verification state.
+
+First detected departure is not root-cause proof. Plant-reported context is not silently promoted to a verified source record. Temporal precedence does not establish causation, and a LineAlert recommendation does not authorize an equipment action. See `docs/architecture/speedway-service-workflow-scope-v1.md` for the current product boundary.
+
 For the live read-only Microsoft OPC PLC dashboard lab, see
 [docs/opcua-local-demo.md](docs/opcua-local-demo.md).
 

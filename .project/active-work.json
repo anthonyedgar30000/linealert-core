@@ -12,25 +12,25 @@
   "updated_on": "2026-09-28",
   "state_model": {
     "record_type": "repository_coordination_snapshot",
-    "captured_from_main": "d4f26be57d87258ea92d61f4f11db2dc25ef1a0f",
+    "captured_from_main": "13d57e81164c28918d9959874348b498cb3b45e2",
     "current_reality_source": "live_github_and_explicit_user_direction",
     "semantics": "This is a time-bounded coordination snapshot. Live GitHub lifecycle, exact current branch head, CI, deployment, equipment documentation, and equipment evidence supersede cached claims.",
     "publication_policy": {
       "state_only_merge_requires_immediate_self_sync": false,
       "publication_pr_self_reference_required": false,
       "rule": "A state-only publication does not require another pull request merely to record its own merge. Create a corrective sync only when a substantive external lifecycle, authority, deployment, equipment, or scope fact changes or contradicts the published snapshot.",
-      "current_correction_reason": "The September 10 snapshot still described PR #115 as active. Live GitHub now shows PR #115 merged and repository reality advanced through PR #150, including persisted historian authority, bounded clock evidence, the deterministic Reasoning Node context bundle, read-only historian retrieval, clock-step/coverage gates, and live local Timescale acceptance. This corrective sync updates aggregate coordination state while preserving older PR 37/38 evidence as history."
+      "current_correction_reason": "The initial commercial product scope changed materially after PR #152: LineAlert v1 is now centered on Speedway service/maintenance technicians, with plant personnel and plant systems treated as evidence sources rather than required LineAlert end users. This snapshot records that product-scope reset before service-case runtime or UI work proceeds."
     }
   },
   "live_observation": {
-    "observed_at": "2026-09-28T21:06:27Z",
+    "observed_at": "2026-09-28T21:58:08Z",
     "default_branch": "main",
-    "default_branch_head": "d4f26be57d87258ea92d61f4f11db2dc25ef1a0f",
-    "default_branch_tree": "1416286f085ac7340c0442779abb8effb5367669",
+    "default_branch_head": "13d57e81164c28918d9959874348b498cb3b45e2",
+    "default_branch_tree": "9ab4f7b25e19d27482d5a9a5d78dd4f76006d00b",
     "latest_functional_merge": {
-      "pull_request": 150,
-      "title": "Add live Reasoning Node Timescale acceptance",
-      "merge_commit": "d4f26be57d87258ea92d61f4f11db2dc25ef1a0f"
+      "pull_request": 152,
+      "title": "Add read-only Reasoning Inputs frontend",
+      "merge_commit": "13d57e81164c28918d9959874348b498cb3b45e2"
     },
     "open_pull_requests_before_branch_creation": [],
     "active_sync_pull_request": null,
@@ -55,19 +55,19 @@
       "status": "verified_public"
     },
     "main_ci": {
-      "verification_scope": "latest_verified_pull_request_head",
-      "pull_request": 150,
-      "run_id": 36482787357,
-      "head_sha": "d300af099fe493f5e6c727c66f2f0371d2ccbf86",
-      "merge_commit": "d4f26be57d87258ea92d61f4f11db2dc25ef1a0f",
+      "verification_scope": "merged_main_push",
+      "pull_request": 152,
+      "run_id": 36485473903,
+      "head_sha": "13d57e81164c28918d9959874348b498cb3b45e2",
+      "merge_commit": "13d57e81164c28918d9959874348b498cb3b45e2",
       "conclusion": "success",
       "jobs": [
         "test (3.11)",
         "test (3.12)",
         "ui-build"
       ],
-      "checkout_provenance": "literal_pull_request_head_sha",
-      "merge_commit_ci": "not_observed_via_connected_pr_run_endpoint"
+      "checkout_provenance": "literal_push_sha",
+      "merge_commit_ci": "verified_success"
     },
     "public_pages": {
       "status": "previously_observed_deployed_not_reverified_in_2026_09_28_sync",
@@ -89,10 +89,10 @@
     "equipment_control_path": "not_observed",
     "equipment_documentation": "synthetic demo profiles and planning material observed; no Labeler 2 OEM manual or commissioned machine package observed",
     "latest_merged_pull_request": {
-      "pull_request": 150,
-      "title": "Add live Reasoning Node Timescale acceptance",
-      "source_head": "d300af099fe493f5e6c727c66f2f0371d2ccbf86",
-      "merge_commit": "d4f26be57d87258ea92d61f4f11db2dc25ef1a0f"
+      "pull_request": 152,
+      "title": "Add read-only Reasoning Inputs frontend",
+      "source_head": "6d7d284008ca7e8ee1a7f4d03a67cdba2a79f87",
+      "merge_commit": "13d57e81164c28918d9959874348b498cb3b45e2"
     },
     "recent_repository_increments": [
       {
@@ -144,6 +144,11 @@
         "pull_request": 150,
         "title": "Add live Reasoning Node Timescale acceptance",
         "merge_commit": "d4f26be57d87258ea92d61f4f11db2dc25ef1a0f"
+      },
+      {
+        "pull_request": 152,
+        "title": "Add read-only Reasoning Inputs frontend",
+        "merge_commit": "13d57e81164c28918d9959874348b498cb3b45e2"
       }
     ]
   },
@@ -313,7 +318,8 @@
         "oem_procedure_authority",
         "production_authority"
       ]
-    }
+    },
+    "product_scope_relationship": "The existing Plant Canvas and operator/shift-supervisor workflow remain preserved synthetic demo behavior, but they are not the initial commercial LineAlert user workflow after the Speedway service-scope reset."
   },
   "equipment_and_source_reality": {
     "labeler_2": {
@@ -499,7 +505,10 @@
     "retrieval != diagnosis",
     "semantic_similarity != evidentiary_authority",
     "generated_summary != source_evidence",
-    "clock_evidence_present != clock_synchronization_proven"
+    "clock_evidence_present != clock_synchronization_proven",
+    "first_detected_departure != root_cause",
+    "plant_reported_context != verified_source_record",
+    "technician_entry != direct_system_observation"
   ],
   "reasoning_node_reality": {
     "classification": "controlled_synthetic_local_reasoning_substrate",
@@ -563,5 +572,79 @@
     "production_clock_synchronization_authority": "not_granted",
     "physical_equipment_timing_limits": "not_established",
     "boundary": "Synthetic clock evidence and step-monitor declarations do not establish PLC/SCADA clock truth, physical event ordering, or production timing authority."
+  },
+  "product_scope": {
+    "scope_version": "speedway_service_workflow_v1",
+    "status": "authoritative_initial_commercial_scope",
+    "primary_user": {
+      "role": "speedway_service_maintenance_technician",
+      "organization_context": "Speedway",
+      "plant_operator_required_as_linealert_user": false,
+      "plant_internal_maintenance_required_as_linealert_user": false
+    },
+    "primary_problem": "Help a Speedway technician reconstruct what changed before the incident that caused a service call, preserve the evidence chain, identify the earliest defensible departure from expected behavior, and request the most useful missing plant context.",
+    "service_case_workflow": [
+      "service_call_received",
+      "bind_customer_site_asset_and_reported_symptom",
+      "reconstruct_pre_incident_evidence_window",
+      "identify_first_detected_departure_if_supported",
+      "separate_changed_relationships_from_relationships_that_held",
+      "identify_missing_discriminating_context",
+      "technician_requests_targeted_plant_context",
+      "technician_records_returned_context_with_provenance",
+      "perform_bounded_technician_checks_or_tests",
+      "update_working_explanations_without_claiming_causal_proof",
+      "produce_bounded_service_evidence_package"
+    ],
+    "first_detected_departure": {
+      "role": "earliest_defensible_observed_move_away_from_expected_behavior",
+      "not_equivalent_to": [
+        "root_cause",
+        "fault",
+        "incident_start",
+        "alarm_time"
+      ],
+      "requires_retained_evidence": true,
+      "temporal_precedence_confers_causation": false
+    },
+    "plant_context_strategy": {
+      "plant_people_role": "external_context_and_evidence_source",
+      "plant_systems_role": "external_evidence_source",
+      "v1_cmms_workflow": "Speedway technician requests a targeted time window from the plant and manually records relevant returned CMMS/operator/maintenance context.",
+      "direct_cmms_integration_required_for_v1": false,
+      "manual_entry_must_preserve": [
+        "reported_event_time_or_window",
+        "entered_at",
+        "entered_by",
+        "reported_source",
+        "original_wording_or_bounded_summary",
+        "source_verification_state",
+        "asset_or_process_scope"
+      ],
+      "reported_context_default_classification": "plant_reported_context",
+      "reported_context_is_verified_source_record": false
+    },
+    "initial_ui_direction": {
+      "target_primary_surface": "Speedway Service Workspace",
+      "current_plant_canvas": "legacy_synthetic_demo_not_initial_commercial_target",
+      "current_reasoning_inputs": "supporting_read_only_evidence_surface",
+      "customer_facing_operator_workflow": "deferred"
+    },
+    "deferred_from_initial_scope": [
+      "plant_operator_linealert_workflow",
+      "plant_internal_maintenance_linealert_workflow",
+      "direct_client_cmms_integration",
+      "unrestricted_automatic_diagnosis",
+      "equipment_control",
+      "return_to_service_authority"
+    ],
+    "boundaries": [
+      "first_detected_departure != root_cause",
+      "first_detected_departure != incident_start",
+      "plant_reported_context != verified_source_record",
+      "temporal_precedence != causation",
+      "technician_entry != direct_system_observation",
+      "recommendation != authorized_action"
+    ]
   }
 }
