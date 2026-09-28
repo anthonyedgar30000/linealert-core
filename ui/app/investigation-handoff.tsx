@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 
 import FunctionalTemporalComparison from "./functional-temporal-comparison";
 import styles from "./investigation-handoff.module.css";
+import SustainedDeviation from "./sustained-deviation";
 
 type RuntimeObservation = {
   signal: string;
@@ -592,6 +593,12 @@ export default function InvestigationHandoff() {
         Treat the scenario cards below as candidate checks, not as the explanation for this condition. Improvement in arrival phase or another local metric does not clear the handoff until LineAlert re-measures this original relationship inside its commissioned envelope.
       </p>
       <EpisodeTimeline timeline={episodeTimeline} />
+      <SustainedDeviation
+        key={`${incomingContext.asset}:${incomingContext.relationshipId}:${incomingContext.episodeId}`}
+        assetId={incomingContext.asset}
+        relationshipId={incomingContext.relationshipId}
+        episodeId={incomingContext.episodeId}
+      />
       <FunctionalTemporalComparison
         key={`${incomingContext.asset}:${incomingContext.correlationId ?? ""}`}
         assetId={incomingContext.asset}

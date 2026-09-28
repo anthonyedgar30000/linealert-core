@@ -89,6 +89,7 @@ The UI proxies the shared-history paths through:
 
 ```text
 GET  /api/historian/conditions
+GET  /api/historian/conditions/localize
 GET  /api/historian/functional-temporal
 GET  /api/historian/functional-temporal/compare
 GET  /api/historian/status
