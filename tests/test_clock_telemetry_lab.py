@@ -10,6 +10,7 @@ import pytest
 
 from linealert_core.clock_evidence import assess_clock_drift
 from linealert_core.clock_telemetry_lab import (
+    ClockStepBoundary,
     ClockTelemetryLabAdapter,
     ClockTelemetryLabError,
     load_clock_telemetry_lab,
@@ -212,3 +213,137 @@ def test_resolved_lab_offset_series_yields_drift_and_step_candidates() -> None:
     assert drift.disposition == "DRIFT_CANDIDATE"
     step = assess_clock_drift(project_series((0, 0, 200, 200)), minimum_rate_ppm=10)
     assert step.disposition == "STEP_CANDIDATE"
+
+
+def step_boundary() -> ClockStepBoundary:
+    adapter = load_clock_telemetry_lab(FIXTURE)
+    binding = adapter._bindings["plc-a"]
+    return ClockStepBoundary(
+        boundary_id="lab-step-a-1",
+        binding_id=binding.binding_id,
+        source_id=binding.source_id,
+        clock_id=binding.clock_id,
+        reference_clock_id=binding.reference_clock_id,
+        reference_path=binding.reference_path,
+        earliest_reference=BASE + timedelta(milliseconds=1000),
+        latest_reference=BASE + timedelta(milliseconds=1050),
+        observation_method="SYNTHETIC_STEP_INJECTION",
+    )
+
+
+def test_step_boundary_blocks_old_sample_and_requires_fresh_post_step_measurement() -> None:
+    base = load_clock_telemetry_lab(FIXTURE)
+    boundary = step_boundary()
+    old = ClockTelemetryLabAdapter(tuple(base._bindings.values()), base._samples, (boundary,))
+
+    assert old.project(event("before", "plc-a", "Start", 902)).observation is not None
+    for timestamp_ms in (1001, 1002, 1052, 1202):
+        result = old.project(event(f"blocked-{timestamp_ms}", "plc-a", "Start", timestamp_ms))
+        assert result.observation is None
+        assert result.refusal is not None
+        assert result.refusal.reason_code == "CLOCK.STEP_WINDOW_UNQUALIFIED"
+        assert result.refusal.step_boundary_ids == (boundary.boundary_id,)
+    assert old.project(event("other-source", "scada-b", "End", 1200)).observation is not None
+
+    fresh = replace(
+        base._samples[0],
+        sample_id="lab-offset-a-2",
+        sampled_at_reference=BASE + timedelta(milliseconds=1100),
+        offset_ms=20,
+    )
+    renewed = ClockTelemetryLabAdapter(
+        tuple(base._bindings.values()), (*base._samples, fresh), (boundary,)
+    )
+    result = renewed.project(event("after", "plc-a", "Start", 1220))
+    assert result.refusal is None and result.observation is not None
+    assert result.observation.observed_at_reference == BASE + timedelta(milliseconds=1200)
+    provenance = result.observation.telemetry_provenance
+    assert provenance is not None
+    assert provenance.sample_id == fresh.sample_id
+    assert provenance.last_step_boundary_id == boundary.boundary_id
+    assert provenance.last_step_earliest_reference == boundary.earliest_reference
+    assert provenance.last_step_latest_reference == boundary.latest_reference
+    assert provenance.last_step_observation_method == boundary.observation_method
+
+    consumer = LiveConditionConsumer(
+        LineAlertCore(
+            rules=[
+                TemporalRule(
+                    rule_id="step-delay",
+                    start_event="Start",
+                    end_event="End",
+                    min_delay_seconds=0.1,
+                    max_delay_seconds=0.6,
+                    topology_from="Start",
+                    topology_to="End",
+                )
+            ],
+            topology=TopologyGraph([DependencyEdge("Start", "End")]),
+        ),
+        (
+            TimingConditionBinding(
+                signal_name="step_delay_ms",
+                rule_id="step-delay",
+                semantic="lab_delay",
+                scope="synthetic_lab",
+                max_combined_uncertainty_ms=10,
+            ),
+        ),
+    )
+    first, _ = renewed.annotate(envelope(event("after", "plc-a", "Start", 1220)))
+    second, _ = renewed.annotate(envelope(event("end-after", "scada-b", "End", 1497)))
+    consumer.consume(first)
+    consumed = consumer.consume(second)
+    assert len(consumed.measurements) == 1
+    payload = live_condition_summary_to_dict(consumer.summary())["condition_signals"][
+        "observations"
+    ][0]
+    rebuilt = measurement_from_payload(payload)
+    retained = rebuilt.clock_evidence.interval_assessment.start_observation.telemetry_provenance
+    assert retained == provenance
+    tampered = copy.deepcopy(payload)
+    tampered["clock_evidence"]["interval_assessment"]["start_observation"][
+        "telemetry_provenance"
+    ]["last_step_latest_reference"] = (BASE + timedelta(milliseconds=1300)).isoformat()
+    with pytest.raises(ValueError, match="invalid condition clock"):
+        measurement_from_payload(tampered)
+
+
+def test_step_boundary_identity_and_fixture_validation(tmp_path: Path) -> None:
+    base = load_clock_telemetry_lab(FIXTURE)
+    boundary = step_boundary()
+    bindings = tuple(base._bindings.values())
+    conflict = replace(boundary, reference_path=("lab-reference-1", "other", "clock-plc-a"))
+    result = ClockTelemetryLabAdapter(bindings, base._samples, (conflict,)).project(
+        event("conflict", "plc-a", "Start", 1202)
+    )
+    assert result.refusal is not None
+    assert result.refusal.reason_code == "CLOCK.STEP_BINDING_CONFLICT"
+    assert result.refusal.step_boundary_ids == (conflict.boundary_id,)
+    with pytest.raises(ClockTelemetryLabError, match="unique"):
+        ClockTelemetryLabAdapter(bindings, base._samples, (boundary, boundary))
+
+    raw = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    raw["step_boundaries"] = [
+        {
+            "boundary_id": boundary.boundary_id,
+            "binding_id": boundary.binding_id,
+            "source_id": boundary.source_id,
+            "clock_id": boundary.clock_id,
+            "reference_clock_id": boundary.reference_clock_id,
+            "reference_path": list(boundary.reference_path),
+            "earliest_reference": boundary.earliest_reference.isoformat(),
+            "latest_reference": boundary.latest_reference.isoformat(),
+            "observation_method": boundary.observation_method,
+        }
+    ]
+    fixture = tmp_path / "step.json"
+    fixture.write_text(json.dumps(raw), encoding="utf-8")
+    loaded = load_clock_telemetry_lab(fixture)
+    assert loaded.project(event("later", "plc-a", "Start", 1202)).refusal.reason_code == (
+        "CLOCK.STEP_WINDOW_UNQUALIFIED"
+    )
+    raw["step_boundaries"][0]["source_classification"] = "physical_plant"
+    fixture.write_text(json.dumps(raw), encoding="utf-8")
+    with pytest.raises(ClockTelemetryLabError, match="invalid lab clock fixture"):
+        load_clock_telemetry_lab(fixture)

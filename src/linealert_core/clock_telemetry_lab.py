@@ -147,12 +147,47 @@ class ClockTelemetrySample:
 
 
 @dataclass(frozen=True, slots=True)
+class ClockStepBoundary:
+    """Supplied lab notice that this source clock stepped within a reference-time bracket."""
+
+    boundary_id: str
+    binding_id: str
+    source_id: str
+    clock_id: str
+    reference_clock_id: str
+    reference_path: tuple[str, ...]
+    earliest_reference: datetime
+    latest_reference: datetime
+    observation_method: str
+    source_classification: str = "synthetic_lab_telemetry"
+
+    def __post_init__(self) -> None:
+        for name in (
+            "boundary_id",
+            "binding_id",
+            "source_id",
+            "clock_id",
+            "reference_clock_id",
+            "observation_method",
+        ):
+            _text(getattr(self, name), name)
+        _path(self.reference_path, self.reference_clock_id, self.clock_id)
+        if self.source_classification != "synthetic_lab_telemetry":
+            raise ClockTelemetryLabError("step boundary must be synthetic_lab_telemetry")
+        _time(self.earliest_reference, "earliest_reference")
+        _time(self.latest_reference, "latest_reference")
+        if self.latest_reference < self.earliest_reference:
+            raise ClockTelemetryLabError("step boundary reference bracket is reversed")
+
+
+@dataclass(frozen=True, slots=True)
 class ClockProjectionRefusal:
     event_id: str
     source_id: str
     reason_code: str
     sample_ids: tuple[str, ...]
     retained_uncertainty: str
+    step_boundary_ids: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -165,18 +200,30 @@ class ClockTelemetryLabAdapter:
     """Project only one unambiguous, current lab sample for an exact source."""
 
     def __init__(
-        self, bindings: tuple[ClockSourceBinding, ...], samples: tuple[ClockTelemetrySample, ...]
+        self,
+        bindings: tuple[ClockSourceBinding, ...],
+        samples: tuple[ClockTelemetrySample, ...],
+        step_boundaries: tuple[ClockStepBoundary, ...] = (),
     ) -> None:
         if not bindings or len({b.source_id for b in bindings}) != len(bindings):
             raise ClockTelemetryLabError("one exact binding per source is required")
         if len({s.sample_id for s in samples}) != len(samples):
             raise ClockTelemetryLabError("sample IDs must be unique")
+        if len({b.boundary_id for b in step_boundaries}) != len(step_boundaries):
+            raise ClockTelemetryLabError("step boundary IDs must be unique")
         self._bindings = {b.source_id: b for b in bindings}
+        if any(b.source_id not in self._bindings for b in step_boundaries):
+            raise ClockTelemetryLabError("step boundary needs an exact source binding")
         self._samples = tuple(sorted(samples, key=lambda s: s.sample_id))
+        self._step_boundaries = tuple(sorted(step_boundaries, key=lambda b: b.boundary_id))
 
     @staticmethod
     def _refuse(
-        event: MachineEvent, code: str, samples: tuple[ClockTelemetrySample, ...], detail: str
+        event: MachineEvent,
+        code: str,
+        samples: tuple[ClockTelemetrySample, ...],
+        detail: str,
+        boundaries: tuple[ClockStepBoundary, ...] = (),
     ) -> ClockProjection:
         return ClockProjection(
             None,
@@ -186,6 +233,7 @@ class ClockTelemetryLabAdapter:
                 reason_code=code,
                 sample_ids=tuple(s.sample_id for s in samples),
                 retained_uncertainty=detail,
+                step_boundary_ids=tuple(b.boundary_id for b in boundaries),
             ),
         )
 
@@ -194,6 +242,21 @@ class ClockTelemetryLabAdapter:
         if binding is None:
             return self._refuse(event, "CLOCK.BINDING_MISSING", (), "No lab source clock binding.")
         samples = tuple(s for s in self._samples if s.source_id == event.source_id)
+        boundaries = tuple(b for b in self._step_boundaries if b.source_id == event.source_id)
+        if any(
+            b.binding_id != binding.binding_id
+            or b.clock_id != binding.clock_id
+            or b.reference_clock_id != binding.reference_clock_id
+            or b.reference_path != binding.reference_path
+            for b in boundaries
+        ):
+            return self._refuse(
+                event,
+                "CLOCK.STEP_BINDING_CONFLICT",
+                samples,
+                "Step boundary conflicts with the exact source clock or reference path.",
+                boundaries,
+            )
         if not samples:
             return self._refuse(event, "CLOCK.SAMPLE_MISSING", (), "No source offset sample.")
         identity = (
@@ -218,6 +281,7 @@ class ClockTelemetryLabAdapter:
             )
 
         eligible: list[tuple[ClockTelemetrySample, datetime, float, float, float]] = []
+        blocked: list[tuple[ClockTelemetrySample, tuple[ClockStepBoundary, ...]]] = []
         for sample in samples:
             try:
                 candidate = event.timestamp - timedelta(milliseconds=sample.offset_ms)
@@ -238,10 +302,32 @@ class ClockTelemetryLabAdapter:
                     continue
             except OverflowError:
                 continue
+            lower = candidate - timedelta(milliseconds=uncertainty)
+            upper = candidate + timedelta(milliseconds=uncertainty)
+            crossed = tuple(
+                b
+                for b in boundaries
+                if upper >= b.earliest_reference
+                and (
+                    lower <= b.latest_reference
+                    or sample.sampled_at_reference <= b.latest_reference
+                )
+            )
+            if crossed:
+                blocked.append((sample, crossed))
+                continue
             eligible.append(
                 (sample, candidate, age, uncertainty, uncertainty - sample.uncertainty_ms)
             )
         if not eligible:
+            if blocked:
+                return self._refuse(
+                    event,
+                    "CLOCK.STEP_WINDOW_UNQUALIFIED",
+                    tuple(sample for sample, _ in blocked),
+                    "The event interval touches a step bracket or its sample predates that step.",
+                    tuple({b.boundary_id: b for _, bs in blocked for b in bs}.values()),
+                )
             return self._refuse(
                 event,
                 "CLOCK.SAMPLE_OUTSIDE_VALIDITY",
@@ -256,6 +342,7 @@ class ClockTelemetryLabAdapter:
                 "Multiple source samples qualify; no latest-wins selection is permitted.",
             )
         sample, candidate, age, uncertainty, drift_allowance = eligible[0]
+        lower = candidate - timedelta(milliseconds=uncertainty)
         if sample.synchronization_state != "LOCKED":
             return self._refuse(
                 event,
@@ -263,6 +350,12 @@ class ClockTelemetryLabAdapter:
                 (sample,),
                 "A declared source sample is not in the locked synchronization state.",
             )
+        preceding_steps = tuple(b for b in boundaries if b.latest_reference < lower)
+        last_step = (
+            max(preceding_steps, key=lambda b: (b.latest_reference, b.boundary_id))
+            if preceding_steps
+            else None
+        )
         provenance = ClockTelemetryProvenance(
             sample_id=sample.sample_id,
             binding_id=binding.binding_id,
@@ -281,6 +374,10 @@ class ClockTelemetryLabAdapter:
             maximum_drift_ppm=sample.maximum_drift_ppm,
             drift_allowance_ms=drift_allowance,
             age_seconds=age,
+            last_step_boundary_id=last_step.boundary_id if last_step else None,
+            last_step_earliest_reference=last_step.earliest_reference if last_step else None,
+            last_step_latest_reference=last_step.latest_reference if last_step else None,
+            last_step_observation_method=last_step.observation_method if last_step else None,
         )
         return ClockProjection(
             ClockObservation(
@@ -322,8 +419,9 @@ def load_clock_telemetry_lab(path: str | Path) -> ClockTelemetryLabAdapter:
     if raw.get("classification") != "synthetic_lab_only":
         raise ClockTelemetryLabError("lab fixture must declare synthetic_lab_only")
     bindings_raw, samples_raw = raw.get("bindings"), raw.get("samples")
-    if not isinstance(bindings_raw, list) or not isinstance(samples_raw, list):
-        raise ClockTelemetryLabError("bindings and samples must be arrays")
+    boundaries_raw = raw.get("step_boundaries", [])
+    if not all(isinstance(value, list) for value in (bindings_raw, samples_raw, boundaries_raw)):
+        raise ClockTelemetryLabError("bindings, samples and step_boundaries must be arrays")
     try:
         bindings = tuple(
             ClockSourceBinding(**{**item, "reference_path": tuple(item["reference_path"])})
@@ -340,6 +438,17 @@ def load_clock_telemetry_lab(path: str | Path) -> ClockTelemetryLabAdapter:
             )
             for item in samples_raw
         )
+        boundaries = tuple(
+            ClockStepBoundary(
+                **{
+                    **item,
+                    "reference_path": tuple(item["reference_path"]),
+                    "earliest_reference": datetime.fromisoformat(item["earliest_reference"]),
+                    "latest_reference": datetime.fromisoformat(item["latest_reference"]),
+                }
+            )
+            for item in boundaries_raw
+        )
     except (KeyError, TypeError, ValueError) as exc:
         raise ClockTelemetryLabError("invalid lab clock fixture record") from exc
-    return ClockTelemetryLabAdapter(bindings, samples)
+    return ClockTelemetryLabAdapter(bindings, samples, boundaries)

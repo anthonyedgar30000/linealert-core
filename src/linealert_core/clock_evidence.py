@@ -46,6 +46,10 @@ class ClockTelemetryProvenance:
     maximum_drift_ppm: float
     drift_allowance_ms: float
     age_seconds: float
+    last_step_boundary_id: str | None = None
+    last_step_earliest_reference: datetime | None = None
+    last_step_latest_reference: datetime | None = None
+    last_step_observation_method: str | None = None
 
     def __post_init__(self) -> None:
         for name in (
@@ -90,6 +94,37 @@ class ClockTelemetryProvenance:
                 raise ClockEvidenceError(f"{name} must be finite and non-negative")
         if self.maximum_drift_ppm >= 1_000_000:
             raise ClockEvidenceError("maximum_drift_ppm must be below one million")
+        step_fields = (
+            self.last_step_boundary_id,
+            self.last_step_earliest_reference,
+            self.last_step_latest_reference,
+            self.last_step_observation_method,
+        )
+        if any(field is None for field in step_fields) and not all(
+            field is None for field in step_fields
+        ):
+            raise ClockEvidenceError("step boundary provenance must be complete")
+        if self.last_step_boundary_id is not None:
+            if (
+                not isinstance(self.last_step_boundary_id, str)
+                or not self.last_step_boundary_id.strip()
+                or not isinstance(self.last_step_observation_method, str)
+                or not self.last_step_observation_method.strip()
+            ):
+                raise ClockEvidenceError("step boundary identity and method must be non-empty")
+            boundary_start = self.last_step_earliest_reference
+            boundary_end = self.last_step_latest_reference
+            if (
+                not isinstance(boundary_start, datetime)
+                or boundary_start.tzinfo is None
+                or boundary_start.utcoffset() is None
+                or not isinstance(boundary_end, datetime)
+                or boundary_end.tzinfo is None
+                or boundary_end.utcoffset() is None
+                or boundary_start > boundary_end
+                or self.sampled_at_reference <= boundary_end
+            ):
+                raise ClockEvidenceError("sample must follow the retained step boundary")
 
 
 @dataclass(frozen=True, slots=True)
@@ -226,6 +261,19 @@ def _observation_to_dict(value: ClockObservation) -> dict[str, Any]:
             "drift_allowance_ms": p.drift_allowance_ms,
             "age_seconds": p.age_seconds,
         }
+        if p.last_step_boundary_id is not None:
+            assert p.last_step_earliest_reference is not None
+            assert p.last_step_latest_reference is not None
+            payload["telemetry_provenance"]["last_step_boundary_id"] = p.last_step_boundary_id
+            payload["telemetry_provenance"]["last_step_earliest_reference"] = (
+                p.last_step_earliest_reference.isoformat()
+            )
+            payload["telemetry_provenance"]["last_step_latest_reference"] = (
+                p.last_step_latest_reference.isoformat()
+            )
+            payload["telemetry_provenance"]["last_step_observation_method"] = (
+                p.last_step_observation_method
+            )
     return payload
 
 
@@ -252,6 +300,18 @@ def _provenance_from_dict(raw: Mapping[str, Any]) -> ClockTelemetryProvenance:
             maximum_drift_ppm=raw["maximum_drift_ppm"],
             drift_allowance_ms=raw["drift_allowance_ms"],
             age_seconds=raw["age_seconds"],
+            last_step_boundary_id=raw.get("last_step_boundary_id"),
+            last_step_earliest_reference=(
+                datetime.fromisoformat(raw["last_step_earliest_reference"])
+                if raw.get("last_step_earliest_reference") is not None
+                else None
+            ),
+            last_step_latest_reference=(
+                datetime.fromisoformat(raw["last_step_latest_reference"])
+                if raw.get("last_step_latest_reference") is not None
+                else None
+            ),
+            last_step_observation_method=raw.get("last_step_observation_method"),
         )
     except (KeyError, TypeError, ValueError) as exc:
         raise ClockEvidenceError("invalid retained clock telemetry provenance") from exc
