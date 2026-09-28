@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 
+import FunctionalTemporalComparison from "./functional-temporal-comparison";
 import styles from "./investigation-handoff.module.css";
 
 type RuntimeObservation = {
@@ -591,6 +592,11 @@ export default function InvestigationHandoff() {
         Treat the scenario cards below as candidate checks, not as the explanation for this condition. Improvement in arrival phase or another local metric does not clear the handoff until LineAlert re-measures this original relationship inside its commissioned envelope.
       </p>
       <EpisodeTimeline timeline={episodeTimeline} />
+      <FunctionalTemporalComparison
+        key={`${incomingContext.asset}:${incomingContext.correlationId ?? ""}`}
+        assetId={incomingContext.asset}
+        selectedCycleHint={incomingContext.correlationId}
+      />
       {verification.state !== "idle" && (
         <div className={`${styles.verificationResult} ${styles[`verification_${verification.state}`]}`} role="status">
           {verification.state === "checking" && <><span>VERIFYING ORIGINAL RELATIONSHIP</span><b>Reading the latest admitted condition measurement…</b></>}

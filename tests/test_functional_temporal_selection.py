@@ -15,6 +15,7 @@ from linealert_core.functional_temporal_selection import (
     FunctionalTemporalSelectionError,
     FunctionalTemporalSelectionSpec,
     SelectionHandoffDisposition,
+    functional_temporal_selected_comparison_to_dict,
 )
 from linealert_core.historian import (
     FunctionalTemporalHistoryRecord,
@@ -299,3 +300,95 @@ def test_selection_types_are_exported_from_public_api() -> None:
     assert linealert_core.FunctionalTemporalHistorianSelector is FunctionalTemporalHistorianSelector
     assert linealert_core.FunctionalTemporalSelectionSpec is FunctionalTemporalSelectionSpec
     assert linealert_core.SelectionHandoffDisposition is SelectionHandoffDisposition
+
+
+def test_selected_comparison_serializer_preserves_governed_result() -> None:
+    reference = guard_record(
+        record_id="ref",
+        observed_at=BASE,
+        cycle_id="ref-cycle",
+    )
+    selected = guard_record(
+        record_id="selected",
+        observed_at=BASE + timedelta(days=1),
+        cycle_id="selected-cycle",
+        state=EpistemicState.VIOLATED,
+    )
+    selector = FunctionalTemporalHistorianSelector(
+        FakeSelectionRepository(
+            [
+                ((reference,), False),
+                ((selected,), False),
+            ]
+        )
+    )
+    result = selector.compare(
+        FunctionalTemporalSelectionSpec(
+            label="Reference cycle ref-cycle",
+            asset_id="LABELER-DEMO-01",
+            cycle_id="ref-cycle",
+        ),
+        FunctionalTemporalSelectionSpec(
+            label="Selected cycle selected-cycle",
+            asset_id="LABELER-DEMO-01",
+            cycle_id="selected-cycle",
+        ),
+    )
+
+    payload = functional_temporal_selected_comparison_to_dict(result)
+
+    assert payload["schema_version"] == ("linealert.functional-temporal-selected-comparison.v1")
+    assert payload["disposition"] == "READY"
+    comparison = payload["comparison"]
+    assert isinstance(comparison, dict)
+    assert comparison["disposition"] == "ADMITTED"
+    assert comparison["changed_count"] == 1
+    assert comparison["reference_label"] == "Reference cycle ref-cycle"
+    assert comparison["selected_label"] == "Selected cycle selected-cycle"
+    points = comparison["points"]
+    assert isinstance(points, list)
+    assert points[0]["disposition"] == "CHANGED"
+    assert points[0]["reference_state"] == "VERIFIED"
+    assert points[0]["selected_state"] == "VIOLATED"
+    assert payload["reference"]["cycle_id"] == "ref-cycle"
+    assert payload["selected"]["cycle_id"] == "selected-cycle"
+
+
+def test_selected_comparison_serializer_preserves_selection_refusal() -> None:
+    reference = guard_record(
+        record_id="ref",
+        observed_at=BASE,
+        cycle_id="ref-cycle",
+    )
+    selected = guard_record(
+        record_id="selected",
+        observed_at=BASE + timedelta(days=1),
+        cycle_id="selected-cycle",
+    )
+    selector = FunctionalTemporalHistorianSelector(
+        FakeSelectionRepository(
+            [
+                ((reference,), True),
+                ((selected,), False),
+            ]
+        )
+    )
+    result = selector.compare(
+        FunctionalTemporalSelectionSpec(
+            label="Reference",
+            asset_id="LABELER-DEMO-01",
+            cycle_id="ref-cycle",
+        ),
+        FunctionalTemporalSelectionSpec(
+            label="Selected",
+            asset_id="LABELER-DEMO-01",
+            cycle_id="selected-cycle",
+        ),
+    )
+
+    payload = functional_temporal_selected_comparison_to_dict(result)
+
+    assert payload["disposition"] == "REFUSED_REFERENCE_TRUNCATED"
+    assert payload["reason_code"] == "SELECTION.REFERENCE_TRUNCATED"
+    assert payload["comparison"] is None
+    assert payload["reference"]["truncated"] is True
