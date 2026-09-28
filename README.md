@@ -10,6 +10,8 @@ First detected departure is not root-cause proof. Plant-reported context is not 
 
 The executable v1 service-case and plant-reported-context contracts are documented in `docs/architecture/service-case-data-contract-v1.md`, with canonical synthetic wire examples in `examples/speedway_service_case_v1.json` and `examples/plant_reported_context_v1.json`.
 
+The local Next.js root route now presents the synthetic Speedway Service Workspace. The previous operator-oriented Plant Canvas is preserved at `/plant-canvas` as a secondary legacy demo. See `docs/architecture/speedway-service-workspace-v1.md` for the UI boundary and browser-session plant-context limitations.
+
 For the live read-only Microsoft OPC PLC dashboard lab, see
 [docs/opcua-local-demo.md](docs/opcua-local-demo.md).
 

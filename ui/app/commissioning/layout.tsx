@@ -11,7 +11,7 @@ export default function CommissioningLayout({ children }: { children: ReactNode 
           <span>COMMISSIONING FAULT-INJECTION LAB</span>
           <b>Synthetic fixtures are controlled test inputs · not operator diagnoses</b>
         </div>
-        <Link href="/">← Operator View</Link>
+        <Link href="/">← Service workspace</Link>
       </div>
       {children}
     </>

@@ -101,7 +101,7 @@ export default function EvidenceView() {
           </p>
         </div>
         <nav className={styles.nav} aria-label="Evidence view navigation">
-          <Link href="/">Triage Board</Link>
+          <Link href="/">Service workspace</Link>
           <Link href="/health">Machine Health</Link>
           <Link className={styles.secondary} href="/training">Training Lab</Link>
           <Link className={styles.secondary} href="/commissioning">Commissioning Lab</Link>
