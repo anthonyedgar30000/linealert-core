@@ -10,6 +10,15 @@ type HistorianStatus = {
   source_available?: boolean;
   reason_code?: string;
   updated_at?: string;
+  historian_backend?: string;
+  persistence?: string;
+  source_mode?: string;
+  source_classification?: string;
+  emulated?: boolean;
+  retained_cycle_count?: number;
+  latest_cycle_id?: string | null;
+  latest_scenario_phase?: string | null;
+  latest_observed_at?: string | null;
 };
 
 type EvidenceRecord = {
@@ -30,11 +39,26 @@ type EvidenceRecord = {
     profile_id?: string;
     operating_mode?: string;
     configuration_version?: string;
+    firmware_version?: string;
+    calibration_id?: string;
+    sampling_profile_id?: string;
+    context_tags?: Record<string, string>;
+  };
+  details?: {
+    signal?: string;
+    value?: number;
+    unit?: string;
+    min_value?: number;
+    max_value?: number;
+    scenario_phase?: string;
+    emulated?: boolean;
   };
 };
 
 type HistoryPayload = {
   persistence?: string;
+  source_mode?: string;
+  emulated?: boolean;
   count?: number;
   truncated?: boolean;
   records?: EvidenceRecord[];
@@ -84,15 +108,26 @@ export default function ReasoningInputs() {
   }, []);
 
   const records = useMemo(() => history?.records ?? [], [history]);
+  const isEmulated = Boolean(status?.emulated || history?.emulated);
   const historianState = status?.connected ? "CONNECTED" : "OFFLINE · FAIL CLOSED";
-  const sourceState = status?.source_available ? "SOURCE AVAILABLE" : "SOURCE UNAVAILABLE";
+  const sourceState = status?.source_available
+    ? isEmulated
+      ? "EMULATED SOURCE LIVE"
+      : "SOURCE AVAILABLE"
+    : "SOURCE UNAVAILABLE";
   const recordState = reachable ? `${history?.count ?? 0} RETAINED RECORDS` : "NO LIVE HISTORY";
+  const historianLabel = isEmulated ? "Local emulated historian" : "Timescale historian";
+  const historianDetail = isEmulated
+    ? "SQLite-backed deterministic synthetic history. It is not TimescaleDB or physical plant history."
+    : "History is bounded and queryable only when the local Timescale historian is available.";
 
   return (
     <main className={styles.shell}>
       <header className={styles.header}>
         <div>
-          <span className={styles.kicker}>LINEALERT · REASONING INPUTS · READ ONLY</span>
+          <span className={styles.kicker}>
+            LINEALERT · REASONING INPUTS · READ ONLY{isEmulated ? " · LIVE EMULATION" : ""}
+          </span>
           <h1>Evidence before explanation</h1>
           <p>
             This surface exposes admitted historian evidence and retrieval readiness for governed reasoning.
@@ -130,7 +165,7 @@ export default function ReasoningInputs() {
         </div>
         <div className={styles.trialGrid}>
           <div><span>01 · OBSERVE</span><strong>Qualified evidence</strong><small>Source identity, timestamps, clock quality, asset and context stay attached.</small></div>
-          <div><span>02 · RETAIN</span><strong>Timescale historian</strong><small>History is bounded and queryable only when the local historian is available.</small></div>
+          <div><span>02 · RETAIN</span><strong>{historianLabel}</strong><small>{historianDetail}</small></div>
           <div><span>03 · ASSEMBLE</span><strong>Reasoning context</strong><small>Backend context-bundle and historian retrieval logic can consume governed evidence without changing it.</small></div>
           <div><span>04 · REVIEW</span><strong>Human authority</strong><small>Any explanation or recommendation remains subject to evidence limits and plant authority.</small></div>
         </div>
@@ -160,7 +195,17 @@ export default function ReasoningInputs() {
               <span>{record.record_kind ?? "EVIDENCE RECORD"} · {record.evidence_validity ?? "UNKNOWN VALIDITY"}</span>
               <p><b>{record.asset_id ?? "Unknown asset"}</b> · {record.operating_context?.component_id ?? "Unknown component"} · {observedLabel(record.observed_at)}</p>
               <p>Episode {record.episode_id ?? "—"} · Cycle {record.cycle_id ?? "—"} · State {record.epistemic_state ?? "—"} · Coverage {record.temporal_coverage ?? "—"}</p>
-              <small>Source {record.source_id ?? "—"} · Evidence IDs {record.evidence_ids?.length ?? 0} · Reasons {record.reasons?.join(" · ") || "none recorded"}</small>
+              {typeof record.details?.value === "number" && (
+                <p>
+                  {record.details.signal ?? "measurement"} · {record.details.value} {record.details.unit ?? ""}
+                  {" · "}expected {record.details.min_value ?? "—"}–{record.details.max_value ?? "—"} {record.details.unit ?? ""}
+                  {record.details.scenario_phase ? ` · phase ${record.details.scenario_phase}` : ""}
+                </p>
+              )}
+              <small>
+                Source {record.source_id ?? "—"} · Evidence IDs {record.evidence_ids?.length ?? 0} ·
+                {" "}Reasons {record.reasons?.join(" · ") || "none recorded"}
+              </small>
             </div>
           ))}
         </div>
@@ -169,6 +214,11 @@ export default function ReasoningInputs() {
         <span>LIVE READINESS</span>
         <small>Historian connected · {String(Boolean(status?.connected))}</small>
         <small>Historian source available · {String(Boolean(status?.source_available))}</small>
+        <small>Historian backend · {status?.historian_backend ?? "unknown"}</small>
+        <small>Persistence · {status?.persistence ?? history?.persistence ?? "unknown"}</small>
+        <small>Source classification · {status?.source_classification ?? "unknown"}</small>
+        <small>Latest scenario phase · {status?.latest_scenario_phase ?? "—"}</small>
+        <small>Latest cycle · {status?.latest_cycle_id ?? "—"}</small>
         <small>Last historian status update · {observedLabel(status?.updated_at)}</small>
         <small>HTTP retrieval healthy · {String(reachable)}</small>
       </section>
@@ -182,6 +232,7 @@ export default function ReasoningInputs() {
           This page is read-only. It does not write historian evidence, issue commands, change equipment state,
           infer a root cause, or grant production authority. A successful retrieval only establishes that evidence
           was retrievable under the displayed context; it does not establish that an explanation is true.
+          {isEmulated ? " Current history is controlled synthetic emulation, not verified physical plant history." : ""}
         </p>
       </section>
     </main>

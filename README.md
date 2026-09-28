@@ -43,6 +43,20 @@ Open `http://localhost:8766`. The evidence console must report `LIVE OPC UA` and
 `SIM-OPCPLC-01`. If the bridge retains stale observations after a disconnect, the interface reports
 `STALE · FAIL CLOSED`; it does not silently treat the last value as current.
 
+For a Docker-free local Reasoning Inputs demo with continuously changing,
+retained synthetic historian evidence, use:
+
+```powershell
+.\scripts\start-hybrid.ps1 -SkipInstall -UseEmulatedHistorian
+```
+
+The emulated historian binds only to `127.0.0.1:8767`, retains deterministic
+Labeler 2 history in local SQLite, and is explicitly surfaced as synthetic in
+the UI. It is not an automatic fallback for TimescaleDB and does not represent
+physical plant history. See
+`docs/architecture/live-emulated-historian-v1.md` for the evidence and
+authority boundary.
+
 The local process boundary is:
 
 ```text
