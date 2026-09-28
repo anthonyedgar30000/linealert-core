@@ -2,21 +2,20 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from linealert_core import (
-    ComparisonDisposition,
-    ComparisonPointDisposition,
-    EpistemicState,
-    EvidenceValidity,
-    FunctionalTemporalComparator,
-    TemporalCoverage,
-    TransitionDisposition,
-)
-from linealert_core.historian import (
-    FunctionalTemporalHistoryRecord,
-    FunctionalTemporalRecordKind,
-    HistorianOperatingContext,
-)
+import linealert_core
+from linealert_core import historian
 
+ComparisonDisposition = linealert_core.ComparisonDisposition
+ComparisonPointDisposition = linealert_core.ComparisonPointDisposition
+EpistemicState = linealert_core.EpistemicState
+EvidenceValidity = linealert_core.EvidenceValidity
+FunctionalTemporalComparator = linealert_core.FunctionalTemporalComparator
+TemporalCoverage = linealert_core.TemporalCoverage
+TransitionDisposition = linealert_core.TransitionDisposition
+
+FunctionalTemporalHistoryRecord = historian.FunctionalTemporalHistoryRecord
+FunctionalTemporalRecordKind = historian.FunctionalTemporalRecordKind
+HistorianOperatingContext = historian.HistorianOperatingContext
 
 BASE = datetime(2026, 3, 12, 14, 30, tzinfo=UTC)
 
@@ -420,8 +419,6 @@ def test_empty_reference_and_selected_are_explicit_refusals() -> None:
 
 
 def test_comparison_types_are_exported_from_public_api() -> None:
-    import linealert_core
-
     assert linealert_core.FunctionalTemporalComparator is FunctionalTemporalComparator
     assert linealert_core.ComparisonDisposition is ComparisonDisposition
     assert linealert_core.ComparisonPointDisposition is ComparisonPointDisposition
