@@ -69,6 +69,18 @@ To run the UI without the shared historian:
 .\scripts\start-hybrid.ps1 -SkipInstall -SkipHistorian
 ```
 
+## Read-only live acceptance
+
+With the synthetic bridge, historian, TimescaleDB, and Operator View already running, verify the complete local persistence/API/proxy path with:
+
+```powershell
+linealert-historian-acceptance --dsn "postgresql://linealert:linealert_dev@127.0.0.1:5433/linealert"
+```
+
+The acceptance command performs HTTP GETs and SQL `SELECT` queries only. It does not start services, write historian rows, reset volumes, or interact with equipment. The default identity is the controlled synthetic labeler demo and a passing result is not production-equipment evidence.
+
+See `docs/architecture/local-historian-timescale-acceptance-v1.md` for the contract and `docs/acceptance/2026-09-28-local-timescale-acceptance.md` for the first live acceptance record.
+
 ## Historian endpoints
 
 The sidecar serves:
