@@ -315,7 +315,7 @@ export default function MachineHealthPage() {
     <main className={styles.shell}>
       <header className={styles.topbar}>
         <div>
-          <Link className={styles.backLink} href="/">← Operator / troubleshooting view</Link>
+          <Link className={styles.backLink} href="/">← Speedway Service Workspace</Link>
           <p className={styles.eyebrow}>LINEALERT · CONDITION MONITORING PROTOTYPE</p>
           <h1>Machine Health — Label Application Station</h1>
           <p className={styles.subtitle}>

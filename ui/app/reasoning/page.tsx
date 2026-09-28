@@ -105,7 +105,8 @@ export default function ReasoningInputs() {
           </p>
         </div>
         <nav className={styles.nav}>
-          <Link href="/">Plant canvas</Link>
+          <Link href="/">Service workspace</Link>
+          <Link href="/plant-canvas">Legacy Plant Canvas</Link>
           <Link href="/health">Evidence</Link>
           <Link className={styles.activeView} href="/reasoning">Reasoning inputs</Link>
         </nav>

@@ -12,25 +12,25 @@
   "updated_on": "2026-09-28",
   "state_model": {
     "record_type": "repository_coordination_snapshot",
-    "captured_from_main": "e22ca7cc404b9040c0c2a48eabe6fa442d75dfe5",
+    "captured_from_main": "29072f410717cb26b266bd8387ee422c7310a3b0",
     "current_reality_source": "live_github_and_explicit_user_direction",
     "semantics": "This is a time-bounded coordination snapshot. Live GitHub lifecycle, exact current branch head, CI, deployment, equipment documentation, and equipment evidence supersede cached claims.",
     "publication_policy": {
       "state_only_merge_requires_immediate_self_sync": false,
       "publication_pr_self_reference_required": false,
       "rule": "A state-only publication does not require another pull request merely to record its own merge. Create a corrective sync only when a substantive external lifecycle, authority, deployment, equipment, or scope fact changes or contradicts the published snapshot.",
-      "current_correction_reason": "PR #153 merged the authoritative Speedway service-workflow scope reset. This snapshot advances repository reality to that merged main before the service-case data-contract increment, while preserving the rule that a publication PR does not need to self-reference its own merge."
+      "current_correction_reason": "PR #154 merged the Speedway service-case and plant-reported-context data contracts. This snapshot advances repository reality to that merged main before the Speedway Service Workspace increment."
     }
   },
   "live_observation": {
-    "observed_at": "2026-09-28T22:13:44Z",
+    "observed_at": "2026-09-28T22:34:42Z",
     "default_branch": "main",
-    "default_branch_head": "e22ca7cc404b9040c0c2a48eabe6fa442d75dfe5",
-    "default_branch_tree": "41361eb16a4901ad3f7d52d6efe67cd5ddc790d3",
+    "default_branch_head": "29072f410717cb26b266bd8387ee422c7310a3b0",
+    "default_branch_tree": "bbdeebe0f5a5b36cc7510da7439fe6993dfdc610",
     "latest_functional_merge": {
-      "pull_request": 152,
-      "title": "Add read-only Reasoning Inputs frontend",
-      "merge_commit": "13d57e81164c28918d9959874348b498cb3b45e2"
+      "pull_request": 154,
+      "title": "Add Speedway service case data contracts",
+      "merge_commit": "29072f410717cb26b266bd8387ee422c7310a3b0"
     },
     "open_pull_requests_before_branch_creation": [],
     "active_sync_pull_request": null,
@@ -56,10 +56,10 @@
     },
     "main_ci": {
       "verification_scope": "merged_main_push",
-      "pull_request": 153,
-      "run_id": 36490047406,
-      "head_sha": "e22ca7cc404b9040c0c2a48eabe6fa442d75dfe5",
-      "merge_commit": "e22ca7cc404b9040c0c2a48eabe6fa442d75dfe5",
+      "pull_request": 154,
+      "run_id": 36491980754,
+      "head_sha": "29072f410717cb26b266bd8387ee422c7310a3b0",
+      "merge_commit": "29072f410717cb26b266bd8387ee422c7310a3b0",
       "conclusion": "success",
       "jobs": [
         "test (3.11)",
@@ -71,9 +71,9 @@
     },
     "public_pages": {
       "status": "observed_deployed_2026_09_28",
-      "workflow_run": 36490047509,
-      "source_commit": "e22ca7cc404b9040c0c2a48eabe6fa442d75dfe5",
-      "source_tree": "41361eb16a4901ad3f7d52d6efe67cd5ddc790d3",
+      "workflow_run": 36491980757,
+      "source_commit": "29072f410717cb26b266bd8387ee422c7310a3b0",
+      "source_tree": "bbdeebe0f5a5b36cc7510da7439fe6993dfdc610",
       "plant_canvas": "https://anthonyedgar30000.github.io/linealert-core/triage/",
       "troubleshooting_guide": "https://anthonyedgar30000.github.io/linealert-core/troubleshooting-guide.html",
       "event_log": "https://anthonyedgar30000.github.io/linealert-core/event-log/",
@@ -89,10 +89,10 @@
     "equipment_control_path": "not_observed",
     "equipment_documentation": "synthetic demo profiles and planning material observed; no Labeler 2 OEM manual or commissioned machine package observed",
     "latest_merged_pull_request": {
-      "pull_request": 153,
-      "title": "Reset initial product scope to Speedway service workflow",
-      "source_head": "2868ac6d4a69513356e4fc17ce2692ec71500e7a",
-      "merge_commit": "e22ca7cc404b9040c0c2a48eabe6fa442d75dfe5"
+      "pull_request": 154,
+      "title": "Add Speedway service case data contracts",
+      "source_head": "0e3fb70c7a424cec41515c4e30dbccca27001e08",
+      "merge_commit": "29072f410717cb26b266bd8387ee422c7310a3b0"
     },
     "recent_repository_increments": [
       {
@@ -154,6 +154,11 @@
         "pull_request": 153,
         "title": "Reset initial product scope to Speedway service workflow",
         "merge_commit": "e22ca7cc404b9040c0c2a48eabe6fa442d75dfe5"
+      },
+      {
+        "pull_request": 154,
+        "title": "Add Speedway service case data contracts",
+        "merge_commit": "29072f410717cb26b266bd8387ee422c7310a3b0"
       }
     ]
   },
@@ -222,13 +227,16 @@
   },
   "current_demo_reality": {
     "classification": "controlled_synthetic_static_demo",
-    "primary_surface": "Plant Canvas",
+    "primary_surface": "Speedway Service Workspace",
     "supporting_surfaces": [
       "Troubleshooting Guide",
       "Plant Event Log",
-      "Evolving Investigation Workspace"
+      "Evolving Investigation Workspace",
+      "Legacy Plant Canvas",
+      "Reasoning Inputs",
+      "Machine Health / Evidence"
     ],
-    "workflow_summary": "Synthetic plant state can progress from normal production through concern, bounded diagnostic action, explicit restore/repeat/retain discipline, production verification, recovery observation, maintenance observe-only, post-maintenance observation, and evolving investigation views.",
+    "workflow_summary": "The primary synthetic local frontend now centers on a Speedway service case: service-call context, bounded pre-incident reconstruction, first detected departure, changed-versus-held relationships, targeted missing plant context, plant-reported context entry, working explanations, and one bounded technician check. The prior operator-facing Plant Canvas is preserved as a legacy secondary surface.",
     "recent_merged_increments": [
       {
         "pull_request": 104,
@@ -324,7 +332,41 @@
         "production_authority"
       ]
     },
-    "product_scope_relationship": "The existing Plant Canvas and operator/shift-supervisor workflow remain preserved synthetic demo behavior, but they are not the initial commercial LineAlert user workflow after the Speedway service-scope reset."
+    "product_scope_relationship": "The existing Plant Canvas and operator/shift-supervisor workflow remain preserved synthetic demo behavior, but they are not the initial commercial LineAlert user workflow after the Speedway service-scope reset.",
+    "speedway_service_workspace": {
+      "state": "implemented_on_branch_pending_merge",
+      "route": "/",
+      "legacy_operator_demo_route": "/plant-canvas",
+      "classification": "synthetic_browser_session_service_workspace",
+      "service_case_source": "controlled_synthetic_fixture_aligned_to_v1_contract",
+      "historian_status": "read_only_same_origin_status_only",
+      "plant_context_entry": "browser_session_only_not_persisted",
+      "manual_verification_states": [
+        "plant_relay_only",
+        "technician_viewed_source",
+        "technician_retained_copy"
+      ],
+      "direct_source_retrieval_state": false,
+      "displayed_workflow": [
+        "why_speedway_was_called",
+        "pre_incident_reconstruction",
+        "first_detected_departure",
+        "changed_relationships",
+        "relationships_that_held",
+        "missing_discriminating_context",
+        "plant_reported_context_entry",
+        "working_explanations",
+        "next_bounded_technician_check"
+      ],
+      "boundaries": [
+        "first_detected_departure != root_cause",
+        "temporal_precedence != causation",
+        "plant_reported_context != verified_source_record",
+        "technician_entry != direct_system_observation",
+        "recommendation != authorized_action",
+        "browser_session_entry != persisted_service_record"
+      ]
+    }
   },
   "equipment_and_source_reality": {
     "labeler_2": {
@@ -515,7 +557,9 @@
     "plant_reported_context != verified_source_record",
     "technician_entry != direct_system_observation",
     "reported_event_time != verified_machine_timestamp",
-    "technician_viewed_source != direct_system_ingestion"
+    "technician_viewed_source != direct_system_ingestion",
+    "browser_session_entry != persisted_service_record",
+    "service_workspace_display != production_service_case"
   ],
   "reasoning_node_reality": {
     "classification": "controlled_synthetic_local_reasoning_substrate",
@@ -657,7 +701,7 @@
   },
   "service_case_contract_reality": {
     "status": "executable_v1_contract_defined",
-    "source_baseline_main": "e22ca7cc404b9040c0c2a48eabe6fa442d75dfe5",
+    "source_baseline_main": "29072f410717cb26b266bd8387ee422c7310a3b0",
     "schema_versions": [
       "linealert.service-case.v1",
       "linealert.plant-reported-context.v1"
@@ -700,7 +744,7 @@
     "direct_source_retrieval_state_available": false,
     "persistence": "not_implemented",
     "api": "not_implemented",
-    "speedway_service_workspace_ui": "not_implemented",
+    "speedway_service_workspace_ui": "implemented_on_branch_pending_merge",
     "automatic_first_departure_selection": "not_implemented",
     "reasoning_node_consumption": "not_implemented",
     "direct_cmms_integration": "not_implemented",

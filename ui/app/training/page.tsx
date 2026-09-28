@@ -443,7 +443,7 @@ export default function TrainingPage() {
           </p>
         </div>
         <nav className={styles.nav} aria-label="Training navigation">
-          <Link href="/">Operator View</Link>
+          <Link href="/">Service workspace</Link>
           <Link href="/health">Machine Health</Link>
           <Link href="/commissioning">Commissioning Lab</Link>
         </nav>
