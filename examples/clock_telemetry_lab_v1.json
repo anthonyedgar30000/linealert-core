@@ -1,6 +1,7 @@
 {
   "schema_version": "linealert.clock-telemetry-lab.v1",
   "classification": "synthetic_lab_only",
+  "require_step_coverage": true,
   "bindings": [
     {
       "binding_id": "lab-clock-a-v1",
@@ -69,6 +70,40 @@
       "uncertainty_ms": 2,
       "maximum_drift_ppm": 10,
       "source_classification": "synthetic_lab_telemetry"
+    }
+  ],
+  "step_coverages": [
+    {
+      "coverage_id": "lab-step-monitor-a-1",
+      "binding_id": "lab-clock-a-v1",
+      "source_id": "plc-a",
+      "clock_id": "clock-plc-a",
+      "reference_clock_id": "lab-reference-1",
+      "reference_path": ["lab-reference-1", "lab-switch-1", "clock-plc-a"],
+      "firmware_version": "synthetic-fw-1",
+      "configuration_version": "synthetic-config-1",
+      "calibration_id": "lab-cal-1",
+      "sampling_profile_id": "lab-sample-1",
+      "coverage_start_reference": "2026-09-28T18:59:59+00:00",
+      "coverage_until_reference": "2026-09-28T19:00:05+00:00",
+      "monitor_method": "SYNTHETIC_COMPLETE_STEP_NOTICE_FEED",
+      "monitor_state": "COMPLETE"
+    },
+    {
+      "coverage_id": "lab-step-monitor-b-1",
+      "binding_id": "lab-clock-b-v1",
+      "source_id": "scada-b",
+      "clock_id": "clock-scada-b",
+      "reference_clock_id": "lab-reference-1",
+      "reference_path": ["lab-reference-1", "lab-switch-2", "clock-scada-b"],
+      "firmware_version": "synthetic-fw-1",
+      "configuration_version": "synthetic-config-1",
+      "calibration_id": "lab-cal-1",
+      "sampling_profile_id": "lab-sample-1",
+      "coverage_start_reference": "2026-09-28T18:59:59+00:00",
+      "coverage_until_reference": "2026-09-28T19:00:05+00:00",
+      "monitor_method": "SYNTHETIC_COMPLETE_STEP_NOTICE_FEED",
+      "monitor_state": "COMPLETE"
     }
   ]
 }

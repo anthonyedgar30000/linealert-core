@@ -50,6 +50,10 @@ class ClockTelemetryProvenance:
     last_step_earliest_reference: datetime | None = None
     last_step_latest_reference: datetime | None = None
     last_step_observation_method: str | None = None
+    step_coverage_id: str | None = None
+    step_coverage_start_reference: datetime | None = None
+    step_coverage_until_reference: datetime | None = None
+    step_coverage_method: str | None = None
 
     def __post_init__(self) -> None:
         for name in (
@@ -125,6 +129,37 @@ class ClockTelemetryProvenance:
                 or self.sampled_at_reference <= boundary_end
             ):
                 raise ClockEvidenceError("sample must follow the retained step boundary")
+        coverage_fields = (
+            self.step_coverage_id,
+            self.step_coverage_start_reference,
+            self.step_coverage_until_reference,
+            self.step_coverage_method,
+        )
+        if any(field is None for field in coverage_fields) and not all(
+            field is None for field in coverage_fields
+        ):
+            raise ClockEvidenceError("step coverage provenance must be complete")
+        if self.step_coverage_id is not None:
+            if (
+                not isinstance(self.step_coverage_id, str)
+                or not self.step_coverage_id.strip()
+                or not isinstance(self.step_coverage_method, str)
+                or not self.step_coverage_method.strip()
+            ):
+                raise ClockEvidenceError("step coverage identity and method must be non-empty")
+            coverage_start = self.step_coverage_start_reference
+            coverage_end = self.step_coverage_until_reference
+            if (
+                not isinstance(coverage_start, datetime)
+                or coverage_start.tzinfo is None
+                or coverage_start.utcoffset() is None
+                or not isinstance(coverage_end, datetime)
+                or coverage_end.tzinfo is None
+                or coverage_end.utcoffset() is None
+                or coverage_start > self.sampled_at_reference
+                or coverage_end <= self.sampled_at_reference
+            ):
+                raise ClockEvidenceError("step coverage does not include the offset sample")
 
 
 @dataclass(frozen=True, slots=True)
@@ -208,6 +243,11 @@ class ClockObservation:
                 or not math.isclose(self.uncertainty_ms, expanded, abs_tol=1e-6)
             ):
                 raise ClockEvidenceError("telemetry age or uncertainty derivation mismatch")
+            if (
+                provenance.step_coverage_until_reference is not None
+                and upper >= provenance.step_coverage_until_reference
+            ):
+                raise ClockEvidenceError("event reference interval exceeds step coverage")
 
 
 @dataclass(frozen=True, slots=True)
@@ -274,6 +314,15 @@ def _observation_to_dict(value: ClockObservation) -> dict[str, Any]:
             payload["telemetry_provenance"]["last_step_observation_method"] = (
                 p.last_step_observation_method
             )
+        if p.step_coverage_id is not None:
+            assert p.step_coverage_start_reference is not None
+            assert p.step_coverage_until_reference is not None
+            payload["telemetry_provenance"].update(
+                step_coverage_id=p.step_coverage_id,
+                step_coverage_start_reference=p.step_coverage_start_reference.isoformat(),
+                step_coverage_until_reference=p.step_coverage_until_reference.isoformat(),
+                step_coverage_method=p.step_coverage_method,
+            )
     return payload
 
 
@@ -312,6 +361,18 @@ def _provenance_from_dict(raw: Mapping[str, Any]) -> ClockTelemetryProvenance:
                 else None
             ),
             last_step_observation_method=raw.get("last_step_observation_method"),
+            step_coverage_id=raw.get("step_coverage_id"),
+            step_coverage_start_reference=(
+                datetime.fromisoformat(raw["step_coverage_start_reference"])
+                if raw.get("step_coverage_start_reference") is not None
+                else None
+            ),
+            step_coverage_until_reference=(
+                datetime.fromisoformat(raw["step_coverage_until_reference"])
+                if raw.get("step_coverage_until_reference") is not None
+                else None
+            ),
+            step_coverage_method=raw.get("step_coverage_method"),
         )
     except (KeyError, TypeError, ValueError) as exc:
         raise ClockEvidenceError("invalid retained clock telemetry provenance") from exc

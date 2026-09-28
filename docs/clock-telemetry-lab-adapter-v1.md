@@ -57,6 +57,32 @@ notices. The absence of a notice is not evidence that a physical clock did
 not step. A real connector must establish how a step is detected, bound its
 time and invalidate cached offsets before any physical timing claim.
 
+## Strict synthetic step coverage
+
+The shipped fixture now opts into `require_step_coverage: true`. Each source
+declares a synthetic `step_coverages` record with its exact binding, clock,
+reference path, firmware, configuration, calibration and sampling identity,
+monitor method and state, and a half-open reference-time coverage interval. An
+eligible offset sample must
+be taken within **one** `COMPLETE` coverage interval, and the entire estimated
+event reference-time interval must end before that coverage ends. The coverage
+must start no later than the sample. Missing, partial, degraded, or overlapping
+records cause a reasoned refusal. Separate adjacent records cannot silently
+be stitched together into a completeness claim.
+
+Accepted strict projections retain the coverage ID, method, and full interval
+with the offset sample and any last step boundary through the historian payload.
+Retained evidence refuses missing or contradictory coverage fields. The
+existing adapter constructor remains compatible with earlier lab callers
+unless strict mode is explicitly selected; providing coverage while strict
+mode is off is rejected so a declaration cannot be silently ignored.
+
+`COMPLETE` is a **supplied synthetic assertion about the notice feed**, not
+independent proof of monitoring completeness. A configured NTP peer or host
+time-service state does not establish coverage for a PLC or SCADA clock. A real
+connector needs a qualified device-specific observation path and evidence of
+monitor continuity, including gaps, restarts and missed steps.
+
 An accepted projection adds `ClockObservation` to a `StreamEnvelope` without
 changing its event, raw timestamp or transport `clock_quality`. The numeric
 cross-source gate from #144 then applies its own declared uncertainty limit.
@@ -75,7 +101,8 @@ are rewritten. The adapter never adjusts a clock or creates a diagnosis.
 
 Tests feed the fixture into the current live timing gate; exercise stable
 projection, drift and step candidates, stale/expired data, conflicting
-topology/configuration/calibration, degraded state and overlapping samples.
+topology/configuration/calibration, degraded state, overlapping samples and
+strict monitoring coverage refusal.
 This establishes the software contract under synthetic input only. A future
 connector must independently establish the measurement path and uncertainty
 for real NTP/PTP or controller telemetry, including completeness of step
