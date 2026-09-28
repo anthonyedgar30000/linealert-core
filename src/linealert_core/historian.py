@@ -10,14 +10,162 @@ from __future__ import annotations
 import json
 import threading
 import uuid
+from collections.abc import Mapping
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from enum import StrEnum
+from types import MappingProxyType
 from typing import Any
 
+from .functional_temporal import (
+    EpistemicState,
+    EvidenceValidity,
+    TemporalCoverage,
+    TransitionDisposition,
+)
 from .live_condition import LiveConditionMeasurement
 
 
 class HistorianError(RuntimeError):
     """Raised when the optional historian cannot be configured or queried."""
+
+
+class FunctionalTemporalRecordKind(StrEnum):
+    """Historian record class for functional-temporal evidence."""
+
+    PHASE = "PHASE"
+    TRANSITION = "TRANSITION"
+    GUARD = "GUARD"
+    INVARIANT = "INVARIANT"
+
+
+@dataclass(frozen=True, slots=True)
+class HistorianOperatingContext:
+    """Exact machine context bound to one persisted evidence record."""
+
+    asset_id: str
+    component_id: str
+    profile_id: str
+    operating_mode: str
+    configuration_version: str
+    firmware_version: str
+    calibration_id: str
+    sampling_profile_id: str
+    recipe_id: str | None = None
+    product_id: str | None = None
+    context_tags: Mapping[str, str] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        for field_name in (
+            "asset_id",
+            "component_id",
+            "profile_id",
+            "operating_mode",
+            "configuration_version",
+            "firmware_version",
+            "calibration_id",
+            "sampling_profile_id",
+        ):
+            value = getattr(self, field_name)
+            if not isinstance(value, str) or not value.strip():
+                raise HistorianError(f"{field_name} must be a non-empty string")
+        for field_name in ("recipe_id", "product_id"):
+            value = getattr(self, field_name)
+            if value is not None and (not isinstance(value, str) or not value.strip()):
+                raise HistorianError(f"{field_name} must be non-empty when supplied")
+
+        normalized: dict[str, str] = {}
+        for key, value in self.context_tags.items():
+            if not isinstance(key, str) or not key.strip():
+                raise HistorianError("context tag keys must be non-empty strings")
+            if not isinstance(value, str) or not value.strip():
+                raise HistorianError("context tag values must be non-empty strings")
+            normalized[key.strip()] = value.strip()
+        object.__setattr__(
+            self,
+            "context_tags",
+            MappingProxyType(dict(sorted(normalized.items()))),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class FunctionalTemporalHistoryRecord:
+    """Append-only historian record for evaluated phase/transition evidence."""
+
+    observed_at: datetime
+    record_id: str
+    episode_id: str
+    cycle_id: str
+    record_kind: FunctionalTemporalRecordKind
+    state: EpistemicState
+    validity: EvidenceValidity
+    coverage: TemporalCoverage
+    source_id: str
+    operating_context: HistorianOperatingContext
+    phase_id: str | None = None
+    transition_id: str | None = None
+    from_phase_id: str | None = None
+    to_phase_id: str | None = None
+    trigger_event_id: str | None = None
+    requirement_id: str | None = None
+    transition_disposition: TransitionDisposition | None = None
+    evidence_ids: tuple[str, ...] = ()
+    reasons: tuple[str, ...] = ()
+    clock_evidence: Mapping[str, Any] = field(default_factory=dict)
+    details: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.observed_at.tzinfo is None or self.observed_at.utcoffset() is None:
+            raise HistorianError("observed_at must be timezone-aware")
+        for field_name in ("record_id", "episode_id", "cycle_id", "source_id"):
+            value = getattr(self, field_name)
+            if not isinstance(value, str) or not value.strip():
+                raise HistorianError(f"{field_name} must be a non-empty string")
+        for field_name in (
+            "phase_id",
+            "transition_id",
+            "from_phase_id",
+            "to_phase_id",
+            "trigger_event_id",
+            "requirement_id",
+        ):
+            value = getattr(self, field_name)
+            if value is not None and (not isinstance(value, str) or not value.strip()):
+                raise HistorianError(f"{field_name} must be non-empty when supplied")
+        if any(not item.strip() for item in self.evidence_ids):
+            raise HistorianError("evidence_ids must not contain empty values")
+        if any(not item.strip() for item in self.reasons):
+            raise HistorianError("reasons must not contain empty values")
+        object.__setattr__(self, "clock_evidence", MappingProxyType(dict(self.clock_evidence)))
+        object.__setattr__(self, "details", MappingProxyType(dict(self.details)))
+        self._validate_kind_fields()
+
+    def _validate_kind_fields(self) -> None:
+        if self.record_kind is FunctionalTemporalRecordKind.PHASE and self.phase_id is None:
+            raise HistorianError("phase records require phase_id")
+        if self.record_kind is FunctionalTemporalRecordKind.TRANSITION:
+            required = (
+                self.transition_id,
+                self.from_phase_id,
+                self.to_phase_id,
+                self.trigger_event_id,
+            )
+            if any(value is None for value in required):
+                raise HistorianError(
+                    "transition records require transition_id, from_phase_id, "
+                    "to_phase_id, and trigger_event_id"
+                )
+            if self.transition_disposition is None:
+                raise HistorianError("transition records require transition_disposition")
+        if (
+            self.record_kind
+            in {
+                FunctionalTemporalRecordKind.GUARD,
+                FunctionalTemporalRecordKind.INVARIANT,
+            }
+            and self.requirement_id is None
+        ):
+            raise HistorianError("guard and invariant records require requirement_id")
 
 
 _SCHEMA_SQL = """
@@ -73,6 +221,57 @@ CREATE INDEX IF NOT EXISTS condition_asset_relationship_time_idx
     ON condition_measurements (asset_id, relationship_id, observed_at DESC);
 CREATE INDEX IF NOT EXISTS condition_episode_time_idx
     ON condition_measurements (episode_id, observed_at DESC);
+ALTER TABLE condition_measurements
+    ADD COLUMN IF NOT EXISTS cycle_id TEXT,
+    ADD COLUMN IF NOT EXISTS phase_id TEXT,
+    ADD COLUMN IF NOT EXISTS operating_context JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+CREATE TABLE IF NOT EXISTS functional_temporal_evidence (
+    observed_at TIMESTAMPTZ NOT NULL,
+    record_id TEXT NOT NULL,
+    episode_id TEXT NOT NULL,
+    asset_id TEXT NOT NULL,
+    cycle_id TEXT NOT NULL,
+    record_kind TEXT NOT NULL,
+    phase_id TEXT,
+    transition_id TEXT,
+    from_phase_id TEXT,
+    to_phase_id TEXT,
+    trigger_event_id TEXT,
+    requirement_id TEXT,
+    transition_disposition TEXT,
+    epistemic_state TEXT NOT NULL,
+    evidence_validity TEXT NOT NULL,
+    temporal_coverage TEXT NOT NULL,
+    source_id TEXT NOT NULL,
+    component_id TEXT NOT NULL,
+    profile_id TEXT NOT NULL,
+    operating_mode TEXT NOT NULL,
+    configuration_version TEXT NOT NULL,
+    firmware_version TEXT NOT NULL,
+    calibration_id TEXT NOT NULL,
+    sampling_profile_id TEXT NOT NULL,
+    recipe_id TEXT,
+    product_id TEXT,
+    context_tags JSONB NOT NULL,
+    evidence_ids JSONB NOT NULL,
+    reasons JSONB NOT NULL,
+    clock_evidence JSONB NOT NULL,
+    details JSONB NOT NULL,
+    PRIMARY KEY (observed_at, record_id)
+);
+SELECT create_hypertable(
+    'functional_temporal_evidence', 'observed_at',
+    if_not_exists => TRUE, migrate_data => TRUE
+);
+CREATE INDEX IF NOT EXISTS functional_temporal_asset_time_idx
+    ON functional_temporal_evidence (asset_id, observed_at DESC);
+CREATE INDEX IF NOT EXISTS functional_temporal_episode_time_idx
+    ON functional_temporal_evidence (episode_id, observed_at DESC);
+CREATE INDEX IF NOT EXISTS functional_temporal_cycle_time_idx
+    ON functional_temporal_evidence (cycle_id, observed_at ASC);
+CREATE INDEX IF NOT EXISTS functional_temporal_phase_time_idx
+    ON functional_temporal_evidence (phase_id, observed_at DESC);
 
 CREATE TABLE IF NOT EXISTS operational_outcomes (
     recorded_at TIMESTAMPTZ NOT NULL,
@@ -160,6 +359,9 @@ class TimescaleHistorian:
         *,
         episode_id: str,
         source_mode: str,
+        cycle_id: str | None = None,
+        phase_id: str | None = None,
+        operating_context: Mapping[str, Any] | None = None,
     ) -> None:
         observation = measurement.observation
         clock = measurement.clock_evidence
@@ -171,10 +373,11 @@ class TimescaleHistorian:
                     signal_name, value, unit, min_value, max_value, temporal_rule_status,
                     quality, reason_code, rule_id, correlation_id, topology_from, topology_to,
                     start_event_id, end_event_id, start_source_id, end_source_id, semantic, scope,
-                    source_mode, clock_evidence
+                    source_mode, cycle_id, phase_id, operating_context, clock_evidence
                 ) VALUES (
                     %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s::jsonb, %s::jsonb
                 )
                 ON CONFLICT (observed_at, observation_id) DO NOTHING
                 """,
@@ -203,6 +406,9 @@ class TimescaleHistorian:
                     observation.semantic,
                     observation.scope,
                     source_mode,
+                    cycle_id,
+                    phase_id,
+                    json.dumps(dict(operating_context or {}), sort_keys=True),
                     json.dumps(
                         {
                             "start_clock_quality": clock.start_clock_quality,
@@ -214,6 +420,79 @@ class TimescaleHistorian:
                     ),
                 ),
             )
+
+    def record_functional_temporal_evidence(
+        self,
+        record: FunctionalTemporalHistoryRecord,
+    ) -> dict[str, Any]:
+        """Persist one already-evaluated functional-temporal evidence record."""
+
+        context = record.operating_context
+        with self._lock, self._connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO functional_temporal_evidence (
+                    observed_at, record_id, episode_id, asset_id, cycle_id, record_kind,
+                    phase_id, transition_id, from_phase_id, to_phase_id, trigger_event_id,
+                    requirement_id, transition_disposition, epistemic_state,
+                    evidence_validity, temporal_coverage, source_id, component_id, profile_id,
+                    operating_mode, configuration_version, firmware_version, calibration_id,
+                    sampling_profile_id, recipe_id, product_id, context_tags, evidence_ids,
+                    reasons, clock_evidence, details
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s::jsonb, %s::jsonb, %s::jsonb, %s::jsonb, %s::jsonb
+                )
+                ON CONFLICT (observed_at, record_id) DO NOTHING
+                """,
+                (
+                    record.observed_at,
+                    record.record_id,
+                    record.episode_id,
+                    context.asset_id,
+                    record.cycle_id,
+                    record.record_kind.value,
+                    record.phase_id,
+                    record.transition_id,
+                    record.from_phase_id,
+                    record.to_phase_id,
+                    record.trigger_event_id,
+                    record.requirement_id,
+                    (
+                        record.transition_disposition.value
+                        if record.transition_disposition is not None
+                        else None
+                    ),
+                    record.state.value,
+                    record.validity.value,
+                    record.coverage.value,
+                    record.source_id,
+                    context.component_id,
+                    context.profile_id,
+                    context.operating_mode,
+                    context.configuration_version,
+                    context.firmware_version,
+                    context.calibration_id,
+                    context.sampling_profile_id,
+                    context.recipe_id,
+                    context.product_id,
+                    json.dumps(dict(context.context_tags), sort_keys=True),
+                    json.dumps(list(record.evidence_ids), sort_keys=True),
+                    json.dumps(list(record.reasons), sort_keys=True),
+                    json.dumps(dict(record.clock_evidence), sort_keys=True),
+                    json.dumps(dict(record.details), sort_keys=True),
+                ),
+            )
+        return {
+            "record_id": record.record_id,
+            "observed_at": record.observed_at.isoformat(),
+            "episode_id": record.episode_id,
+            "asset_id": context.asset_id,
+            "cycle_id": record.cycle_id,
+            "record_kind": record.record_kind.value,
+            "state": record.state.value,
+        }
 
     def record_outcome(self, payload: dict[str, Any]) -> dict[str, Any]:
         required = ("episode_id", "asset_id", "relationship_id", "outcome_type", "status")
@@ -285,7 +564,7 @@ class TimescaleHistorian:
             SELECT observed_at, observation_id, episode_id, asset_id, relationship_id,
                    signal_name, value, unit, min_value, max_value, temporal_rule_status,
                    quality, reason_code, correlation_id, topology_from, topology_to,
-                   source_mode, clock_evidence
+                   source_mode, cycle_id, phase_id, operating_context, clock_evidence
             FROM condition_measurements
             {predicate}
             ORDER BY observed_at DESC
@@ -313,7 +592,10 @@ class TimescaleHistorian:
                 "topology_from": row[14],
                 "topology_to": row[15],
                 "source_mode": row[16],
-                "clock_evidence": row[17],
+                "cycle_id": row[17],
+                "phase_id": row[18],
+                "operating_context": row[19],
+                "clock_evidence": row[20],
             }
             for row in reversed(rows)
         ]
@@ -324,6 +606,94 @@ class TimescaleHistorian:
             "measurements": measurements,
         }
 
+    def functional_temporal_history(
+        self,
+        *,
+        limit: int = 240,
+        asset_id: str | None = None,
+        episode_id: str | None = None,
+        cycle_id: str | None = None,
+        phase_id: str | None = None,
+        record_kind: str | None = None,
+    ) -> dict[str, Any]:
+        """Return bounded functional-temporal evidence in chronological order."""
+
+        bounded_limit = max(1, min(limit, 5000))
+        where: list[str] = []
+        params: list[Any] = []
+        for column, value in (
+            ("asset_id", asset_id),
+            ("episode_id", episode_id),
+            ("cycle_id", cycle_id),
+            ("phase_id", phase_id),
+            ("record_kind", record_kind),
+        ):
+            if value:
+                where.append(f"{column} = %s")
+                params.append(value)
+        predicate = f"WHERE {' AND '.join(where)}" if where else ""
+        params.append(bounded_limit)
+        query = f"""
+            SELECT observed_at, record_id, episode_id, asset_id, cycle_id, record_kind,
+                   phase_id, transition_id, from_phase_id, to_phase_id, trigger_event_id,
+                   requirement_id, transition_disposition, epistemic_state,
+                   evidence_validity, temporal_coverage, source_id, component_id, profile_id,
+                   operating_mode, configuration_version, firmware_version, calibration_id,
+                   sampling_profile_id, recipe_id, product_id, context_tags, evidence_ids,
+                   reasons, clock_evidence, details
+            FROM functional_temporal_evidence
+            {predicate}
+            ORDER BY observed_at DESC
+            LIMIT %s
+        """
+        with self._lock, self._connection.cursor() as cursor:
+            cursor.execute(query, tuple(params))
+            rows = cursor.fetchall()
+        records = [
+            {
+                "observed_at": row[0].isoformat(),
+                "record_id": row[1],
+                "episode_id": row[2],
+                "asset_id": row[3],
+                "cycle_id": row[4],
+                "record_kind": row[5],
+                "phase_id": row[6],
+                "transition_id": row[7],
+                "from_phase_id": row[8],
+                "to_phase_id": row[9],
+                "trigger_event_id": row[10],
+                "requirement_id": row[11],
+                "transition_disposition": row[12],
+                "epistemic_state": row[13],
+                "evidence_validity": row[14],
+                "temporal_coverage": row[15],
+                "source_id": row[16],
+                "operating_context": {
+                    "component_id": row[17],
+                    "profile_id": row[18],
+                    "operating_mode": row[19],
+                    "configuration_version": row[20],
+                    "firmware_version": row[21],
+                    "calibration_id": row[22],
+                    "sampling_profile_id": row[23],
+                    "recipe_id": row[24],
+                    "product_id": row[25],
+                    "context_tags": row[26],
+                },
+                "evidence_ids": row[27],
+                "reasons": row[28],
+                "clock_evidence": row[29],
+                "details": row[30],
+            }
+            for row in reversed(rows)
+        ]
+        return {
+            "schema_version": "linealert.historian.functional-temporal-history.v1",
+            "persistence": "timescaledb",
+            "count": len(records),
+            "records": records,
+        }
+
     def observation_history(
         self,
         *,
@@ -331,6 +701,7 @@ class TimescaleHistorian:
         asset_id: str | None = None,
     ) -> dict[str, Any]:
         bounded_limit = max(1, min(limit, 5000))
+        params: tuple[Any, ...]
         if asset_id:
             query = """
                 SELECT payload FROM machine_observations
@@ -352,6 +723,10 @@ class TimescaleHistorian:
 
     def episode(self, episode_id: str, *, limit: int = 1000) -> dict[str, Any]:
         conditions = self.condition_history(episode_id=episode_id, limit=limit)
+        functional_temporal = self.functional_temporal_history(
+            episode_id=episode_id,
+            limit=limit,
+        )
         with self._lock, self._connection.cursor() as cursor:
             cursor.execute(
                 """
@@ -386,6 +761,7 @@ class TimescaleHistorian:
             "schema_version": "linealert.historian.episode.v1",
             "episode_id": episode_id,
             "condition_measurements": conditions["measurements"],
+            "functional_temporal_evidence": functional_temporal["records"],
             "outcomes": outcomes,
             "claim_boundary": (
                 "A shared timeline preserves association and sequence. It does not by itself "
