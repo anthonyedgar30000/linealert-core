@@ -116,6 +116,7 @@ class ConditionHistoryRecord:
     cycle_id: str | None = None
     phase_id: str | None = None
     operating_context: Mapping[str, Any] = field(default_factory=dict)
+    evidence_authority: Mapping[str, Any] | None = None
     clock_evidence: Mapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -150,6 +151,12 @@ class ConditionHistoryRecord:
             "operating_context",
             MappingProxyType(dict(self.operating_context)),
         )
+        if self.evidence_authority is not None:
+            object.__setattr__(
+                self,
+                "evidence_authority",
+                MappingProxyType(dict(self.evidence_authority)),
+            )
         object.__setattr__(
             self,
             "clock_evidence",
@@ -293,7 +300,8 @@ CREATE INDEX IF NOT EXISTS condition_episode_time_idx
 ALTER TABLE condition_measurements
     ADD COLUMN IF NOT EXISTS cycle_id TEXT,
     ADD COLUMN IF NOT EXISTS phase_id TEXT,
-    ADD COLUMN IF NOT EXISTS operating_context JSONB NOT NULL DEFAULT '{}'::jsonb;
+    ADD COLUMN IF NOT EXISTS operating_context JSONB NOT NULL DEFAULT '{}'::jsonb,
+    ADD COLUMN IF NOT EXISTS evidence_authority JSONB;
 
 CREATE TABLE IF NOT EXISTS functional_temporal_evidence (
     observed_at TIMESTAMPTZ NOT NULL,
@@ -431,6 +439,7 @@ class TimescaleHistorian:
         cycle_id: str | None = None,
         phase_id: str | None = None,
         operating_context: Mapping[str, Any] | None = None,
+        evidence_authority: Mapping[str, Any] | None = None,
     ) -> None:
         observation = measurement.observation
         clock = measurement.clock_evidence
@@ -442,11 +451,12 @@ class TimescaleHistorian:
                     signal_name, value, unit, min_value, max_value, temporal_rule_status,
                     quality, reason_code, rule_id, correlation_id, topology_from, topology_to,
                     start_event_id, end_event_id, start_source_id, end_source_id, semantic, scope,
-                    source_mode, cycle_id, phase_id, operating_context, clock_evidence
+                    source_mode, cycle_id, phase_id, operating_context, evidence_authority,
+                    clock_evidence
                 ) VALUES (
                     %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                     %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                    %s::jsonb, %s::jsonb
+                    %s::jsonb, %s::jsonb, %s::jsonb
                 )
                 ON CONFLICT (observed_at, observation_id) DO NOTHING
                 """,
@@ -478,6 +488,11 @@ class TimescaleHistorian:
                     cycle_id,
                     phase_id,
                     json.dumps(dict(operating_context or {}), sort_keys=True),
+                    (
+                        json.dumps(dict(evidence_authority), sort_keys=True)
+                        if evidence_authority is not None
+                        else None
+                    ),
                     json.dumps(
                         {
                             "start_clock_quality": clock.start_clock_quality,
@@ -669,7 +684,8 @@ class TimescaleHistorian:
             SELECT observed_at, observation_id, episode_id, asset_id, relationship_id,
                    signal_name, value, unit, min_value, max_value, temporal_rule_status,
                    quality, reason_code, correlation_id, topology_from, topology_to,
-                   source_mode, cycle_id, phase_id, operating_context, clock_evidence
+                   source_mode, cycle_id, phase_id, operating_context, evidence_authority,
+                   clock_evidence
             FROM condition_measurements
             {predicate}
             ORDER BY observed_at DESC, observation_id DESC
@@ -926,7 +942,8 @@ def _condition_history_record_from_row(
         cycle_id=row[17],
         phase_id=row[18],
         operating_context=row[19] or {},
-        clock_evidence=row[20] or {},
+        evidence_authority=row[20],
+        clock_evidence=row[21] or {},
     )
 
 
@@ -954,6 +971,9 @@ def _condition_history_record_to_payload(
         "cycle_id": record.cycle_id,
         "phase_id": record.phase_id,
         "operating_context": dict(record.operating_context),
+        "evidence_authority": (
+            dict(record.evidence_authority) if record.evidence_authority is not None else None
+        ),
         "clock_evidence": dict(record.clock_evidence),
     }
 

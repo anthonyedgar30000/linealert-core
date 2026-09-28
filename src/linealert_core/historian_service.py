@@ -86,6 +86,7 @@ class LocalizationTopologyAuthority:
 
     topology: TopologyGraph
     persistence_policies: PersistencePolicyRegistry
+    declared_relationship_ids: frozenset[str]
     source_name: str
     source_sha256: str
     asset_id: str
@@ -138,6 +139,7 @@ def load_localization_topology_authority(
     return LocalizationTopologyAuthority(
         topology=core.topology,
         persistence_policies=persistence_policies,
+        declared_relationship_ids=declared_relationship_ids,
         source_name=path.name,
         source_sha256=hashlib.sha256(source_bytes).hexdigest(),
         asset_id=core.machine_profile.asset_id,
@@ -561,12 +563,45 @@ def _required_query_text(query: dict[str, list[str]], name: str) -> str:
     return value
 
 
+def condition_evidence_authority_payload(
+    authority: LocalizationTopologyAuthority | None,
+    *,
+    asset_id: str,
+    relationship_id: str,
+) -> dict[str, object] | None:
+    """Capture exact historian write-time config/policy authority for one relationship."""
+
+    if authority is None:
+        return None
+    if asset_id != authority.asset_id:
+        raise ValueError("condition asset_id does not match the configured historian authority")
+    if relationship_id not in authority.declared_relationship_ids:
+        raise ValueError(
+            "condition relationship_id is not declared by the configured historian authority"
+        )
+
+    policy = authority.persistence_policies.resolve(relationship_id)
+    return {
+        "schema_version": "linealert.condition-evidence-authority.v1",
+        "authority_scope": "HISTORIAN_WRITE_TIME_POLICY_AUTHORITY",
+        "configuration": _topology_authority_to_dict(authority),
+        "persistence_policy": (
+            configured_persistence_policy_binding_to_dict(
+                authority.bind_persistence_policy(relationship_id)
+            )
+            if policy is not None
+            else None
+        ),
+    }
+
+
 def persist_published_evidence(
     source_base_url: str,
     historian: TimescaleHistorian,
     status: HistorianServiceStatus,
     *,
     episode_id: str,
+    localization_authority: LocalizationTopologyAuthority | None = None,
 ) -> None:
     """Poll current bridge publications and idempotently retain them."""
 
@@ -585,13 +620,19 @@ def persist_published_evidence(
         operating_context = raw.get("operating_context")
         if operating_context is not None and not isinstance(operating_context, dict):
             raise ValueError("condition operating_context must be an object")
+        measurement = measurement_from_payload(raw)
         historian.record_condition_measurement(
-            measurement_from_payload(raw),
+            measurement,
             episode_id=episode_id,
             source_mode=source_mode,
             cycle_id=_optional_text(raw.get("cycle_id")),
             phase_id=_optional_text(raw.get("phase_id")),
             operating_context=operating_context,
+            evidence_authority=condition_evidence_authority_payload(
+                localization_authority,
+                asset_id=measurement.observation.asset_id,
+                relationship_id=measurement.observation.relationship_id,
+            ),
         )
     status.update(
         connected=True,
@@ -609,6 +650,7 @@ def poll_published_evidence(
     *,
     episode_id: str,
     interval_seconds: float,
+    localization_authority: LocalizationTopologyAuthority | None = None,
 ) -> None:
     while True:
         try:
@@ -617,6 +659,7 @@ def poll_published_evidence(
                 historian,
                 status,
                 episode_id=episode_id,
+                localization_authority=localization_authority,
             )
         except (HTTPError, URLError, TimeoutError, OSError, ValueError, HistorianError) as exc:
             status.update(
@@ -869,7 +912,11 @@ def main() -> None:
     poll_thread = threading.Thread(
         target=poll_published_evidence,
         args=(args.source_base_url, historian, status),
-        kwargs={"episode_id": args.episode_id, "interval_seconds": args.poll_seconds},
+        kwargs={
+            "episode_id": args.episode_id,
+            "interval_seconds": args.poll_seconds,
+            "localization_authority": localization_authority,
+        },
         daemon=True,
     )
     poll_thread.start()

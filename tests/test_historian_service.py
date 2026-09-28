@@ -10,9 +10,11 @@ from urllib.parse import urlencode
 
 import pytest
 
+import linealert_core.historian_service as historian_service_module
 from linealert_core.historian import ConditionHistoryRecord
 from linealert_core.historian_service import (
     HistorianServiceStatus,
+    condition_evidence_authority_payload,
     condition_localization_request_from_query,
     functional_temporal_selection_spec_from_query,
     handler_for,
@@ -499,3 +501,165 @@ def test_localization_endpoint_unavailable_uses_configured_response_schema() -> 
     assert payload["persistence_policy"] is None
     assert payload["policy_application"] is None
     assert payload["topology_authority"] is None
+
+
+def test_condition_evidence_authority_payload_retains_exact_config_and_policy() -> None:
+    authority = load_localization_topology_authority(
+        PROJECT_ROOT / "examples" / "labeler_demo_config.json"
+    )
+
+    payload = condition_evidence_authority_payload(
+        authority,
+        asset_id="LABELER-DEMO-01",
+        relationship_id="relationship:label-presentation-delay",
+    )
+
+    assert payload is not None
+    assert payload["schema_version"] == "linealert.condition-evidence-authority.v1"
+    assert payload["authority_scope"] == "HISTORIAN_WRITE_TIME_POLICY_AUTHORITY"
+    configuration = payload["configuration"]
+    assert isinstance(configuration, dict)
+    assert configuration["asset_id"] == "LABELER-DEMO-01"
+    assert configuration["profile_id"] == "generic-pressure-sensitive-labeler-demo-v1"
+    assert configuration["source_name"] == "labeler_demo_config.json"
+    assert configuration["source_sha256"] == authority.source_sha256
+    policy = payload["persistence_policy"]
+    assert isinstance(policy, dict)
+    policy_payload = policy["policy"]
+    assert isinstance(policy_payload, dict)
+    assert policy_payload["policy_id"] == "label-presentation-persistence-v1"
+    assert policy_payload["policy_revision"] == "1"
+    assert policy_payload["relationship_id"] == "relationship:label-presentation-delay"
+    assert policy_payload["required_outside"] == 3
+    assert policy_payload["window_size"] == 4
+    assert policy["source_sha256"] == authority.source_sha256
+
+
+def test_condition_evidence_authority_payload_is_null_without_configured_authority() -> None:
+    assert (
+        condition_evidence_authority_payload(
+            None,
+            asset_id="LABELER-DEMO-01",
+            relationship_id="relationship:label-presentation-delay",
+        )
+        is None
+    )
+
+
+def test_condition_evidence_authority_payload_refuses_asset_mismatch() -> None:
+    authority = load_localization_topology_authority(
+        PROJECT_ROOT / "examples" / "labeler_demo_config.json"
+    )
+
+    with pytest.raises(ValueError, match="asset_id"):
+        condition_evidence_authority_payload(
+            authority,
+            asset_id="OTHER-ASSET",
+            relationship_id="relationship:label-presentation-delay",
+        )
+
+
+def test_condition_evidence_authority_payload_refuses_undeclared_relationship() -> None:
+    authority = load_localization_topology_authority(
+        PROJECT_ROOT / "examples" / "labeler_demo_config.json"
+    )
+
+    with pytest.raises(ValueError, match="relationship_id"):
+        condition_evidence_authority_payload(
+            authority,
+            asset_id="LABELER-DEMO-01",
+            relationship_id="relationship:not-declared",
+        )
+
+
+def test_condition_evidence_authority_payload_retains_config_when_policy_is_absent() -> None:
+    authority = load_localization_topology_authority(
+        PROJECT_ROOT / "examples" / "labeler_demo_config.json"
+    )
+
+    payload = condition_evidence_authority_payload(
+        authority,
+        asset_id="LABELER-DEMO-01",
+        relationship_id="relationship:initial-contact-delay",
+    )
+
+    assert payload is not None
+    configuration = payload["configuration"]
+    assert isinstance(configuration, dict)
+    assert configuration["source_sha256"] == authority.source_sha256
+    assert payload["persistence_policy"] is None
+
+
+class _CapturingConditionHistorian:
+    def __init__(self) -> None:
+        self.machine_observations: list[dict[str, object]] = []
+        self.condition_writes: list[dict[str, object]] = []
+
+    def record_machine_observation(self, payload: dict[str, object]) -> None:
+        self.machine_observations.append(payload)
+
+    def record_condition_measurement(
+        self,
+        measurement: object,
+        **kwargs: object,
+    ) -> None:
+        self.condition_writes.append({"measurement": measurement, **kwargs})
+
+
+def test_persist_published_evidence_attaches_write_time_authority(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    authority = load_localization_topology_authority(
+        PROJECT_ROOT / "examples" / "labeler_demo_config.json"
+    )
+    condition = _condition_payload()
+    condition["operating_context"] = {
+        "configuration_version": "demo-config-v1",
+        "firmware_version": "demo-fw-v1",
+    }
+
+    def fake_fetch(url: str, *, timeout: float = 1.5) -> dict[str, object]:
+        del timeout
+        if url.endswith("/api/telemetry"):
+            return {
+                "bridge_timestamp": "2026-09-14T11:37:00+00:00",
+                "asset_id": "LABELER-DEMO-01",
+                "connected": True,
+            }
+        if url.endswith("/api/condition"):
+            return {
+                "source_mode": "deterministic_event_replay",
+                "condition": {
+                    "condition_signals": {
+                        "observations": [condition],
+                    }
+                },
+            }
+        raise AssertionError(f"unexpected URL: {url}")
+
+    monkeypatch.setattr(historian_service_module, "_fetch_json", fake_fetch)
+    historian = _CapturingConditionHistorian()
+    status = HistorianServiceStatus()
+
+    historian_service_module.persist_published_evidence(
+        "http://127.0.0.1:8765",
+        historian,  # type: ignore[arg-type]
+        status,
+        episode_id="incident-42",
+        localization_authority=authority,
+    )
+
+    assert len(historian.machine_observations) == 1
+    assert len(historian.condition_writes) == 1
+    write = historian.condition_writes[0]
+    evidence_authority = write["evidence_authority"]
+    assert isinstance(evidence_authority, dict)
+    assert evidence_authority["authority_scope"] == ("HISTORIAN_WRITE_TIME_POLICY_AUTHORITY")
+    configuration = evidence_authority["configuration"]
+    assert isinstance(configuration, dict)
+    assert configuration["source_sha256"] == authority.source_sha256
+    policy = evidence_authority["persistence_policy"]
+    assert isinstance(policy, dict)
+    policy_payload = policy["policy"]
+    assert isinstance(policy_payload, dict)
+    assert policy_payload["policy_id"] == "label-presentation-persistence-v1"
