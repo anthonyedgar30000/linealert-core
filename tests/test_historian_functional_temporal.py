@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import threading
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -363,3 +363,187 @@ def test_empty_functional_temporal_batch_is_noop() -> None:
     assert historian.record_functional_temporal_evidence_batch(()) == ()
     assert connection.transaction_entries == 0
     assert connection.executions == []
+
+
+def _history_row(record: FunctionalTemporalHistoryRecord) -> tuple[object, ...]:
+    context_value = record.operating_context
+    return (
+        record.observed_at,
+        record.record_id,
+        record.episode_id,
+        context_value.asset_id,
+        record.cycle_id,
+        record.record_kind.value,
+        record.phase_id,
+        record.transition_id,
+        record.from_phase_id,
+        record.to_phase_id,
+        record.trigger_event_id,
+        record.requirement_id,
+        (
+            record.transition_disposition.value
+            if record.transition_disposition is not None
+            else None
+        ),
+        record.state.value,
+        record.validity.value,
+        record.coverage.value,
+        record.source_id,
+        context_value.component_id,
+        context_value.profile_id,
+        context_value.operating_mode,
+        context_value.configuration_version,
+        context_value.firmware_version,
+        context_value.calibration_id,
+        context_value.sampling_profile_id,
+        context_value.recipe_id,
+        context_value.product_id,
+        dict(context_value.context_tags),
+        list(record.evidence_ids),
+        list(record.reasons),
+        dict(record.clock_evidence),
+        dict(record.details),
+    )
+
+
+def test_typed_history_selection_applies_exact_time_filters_and_preserves_context() -> None:
+    historian, connection = fake_historian()
+    record = guard_record()
+    connection.rows = [_history_row(record)]
+    start = datetime(2026, 9, 14, 15, 41, tzinfo=UTC)
+    end = datetime(2026, 9, 14, 15, 43, tzinfo=UTC)
+
+    records, truncated = historian.select_functional_temporal_records(
+        limit=10,
+        asset_id="LABELER-DEMO-01",
+        cycle_id="cycle-42",
+        phase_id="CAPTURED",
+        record_kind="GUARD",
+        from_time=start,
+        to_time=end,
+    )
+
+    assert truncated is False
+    assert records == (record,)
+    query, params = connection.executions[-1]
+    assert "asset_id = %s" in query
+    assert "cycle_id = %s" in query
+    assert "phase_id = %s" in query
+    assert "record_kind = %s" in query
+    assert "observed_at >= %s" in query
+    assert "observed_at <= %s" in query
+    assert "ORDER BY observed_at DESC, record_id DESC" in query
+    assert params is not None
+    assert params[-1] == 11
+    assert start in params
+    assert end in params
+    assert records[0].operating_context.configuration_version == "plc-config-4.2.1"
+    assert dict(records[0].operating_context.context_tags) == {
+        "line": "demo",
+        "shift": "day",
+    }
+
+
+def test_typed_history_selection_is_chronological_and_marks_truncation() -> None:
+    historian, connection = fake_historian()
+    latest = guard_record()
+    middle = FunctionalTemporalHistoryRecord(
+        observed_at=latest.observed_at - timedelta(seconds=1),
+        record_id="FT:cycle-42:guard-middle",
+        episode_id=latest.episode_id,
+        cycle_id=latest.cycle_id,
+        record_kind=latest.record_kind,
+        state=latest.state,
+        validity=latest.validity,
+        coverage=latest.coverage,
+        source_id=latest.source_id,
+        operating_context=latest.operating_context,
+        phase_id=latest.phase_id,
+        requirement_id=latest.requirement_id,
+        evidence_ids=("E:middle",),
+    )
+    oldest = FunctionalTemporalHistoryRecord(
+        observed_at=latest.observed_at - timedelta(seconds=2),
+        record_id="FT:cycle-42:guard-oldest",
+        episode_id=latest.episode_id,
+        cycle_id=latest.cycle_id,
+        record_kind=latest.record_kind,
+        state=latest.state,
+        validity=latest.validity,
+        coverage=latest.coverage,
+        source_id=latest.source_id,
+        operating_context=latest.operating_context,
+        phase_id=latest.phase_id,
+        requirement_id=latest.requirement_id,
+        evidence_ids=("E:oldest",),
+    )
+    connection.rows = [
+        _history_row(latest),
+        _history_row(middle),
+        _history_row(oldest),
+    ]
+
+    records, truncated = historian.select_functional_temporal_records(limit=2)
+
+    assert truncated is True
+    assert [record.record_id for record in records] == [
+        middle.record_id,
+        latest.record_id,
+    ]
+    query, params = connection.executions[-1]
+    assert params is not None
+    assert params[-1] == 3
+    assert "LIMIT %s" in query
+
+
+def test_functional_temporal_history_exposes_truncation_and_bounds() -> None:
+    historian, connection = fake_historian()
+    record = guard_record()
+    older = FunctionalTemporalHistoryRecord(
+        observed_at=record.observed_at - timedelta(seconds=1),
+        record_id="FT:cycle-42:guard-older",
+        episode_id=record.episode_id,
+        cycle_id=record.cycle_id,
+        record_kind=record.record_kind,
+        state=record.state,
+        validity=record.validity,
+        coverage=record.coverage,
+        source_id=record.source_id,
+        operating_context=record.operating_context,
+        phase_id=record.phase_id,
+        requirement_id=record.requirement_id,
+        evidence_ids=("E:older",),
+    )
+    connection.rows = [_history_row(record), _history_row(older)]
+    start = datetime(2026, 9, 14, 15, 40, tzinfo=UTC)
+    end = datetime(2026, 9, 14, 15, 44, tzinfo=UTC)
+
+    payload_value = historian.functional_temporal_history(
+        limit=1,
+        asset_id="LABELER-DEMO-01",
+        from_time=start,
+        to_time=end,
+    )
+
+    assert payload_value["count"] == 1
+    assert payload_value["truncated"] is True
+    assert payload_value["truncation_semantic"] == "older_matching_records_omitted"
+    assert payload_value["from_time"] == start.isoformat()
+    assert payload_value["to_time"] == end.isoformat()
+    assert payload_value["records"][0]["record_id"] == record.record_id
+    assert payload_value["records"][0]["asset_id"] == "LABELER-DEMO-01"
+
+
+def test_typed_history_selection_rejects_invalid_bounds_and_limit() -> None:
+    historian, _ = fake_historian()
+    with pytest.raises(HistorianError, match="timezone-aware"):
+        historian.select_functional_temporal_records(
+            from_time=datetime(2026, 9, 14, 15, 40),
+        )
+    with pytest.raises(HistorianError, match="less than or equal"):
+        historian.select_functional_temporal_records(
+            from_time=datetime(2026, 9, 14, 15, 44, tzinfo=UTC),
+            to_time=datetime(2026, 9, 14, 15, 40, tzinfo=UTC),
+        )
+    with pytest.raises(HistorianError, match="between 1 and 5000"):
+        historian.select_functional_temporal_records(limit=5001)

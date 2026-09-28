@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import pytest
 
-from linealert_core.historian_service import HistorianServiceStatus, measurement_from_payload
+from linealert_core.historian_service import (
+    HistorianServiceStatus,
+    history_time_from_query,
+    measurement_from_payload,
+)
 
 
 def _condition_payload() -> dict[str, object]:
@@ -68,3 +72,16 @@ def test_historian_service_status_returns_detached_payload() -> None:
 
     assert status.get()["connected"] is True
     assert status.get()["latest_condition_count"] == 10
+
+
+def test_history_time_from_query_requires_timezone_aware_iso8601() -> None:
+    parsed = history_time_from_query("2026-09-14T15:42:00Z", "from_time")
+
+    assert parsed is not None
+    assert parsed.isoformat() == "2026-09-14T15:42:00+00:00"
+    assert history_time_from_query(None, "to_time") is None
+
+    with pytest.raises(ValueError, match="timezone-aware"):
+        history_time_from_query("2026-09-14T15:42:00", "from_time")
+    with pytest.raises(ValueError, match="ISO 8601"):
+        history_time_from_query("not-a-time", "from_time")

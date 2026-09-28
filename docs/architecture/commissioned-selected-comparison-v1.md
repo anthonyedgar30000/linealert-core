@@ -91,11 +91,11 @@ A numeric difference is descriptive operational evidence. It is not automaticall
 
 ## Current scope
 
-V1 compares explicit `FunctionalTemporalHistoryRecord` selections. It does not yet add a new historian HTTP time-range query surface or automatically choose the commissioned reference window.
+The comparator continues to consume explicit `FunctionalTemporalHistoryRecord` selections and does not choose a commissioned reference window automatically.
 
-That separation is deliberate: reference selection policy is an authority decision and should not be hidden inside the comparator.
+A separate read-only historian selection layer now supplies exact cycle/episode/time-window records to this comparator, preserves truncation state, and refuses to hand partial selections into comparison. The comparator semantics themselves remain unchanged.
 
-A later read-only historian integration can select exact windows/cycles and feed them to this comparator without changing comparison semantics.
+That separation is deliberate: reference selection policy is an authority decision and should not be hidden inside either the historian query or the comparator.
 
 ## Authority boundary
 

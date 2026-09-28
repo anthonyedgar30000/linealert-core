@@ -30,6 +30,7 @@ from .historian import (
     FunctionalTemporalRecordKind,
     HistorianError,
     HistorianOperatingContext,
+    HistorianQueryError,
     TimescaleHistorian,
 )
 from .live_condition import LiveClockEvidence, LiveConditionMeasurement
@@ -243,6 +244,22 @@ def _optional_text(value: Any) -> str | None:
     return value if value.strip() else None
 
 
+def history_time_from_query(value: str | None, field_name: str) -> datetime | None:
+    """Parse an optional timezone-aware ISO 8601 historian query bound."""
+
+    if value is None:
+        return None
+    if not value.strip():
+        raise ValueError(f"{field_name} must not be empty when supplied")
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError(f"{field_name} must be ISO 8601") from exc
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError(f"{field_name} must be timezone-aware")
+    return parsed
+
+
 def persist_published_evidence(
     source_base_url: str,
     historian: TimescaleHistorian,
@@ -362,6 +379,14 @@ def handler_for(
                             cycle_id=query.get("cycle_id", [None])[0],
                             phase_id=query.get("phase_id", [None])[0],
                             record_kind=query.get("record_kind", [None])[0],
+                            from_time=history_time_from_query(
+                                query.get("from_time", [None])[0],
+                                "from_time",
+                            ),
+                            to_time=history_time_from_query(
+                                query.get("to_time", [None])[0],
+                                "to_time",
+                            ),
                         )
                     )
                     return
@@ -374,6 +399,8 @@ def handler_for(
                     self._send_json(historian.episode(episode_id, limit=limit))
                     return
                 self._send_json({"error": "not found"}, status_code=404)
+            except (ValueError, HistorianQueryError) as exc:
+                self._send_json({"error": str(exc)}, status_code=400)
             except HistorianError as exc:
                 self._send_json({"error": str(exc)}, status_code=503)
 

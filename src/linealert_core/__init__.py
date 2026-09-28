@@ -110,6 +110,14 @@ from .functional_temporal_runtime import (
     FunctionalTemporalRuntimeError,
     FunctionalTemporalRuntimeResult,
 )
+from .functional_temporal_selection import (
+    FunctionalTemporalHistorianSelector,
+    FunctionalTemporalHistorySelection,
+    FunctionalTemporalSelectedComparison,
+    FunctionalTemporalSelectionError,
+    FunctionalTemporalSelectionSpec,
+    SelectionHandoffDisposition,
+)
 from .functional_temporal_source_binding import (
     BoundEvidenceObservation,
     EventEvidenceBinding,
@@ -240,6 +248,8 @@ __all__ = [
     "FunctionalTemporalComparisonError",
     "FunctionalTemporalComparisonPoint",
     "FunctionalTemporalComparisonResult",
+    "FunctionalTemporalHistorianSelector",
+    "FunctionalTemporalHistorySelection",
     "FunctionalTemporalIdentity",
     "FunctionalTemporalOrchestrationError",
     "FunctionalTemporalOrchestrationResult",
@@ -249,6 +259,9 @@ __all__ = [
     "FunctionalTemporalRuntimeCheckpoint",
     "FunctionalTemporalRuntimeError",
     "FunctionalTemporalRuntimeResult",
+    "FunctionalTemporalSelectedComparison",
+    "FunctionalTemporalSelectionError",
+    "FunctionalTemporalSelectionSpec",
     "FunctionalTemporalSourceBindingError",
     "GuardDefinition",
     "InvariantDefinition",
@@ -273,6 +286,7 @@ __all__ = [
     "RequirementEvaluation",
     "ReplayBaselineAssessment",
     "RunDriftAssessment",
+    "SelectionHandoffDisposition",
     "ReplayInputError",
     "ReplaySummary",
     "SignalAnalysisError",
