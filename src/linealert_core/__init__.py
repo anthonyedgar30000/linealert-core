@@ -86,6 +86,12 @@ from .functional_temporal import (
     TransitionDisposition,
     TransitionEvaluation,
 )
+from .functional_temporal_runtime import (
+    FunctionalTemporalPhaseAssessment,
+    FunctionalTemporalRuntime,
+    FunctionalTemporalRuntimeError,
+    FunctionalTemporalRuntimeResult,
+)
 from .live_condition import (
     LiveClockEvidence,
     LiveConditionConsumer,
@@ -192,6 +198,10 @@ __all__ = [
     "FunctionalTemporalError",
     "FunctionalTemporalEvaluator",
     "FunctionalTemporalModel",
+    "FunctionalTemporalPhaseAssessment",
+    "FunctionalTemporalRuntime",
+    "FunctionalTemporalRuntimeError",
+    "FunctionalTemporalRuntimeResult",
     "GuardDefinition",
     "InvariantDefinition",
     "FusionMosaic",
