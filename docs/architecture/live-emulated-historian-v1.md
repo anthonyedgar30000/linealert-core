@@ -169,6 +169,10 @@ latest cycle, measured value, engineering unit, and expected envelope.
 
 It does not label emulated SQLite history as TimescaleDB.
 
+## Server-rendered readiness
+
+A later bounded frontend increment server-renders the initial historian status and recent functional/temporal history for `/reasoning` before browser hydration. Client polling still continues through the same-origin historian proxy afterward. This prevents a browser hydration failure from leaving a healthy emulator displayed as an unassessed `WAITING` state. See `docs/architecture/reasoning-server-rendered-readiness-v1.md`.
+
 ## Failure behavior
 
 Retained-store availability and live generator availability are distinct.

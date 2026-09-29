@@ -31,16 +31,22 @@ SERVICE_CASE_PERSISTENCE = (
 LIVE_EMULATED_HISTORIAN = (
     PROJECT_ROOT / "docs" / "architecture" / "live-emulated-historian-v1.md"
 )
+REASONING_SSR = (
+    PROJECT_ROOT
+    / "docs"
+    / "architecture"
+    / "reasoning-server-rendered-readiness-v1.md"
+)
 
 PR37_HEAD = "fc22177e1b855fd6f416f648330cd3416215a96c"
 PR37_MERGE = "97256907cd428a8a0ba3dfb7d4020fa19a2485ee"
 PR38_HEAD = "0d5d8180a5edffaeca8a9822800d7e729ef96327"
 PR38_MERGE = "06f795e760c7ad360bc51e264f8c55238a2a60da"
 PR114_MERGE = "4037c2c0bcadce3e3e6e414735c0045b65db6027"
-CURRENT_MAIN = "a39007ab09ec1be4ff7fb051e524ae7bc2833227"
-CURRENT_TREE = "26b80541cd22313de25eb9b40ef1298a9be323d8"
+CURRENT_MAIN = "17bc6abbf402a2532b64a58f701f707833b4d671"
+CURRENT_TREE = "c813cd5e27ffdf801a2ee5bda572627b75f3fd7b"
 PR150_HEAD = "d300af099fe493f5e6c727c66f2f0371d2ccbf86"
-PR156_HEAD = "569e1369e05538654b1b32f7181933c50fb716c3"
+PR157_HEAD = "c0c05d414fd007ff7c8f90154fe67eb67531f69f"
 
 
 def load_project_state() -> dict[str, Any]:
@@ -62,10 +68,10 @@ def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
     assert policy["state_only_merge_requires_immediate_self_sync"] is False
     assert policy["publication_pr_self_reference_required"] is False
     assert "substantive external lifecycle" in policy["rule"]
-    assert "PR #156 merged bounded local service-case persistence" in (
+    assert "PR #157 merged the explicit live emulated historian" in (
         policy["current_correction_reason"]
     )
-    assert "live emulated historian increment" in (
+    assert "server-rendered readiness increment" in (
         policy["current_correction_reason"]
     )
 
@@ -76,9 +82,9 @@ def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
     assert observation["active_sync_pull_request"] is None
     assert observation["open_issues"] == [31]
     assert observation["latest_merged_pull_request"] == {
-        "pull_request": 156,
-        "title": "Add local service case persistence",
-        "source_head": PR156_HEAD,
+        "pull_request": 157,
+        "title": "Add live emulated historian",
+        "source_head": PR157_HEAD,
         "merge_commit": CURRENT_MAIN,
     }
     assert observation["recently_closed_issues"]["23"] == {
@@ -93,8 +99,8 @@ def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
 
     ci = observation["main_ci"]
     assert ci["verification_scope"] == "merged_main_push"
-    assert ci["pull_request"] == 156
-    assert ci["run_id"] == 36495833503
+    assert ci["pull_request"] == 157
+    assert ci["run_id"] == 36500616625
     assert ci["head_sha"] == CURRENT_MAIN
     assert ci["merge_commit"] == CURRENT_MAIN
     assert ci["conclusion"] == "success"
@@ -104,7 +110,7 @@ def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
 
     pages = observation["public_pages"]
     assert pages["status"] == "observed_deployed_2026_09_28"
-    assert pages["workflow_run"] == 36495833532
+    assert pages["workflow_run"] == 36500616599
     assert pages["source_commit"] == CURRENT_MAIN
     assert pages["source_tree"] == CURRENT_TREE
     assert pages["fresh_verification_in_this_sync"] is True
@@ -496,7 +502,7 @@ def test_emulated_historian_reality_is_explicit_and_non_authoritative() -> None:
     state = load_project_state()
     reality = state["emulated_historian_reality"]
 
-    assert reality["status"] == "implemented_in_current_increment"
+    assert reality["status"] == "merged_on_main_runtime_verified"
     assert reality["classification"] == "controlled_synthetic_live_historian_emulation"
     assert reality["source_baseline_main"] == CURRENT_MAIN
 
@@ -547,7 +553,7 @@ def test_reasoning_node_tracks_current_emulated_historian_increment() -> None:
     reasoning = load_project_state()["reasoning_node_reality"]
     emulation = reasoning["historian_emulation"]
 
-    assert emulation["status"] == "implemented_in_current_increment"
+    assert emulation["status"] == "merged_on_main_runtime_verified"
     assert emulation["explicit_mode"] == "-UseEmulatedHistorian"
     assert emulation["automatic_timescale_fallback"] is False
     assert emulation["service"] == {
@@ -566,6 +572,52 @@ def test_reasoning_node_tracks_current_emulated_historian_increment() -> None:
     assert emulation["physical_state_authority"] is False
     assert emulation["production_authority"] is False
     assert emulation["timescale_replacement_claim"] is False
+
+
+def test_reasoning_inputs_delivery_is_server_rendered_then_client_polled() -> None:
+    state = load_project_state()
+    delivery = state["reasoning_inputs_delivery_reality"]
+
+    assert delivery["status"] == "implemented_in_current_increment"
+    assert delivery["classification"] == (
+        "server_rendered_initial_readiness_plus_client_polling"
+    )
+    assert delivery["source_baseline_main"] == CURRENT_MAIN
+    assert delivery["route"] == "/reasoning"
+
+    server = delivery["server_initial_read"]
+    assert server["source"] == "loopback_127_0_0_1_8767"
+    assert server["status_path"] == "/api/status"
+    assert server["history_path"] == "/api/history/functional-temporal?limit=8"
+    assert server["cache"] == "no-store"
+    assert server["timeout_seconds"] == 1.5
+    assert server["historian_write_path"] is False
+
+    client = delivery["client_continuation"]
+    assert client["same_origin"] is True
+    assert client["status_path"] == "/api/historian/status"
+    assert client["history_path"] == "/api/historian/functional-temporal?limit=8"
+    assert client["poll_interval_seconds"] == 2.5
+
+    acceptance = delivery["healthy_lan_initial_html_acceptance"]
+    assert acceptance["http_status"] == 200
+    assert "LIVE EMULATION" in acceptance["contains"]
+    assert "EMULATED SOURCE LIVE" in acceptance["contains"]
+    assert "Local emulated historian" in acceptance["contains"]
+    assert "OFFLINE · FAIL CLOSED" in acceptance["does_not_contain"]
+    assert "WAITING" in acceptance["does_not_contain"]
+
+    assert "EVIDENCE.HISTORIAN_UNAVAILABLE" in delivery["failure_behavior"]
+    assert "server_rendered_readiness != diagnosis" in delivery["boundaries"]
+    assert "client_hydration_failure != historian_failure" in (
+        delivery["boundaries"]
+    )
+
+    architecture = REASONING_SSR.read_text(encoding="utf-8")
+    assert "dynamic server-rendered route" in architecture
+    assert "EVIDENCE.HISTORIAN_UNAVAILABLE" in architecture
+    assert "LIVE EMULATION" in architecture
+    assert "client_hydration_failure != historian_failure" in architecture
 
 
 def test_clock_integrity_reality_remains_synthetic_and_bounded() -> None:
