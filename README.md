@@ -58,6 +58,9 @@ physical plant history. See
 authority boundary. The `/reasoning` route server-renders the initial historian
 readiness and recent bounded history before browser hydration, then continues
 client polling; see `docs/architecture/reasoning-server-rendered-readiness-v1.md`.
+Reasoning historian timestamps are rendered in canonical UTC rather than using
+environment locale formatting so server/client hydration remains deterministic;
+see `docs/architecture/reasoning-deterministic-timestamp-rendering-v1.md`.
 When the hybrid UI is launched in Next.js development mode, the launcher also
 adds only the host's default-route IPv4 address to `allowedDevOrigins` so a LAN
 browser can load the client/HMR runtime without exposing loopback services; see

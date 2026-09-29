@@ -80,3 +80,13 @@ def test_reasoning_client_polls_after_server_initial_state() -> None:
     assert "initialReachable" in client
     assert 'fetch("/api/historian/status"' in client
     assert 'fetch("/api/historian/functional-temporal?limit=8"' in client
+
+
+def test_reasoning_timestamps_are_hydration_deterministic() -> None:
+    client = REASONING_CLIENT.read_text(encoding="utf-8")
+
+    assert "parsed.toISOString()" in client
+    assert 'iso.slice(0, 10) + " " + iso.slice(11, 19) + " UTC"' in client
+    assert "toLocaleString" not in client
+    assert "toLocaleDateString" not in client
+    assert "toLocaleTimeString" not in client
