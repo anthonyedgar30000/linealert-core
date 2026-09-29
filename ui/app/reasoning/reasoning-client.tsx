@@ -68,7 +68,9 @@ export type HistoryPayload = {
 function observedLabel(value?: string) {
   if (!value) return "No timestamp";
   const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString();
+  if (Number.isNaN(parsed.getTime())) return value;
+  const iso = parsed.toISOString();
+  return iso.slice(0, 10) + " " + iso.slice(11, 19) + " UTC";
 }
 
 export function ReasoningInputsClient({

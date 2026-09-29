@@ -38,16 +38,22 @@ REASONING_SSR = (
     / "reasoning-server-rendered-readiness-v1.md"
 )
 LAN_DEV_ORIGIN = PROJECT_ROOT / "docs" / "architecture" / "lan-dev-origin-v1.md"
+REASONING_TIMESTAMP_RENDERING = (
+    PROJECT_ROOT
+    / "docs"
+    / "architecture"
+    / "reasoning-deterministic-timestamp-rendering-v1.md"
+)
 
 PR37_HEAD = "fc22177e1b855fd6f416f648330cd3416215a96c"
 PR37_MERGE = "97256907cd428a8a0ba3dfb7d4020fa19a2485ee"
 PR38_HEAD = "0d5d8180a5edffaeca8a9822800d7e729ef96327"
 PR38_MERGE = "06f795e760c7ad360bc51e264f8c55238a2a60da"
 PR114_MERGE = "4037c2c0bcadce3e3e6e414735c0045b65db6027"
-CURRENT_MAIN = "7a5bac902cfb3caa60d068d1d806c834379ece4a"
-CURRENT_TREE = "d2015306e1aad64ea8ab22131916eae1acd04b0f"
+CURRENT_MAIN = "8c0221ba00ca199b8076701188d7a1f10558a280"
+CURRENT_TREE = "f12f6e0aaa3df29a60e4ceb8f94a4193d0d3fc82"
 PR150_HEAD = "d300af099fe493f5e6c727c66f2f0371d2ccbf86"
-PR158_HEAD = "3b68a02ec064157e0494d0943d1d34e8509bce5b"
+PR159_HEAD = "0b3240f96fb11aa24c7f2c162a508c23c8e92645"
 
 
 def load_project_state() -> dict[str, Any]:
@@ -59,7 +65,7 @@ def load_project_state() -> dict[str, Any]:
 def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
     state = load_project_state()
     assert state["schema_version"] == "project.active-work.v1"
-    assert state["updated_on"] == "2026-09-28"
+    assert state["updated_on"] == "2026-09-29"
     assert state["repository"]["full_name"] == (
         "anthonyedgar30000/linealert-core"
     )
@@ -69,10 +75,10 @@ def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
     assert policy["state_only_merge_requires_immediate_self_sync"] is False
     assert policy["publication_pr_self_reference_required"] is False
     assert "substantive external lifecycle" in policy["rule"]
-    assert "PR #158 merged server-rendered initial Reasoning Inputs readiness" in (
+    assert "PR #159 merged the bounded LAN Next.js development-origin fix" in (
         policy["current_correction_reason"]
     )
-    assert "LAN Next.js development-origin increment" in (
+    assert "deterministic Reasoning Inputs timestamp-rendering increment" in (
         policy["current_correction_reason"]
     )
 
@@ -83,9 +89,9 @@ def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
     assert observation["active_sync_pull_request"] is None
     assert observation["open_issues"] == [31]
     assert observation["latest_merged_pull_request"] == {
-        "pull_request": 158,
-        "title": "Server-render reasoning readiness",
-        "source_head": PR158_HEAD,
+        "pull_request": 159,
+        "title": "Allow bounded LAN Next dev origin",
+        "source_head": PR159_HEAD,
         "merge_commit": CURRENT_MAIN,
     }
     assert observation["recently_closed_issues"]["23"] == {
@@ -100,8 +106,8 @@ def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
 
     ci = observation["main_ci"]
     assert ci["verification_scope"] == "merged_main_push"
-    assert ci["pull_request"] == 158
-    assert ci["run_id"] == 36501930898
+    assert ci["pull_request"] == 159
+    assert ci["run_id"] == 36502837319
     assert ci["head_sha"] == CURRENT_MAIN
     assert ci["merge_commit"] == CURRENT_MAIN
     assert ci["conclusion"] == "success"
@@ -110,8 +116,8 @@ def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
     assert ci["merge_commit_ci"] == "verified_success"
 
     pages = observation["public_pages"]
-    assert pages["status"] == "observed_deployed_2026_09_28"
-    assert pages["workflow_run"] == 36501930863
+    assert pages["status"] == "observed_deployed_2026_09_29"
+    assert pages["workflow_run"] == 36502837331
     assert pages["source_commit"] == CURRENT_MAIN
     assert pages["source_tree"] == CURRENT_TREE
     assert pages["fresh_verification_in_this_sync"] is True
@@ -625,7 +631,7 @@ def test_lan_dev_origin_reality_is_bounded_to_ui_development_resources() -> None
     state = load_project_state()
     reality = state["lan_dev_origin_reality"]
 
-    assert reality["status"] == "implemented_in_current_increment"
+    assert reality["status"] == "merged_on_main_runtime_verified"
     assert reality["classification"] == (
         "bounded_nextjs_development_origin_allowance"
     )
@@ -678,6 +684,52 @@ def test_lan_dev_origin_reality_is_bounded_to_ui_development_resources() -> None
     assert "There is no wildcard origin" in architecture
     assert "127.0.0.1:8767" in architecture
     assert "127.0.0.1:8768" in architecture
+
+
+def test_reasoning_timestamp_rendering_is_deterministic_and_non_mutating() -> None:
+    state = load_project_state()
+    rendering = state["reasoning_timestamp_rendering_reality"]
+
+    assert rendering["status"] == "implemented_in_current_increment"
+    assert rendering["classification"] == "deterministic_utc_presentation_only"
+    assert rendering["source_baseline_main"] == CURRENT_MAIN
+
+    observed = rendering["observed_failure"]
+    assert observed["classification"] == "react_hydration_text_mismatch"
+    assert observed["client_text"] == "9/29/2026, 3:49:05 PM"
+    assert observed["server_text"] == "2026-09-29, 3:49:05 p.m."
+    assert observed["source_timestamp_changed"] is False
+    assert observed["root_cause"] == "environment_dependent_Date_toLocaleString"
+
+    fix = rendering["fix"]
+    assert fix["normalization"] == "toISOString"
+    assert fix["display_shape"] == "YYYY-MM-DD HH:MM:SS UTC"
+    assert fix["locale_dependent_formatting"] is False
+    assert fix["timezone_dependent_formatting"] is False
+    assert fix["source_timestamp_mutation"] is False
+
+    assert "original_historian_timestamp" in rendering["preserved_evidence"]
+    assert "clock_quality" in rendering["preserved_evidence"]
+    assert "timestamp_display_normalization != timestamp_source_mutation" in (
+        rendering["boundaries"]
+    )
+    assert "hydration_match != historian_truth" in rendering["boundaries"]
+
+    acceptance = rendering["runtime_acceptance"]
+    assert acceptance["initial_html_http_status"] == 200
+    assert acceptance["initial_html_live_emulation"] is True
+    assert acceptance["initial_html_canonical_utc_label"] is True
+    assert acceptance["initial_html_client_locale_pm_label"] is False
+    assert acceptance["initial_html_server_locale_pdotm_label"] is False
+    assert acceptance["headless_chrome_dom_live_emulation"] is True
+    assert acceptance["headless_chrome_dom_canonical_utc_label"] is True
+    assert acceptance["headless_chrome_dom_hydration_error"] is False
+    assert acceptance["headless_chrome_dom_recoverable_error"] is False
+
+    architecture = REASONING_TIMESTAMP_RENDERING.read_text(encoding="utf-8")
+    assert "Date.toLocaleString()" in architecture
+    assert "YYYY-MM-DD HH:MM:SS UTC" in architecture
+    assert "It only changes the human-readable presentation label" in architecture
 
 
 def test_clock_integrity_reality_remains_synthetic_and_bounded() -> None:

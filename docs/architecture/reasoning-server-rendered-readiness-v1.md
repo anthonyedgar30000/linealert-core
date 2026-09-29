@@ -34,7 +34,9 @@ the loopback historian service:
 Each request is no-store and bounded by a 1.5 second timeout.
 
 The returned snapshot is rendered into the initial HTML and passed to the
-existing client component.
+existing client component. Historian timestamp labels use a deterministic UTC
+presentation so server and browser hydration do not depend on environment
+locale; see `docs/architecture/reasoning-deterministic-timestamp-rendering-v1.md`.
 
 After hydration, the client continues polling the existing same-origin routes:
 
