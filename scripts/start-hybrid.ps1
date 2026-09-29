@@ -135,12 +135,33 @@ elseif (-not $SkipHistorian) {
     }
 }
 
+$lanDevOrigin = $env:LINEALERT_UI_ALLOWED_DEV_ORIGIN
+if (-not $lanDevOrigin) {
+    $defaultRoute = Get-NetRoute -DestinationPrefix "0.0.0.0/0" -ErrorAction SilentlyContinue |
+        Sort-Object RouteMetric, InterfaceMetric |
+        Select-Object -First 1
+    if ($null -ne $defaultRoute) {
+        $lanDevOrigin = Get-NetIPAddress -InterfaceIndex $defaultRoute.InterfaceIndex -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+            Where-Object {
+                $_.IPAddress -ne "127.0.0.1" -and
+                $_.IPAddress -notlike "169.254.*"
+            } |
+            Select-Object -ExpandProperty IPAddress -First 1
+    }
+}
+if ($lanDevOrigin) {
+    $env:LINEALERT_UI_ALLOWED_DEV_ORIGIN = $lanDevOrigin
+}
+
 Push-Location $uiRoot
 try {
     if (-not $SkipInstall) {
         npm install
     }
     Write-Host "LineAlert hybrid interface: http://localhost:8766" -ForegroundColor Cyan
+    if ($lanDevOrigin) {
+        Write-Host "Allowed Next.js LAN dev origin: $lanDevOrigin" -ForegroundColor DarkCyan
+    }
     Write-Host "Evidence bridge: http://localhost:8765/api/telemetry" -ForegroundColor DarkCyan
     Write-Host "Condition evidence: http://localhost:8765/api/condition" -ForegroundColor DarkCyan
     Write-Host "Service-case persistence: http://localhost:8768/api/status" -ForegroundColor DarkMagenta

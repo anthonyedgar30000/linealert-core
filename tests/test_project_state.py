@@ -37,16 +37,17 @@ REASONING_SSR = (
     / "architecture"
     / "reasoning-server-rendered-readiness-v1.md"
 )
+LAN_DEV_ORIGIN = PROJECT_ROOT / "docs" / "architecture" / "lan-dev-origin-v1.md"
 
 PR37_HEAD = "fc22177e1b855fd6f416f648330cd3416215a96c"
 PR37_MERGE = "97256907cd428a8a0ba3dfb7d4020fa19a2485ee"
 PR38_HEAD = "0d5d8180a5edffaeca8a9822800d7e729ef96327"
 PR38_MERGE = "06f795e760c7ad360bc51e264f8c55238a2a60da"
 PR114_MERGE = "4037c2c0bcadce3e3e6e414735c0045b65db6027"
-CURRENT_MAIN = "17bc6abbf402a2532b64a58f701f707833b4d671"
-CURRENT_TREE = "c813cd5e27ffdf801a2ee5bda572627b75f3fd7b"
+CURRENT_MAIN = "7a5bac902cfb3caa60d068d1d806c834379ece4a"
+CURRENT_TREE = "d2015306e1aad64ea8ab22131916eae1acd04b0f"
 PR150_HEAD = "d300af099fe493f5e6c727c66f2f0371d2ccbf86"
-PR157_HEAD = "c0c05d414fd007ff7c8f90154fe67eb67531f69f"
+PR158_HEAD = "3b68a02ec064157e0494d0943d1d34e8509bce5b"
 
 
 def load_project_state() -> dict[str, Any]:
@@ -68,10 +69,10 @@ def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
     assert policy["state_only_merge_requires_immediate_self_sync"] is False
     assert policy["publication_pr_self_reference_required"] is False
     assert "substantive external lifecycle" in policy["rule"]
-    assert "PR #157 merged the explicit live emulated historian" in (
+    assert "PR #158 merged server-rendered initial Reasoning Inputs readiness" in (
         policy["current_correction_reason"]
     )
-    assert "server-rendered readiness increment" in (
+    assert "LAN Next.js development-origin increment" in (
         policy["current_correction_reason"]
     )
 
@@ -82,9 +83,9 @@ def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
     assert observation["active_sync_pull_request"] is None
     assert observation["open_issues"] == [31]
     assert observation["latest_merged_pull_request"] == {
-        "pull_request": 157,
-        "title": "Add live emulated historian",
-        "source_head": PR157_HEAD,
+        "pull_request": 158,
+        "title": "Server-render reasoning readiness",
+        "source_head": PR158_HEAD,
         "merge_commit": CURRENT_MAIN,
     }
     assert observation["recently_closed_issues"]["23"] == {
@@ -99,8 +100,8 @@ def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
 
     ci = observation["main_ci"]
     assert ci["verification_scope"] == "merged_main_push"
-    assert ci["pull_request"] == 157
-    assert ci["run_id"] == 36500616625
+    assert ci["pull_request"] == 158
+    assert ci["run_id"] == 36501930898
     assert ci["head_sha"] == CURRENT_MAIN
     assert ci["merge_commit"] == CURRENT_MAIN
     assert ci["conclusion"] == "success"
@@ -110,7 +111,7 @@ def test_state_snapshot_tracks_current_main_and_public_demo() -> None:
 
     pages = observation["public_pages"]
     assert pages["status"] == "observed_deployed_2026_09_28"
-    assert pages["workflow_run"] == 36500616599
+    assert pages["workflow_run"] == 36501930863
     assert pages["source_commit"] == CURRENT_MAIN
     assert pages["source_tree"] == CURRENT_TREE
     assert pages["fresh_verification_in_this_sync"] is True
@@ -578,7 +579,7 @@ def test_reasoning_inputs_delivery_is_server_rendered_then_client_polled() -> No
     state = load_project_state()
     delivery = state["reasoning_inputs_delivery_reality"]
 
-    assert delivery["status"] == "implemented_in_current_increment"
+    assert delivery["status"] == "merged_on_main_runtime_verified"
     assert delivery["classification"] == (
         "server_rendered_initial_readiness_plus_client_polling"
     )
@@ -618,6 +619,65 @@ def test_reasoning_inputs_delivery_is_server_rendered_then_client_polled() -> No
     assert "EVIDENCE.HISTORIAN_UNAVAILABLE" in architecture
     assert "LIVE EMULATION" in architecture
     assert "client_hydration_failure != historian_failure" in architecture
+
+
+def test_lan_dev_origin_reality_is_bounded_to_ui_development_resources() -> None:
+    state = load_project_state()
+    reality = state["lan_dev_origin_reality"]
+
+    assert reality["status"] == "implemented_in_current_increment"
+    assert reality["classification"] == (
+        "bounded_nextjs_development_origin_allowance"
+    )
+    assert reality["source_baseline_main"] == CURRENT_MAIN
+
+    observed = reality["observed_failure"]
+    assert observed["origin"] == "192.168.0.242"
+    assert observed["resource"] == "/_next/hmr"
+    assert observed["historian_status_through_lan_origin"] == 200
+    assert observed["historian_history_through_lan_origin"] == 200
+    assert observed["historian_loopback_status"] == 200
+    assert observed["classification"] == (
+        "ui_dev_origin_hydration_not_historian_failure"
+    )
+
+    fix = reality["fix"]
+    assert fix["environment_variable"] == "LINEALERT_UI_ALLOWED_DEV_ORIGIN"
+    assert fix["automatic_source"] == "default_route_ipv4"
+    assert fix["current_derived_origin"] == "192.168.0.242"
+    assert fix["next_config_field"] == "allowedDevOrigins"
+    assert fix["wildcard_allowed"] is False
+    assert fix["subnet_wide_allow"] is False
+
+    network = reality["network_boundary"]
+    assert network["ui_port"] == 8766
+    assert network["historian_host"] == "127.0.0.1"
+    assert network["historian_port"] == 8767
+    assert network["service_case_host"] == "127.0.0.1"
+    assert network["service_case_port"] == 8768
+    assert network["historian_lan_binding_changed"] is False
+    assert network["service_case_lan_binding_changed"] is False
+
+    acceptance = reality["runtime_acceptance"]
+    assert acceptance["launcher_reported_allowed_origin"] == "192.168.0.242"
+    assert acceptance["hmr_websocket_url"] == "ws://192.168.0.242:8766/_next/hmr"
+    assert acceptance["hmr_request_origin"] == "http://192.168.0.242:8766"
+    assert acceptance["hmr_websocket_state"] == "Open"
+    assert acceptance["blocked_origin_warning_observed_in_acceptance"] is False
+    assert acceptance["reasoning_initial_html_http_status"] == 200
+    assert acceptance["reasoning_initial_html_live_emulation"] is True
+
+    assert "lan_dev_origin_allowance != historian_lan_binding" in (
+        reality["boundaries"]
+    )
+    assert "browser_hmr_access != equipment_access" in reality["boundaries"]
+
+    architecture = LAN_DEV_ORIGIN.read_text(encoding="utf-8")
+    assert "Blocked cross-origin request" in architecture
+    assert "allowedDevOrigins" in architecture
+    assert "There is no wildcard origin" in architecture
+    assert "127.0.0.1:8767" in architecture
+    assert "127.0.0.1:8768" in architecture
 
 
 def test_clock_integrity_reality_remains_synthetic_and_bounded() -> None:

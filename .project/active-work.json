@@ -12,25 +12,25 @@
   "updated_on": "2026-09-28",
   "state_model": {
     "record_type": "repository_coordination_snapshot",
-    "captured_from_main": "17bc6abbf402a2532b64a58f701f707833b4d671",
+    "captured_from_main": "7a5bac902cfb3caa60d068d1d806c834379ece4a",
     "current_reality_source": "live_github_and_explicit_user_direction",
     "semantics": "This is a time-bounded coordination snapshot. Live GitHub lifecycle, exact current branch head, CI, deployment, equipment documentation, and equipment evidence supersede cached claims.",
     "publication_policy": {
       "state_only_merge_requires_immediate_self_sync": false,
       "publication_pr_self_reference_required": false,
       "rule": "A state-only publication does not require another pull request merely to record its own merge. Create a corrective sync only when a substantive external lifecycle, authority, deployment, equipment, or scope fact changes or contradicts the published snapshot.",
-      "current_correction_reason": "PR #157 merged the explicit live emulated historian. This snapshot advances repository reality to that merged main before the bounded Reasoning Inputs server-rendered readiness increment."
+      "current_correction_reason": "PR #158 merged server-rendered initial Reasoning Inputs readiness. This snapshot advances repository reality to that merged main before the bounded LAN Next.js development-origin increment."
     }
   },
   "live_observation": {
-    "observed_at": "2026-09-29T00:08:29Z",
+    "observed_at": "2026-09-29T00:15:49Z",
     "default_branch": "main",
-    "default_branch_head": "17bc6abbf402a2532b64a58f701f707833b4d671",
-    "default_branch_tree": "c813cd5e27ffdf801a2ee5bda572627b75f3fd7b",
+    "default_branch_head": "7a5bac902cfb3caa60d068d1d806c834379ece4a",
+    "default_branch_tree": "d2015306e1aad64ea8ab22131916eae1acd04b0f",
     "latest_functional_merge": {
-      "pull_request": 157,
-      "title": "Add live emulated historian",
-      "merge_commit": "17bc6abbf402a2532b64a58f701f707833b4d671"
+      "pull_request": 158,
+      "title": "Server-render reasoning readiness",
+      "merge_commit": "7a5bac902cfb3caa60d068d1d806c834379ece4a"
     },
     "open_pull_requests_before_branch_creation": [],
     "active_sync_pull_request": null,
@@ -56,10 +56,10 @@
     },
     "main_ci": {
       "verification_scope": "merged_main_push",
-      "pull_request": 157,
-      "run_id": 36500616625,
-      "head_sha": "17bc6abbf402a2532b64a58f701f707833b4d671",
-      "merge_commit": "17bc6abbf402a2532b64a58f701f707833b4d671",
+      "pull_request": 158,
+      "run_id": 36501930898,
+      "head_sha": "7a5bac902cfb3caa60d068d1d806c834379ece4a",
+      "merge_commit": "7a5bac902cfb3caa60d068d1d806c834379ece4a",
       "conclusion": "success",
       "jobs": [
         "test (3.11)",
@@ -71,9 +71,9 @@
     },
     "public_pages": {
       "status": "observed_deployed_2026_09_28",
-      "workflow_run": 36500616599,
-      "source_commit": "17bc6abbf402a2532b64a58f701f707833b4d671",
-      "source_tree": "c813cd5e27ffdf801a2ee5bda572627b75f3fd7b",
+      "workflow_run": 36501930863,
+      "source_commit": "7a5bac902cfb3caa60d068d1d806c834379ece4a",
+      "source_tree": "d2015306e1aad64ea8ab22131916eae1acd04b0f",
       "plant_canvas": "https://anthonyedgar30000.github.io/linealert-core/triage/",
       "troubleshooting_guide": "https://anthonyedgar30000.github.io/linealert-core/troubleshooting-guide.html",
       "event_log": "https://anthonyedgar30000.github.io/linealert-core/event-log/",
@@ -89,10 +89,10 @@
     "equipment_control_path": "not_observed",
     "equipment_documentation": "synthetic demo profiles and planning material observed; no Labeler 2 OEM manual or commissioned machine package observed",
     "latest_merged_pull_request": {
-      "pull_request": 157,
-      "title": "Add live emulated historian",
-      "source_head": "c0c05d414fd007ff7c8f90154fe67eb67531f69f",
-      "merge_commit": "17bc6abbf402a2532b64a58f701f707833b4d671"
+      "pull_request": 158,
+      "title": "Server-render reasoning readiness",
+      "source_head": "3b68a02ec064157e0494d0943d1d34e8509bce5b",
+      "merge_commit": "7a5bac902cfb3caa60d068d1d806c834379ece4a"
     },
     "recent_repository_increments": [
       {
@@ -174,6 +174,11 @@
         "pull_request": 157,
         "title": "Add live emulated historian",
         "merge_commit": "17bc6abbf402a2532b64a58f701f707833b4d671"
+      },
+      {
+        "pull_request": 158,
+        "title": "Server-render reasoning readiness",
+        "merge_commit": "7a5bac902cfb3caa60d068d1d806c834379ece4a"
       }
     ]
   },
@@ -600,7 +605,12 @@
     "rendered_emulated_history != verified_physical_state",
     "successful_retrieval != explanation_truth",
     "client_hydration_failure != historian_failure",
-    "historian_retrieval != authorized_action"
+    "historian_retrieval != authorized_action",
+    "lan_dev_origin_allowance != historian_lan_binding",
+    "lan_dev_origin_allowance != service_case_store_lan_binding",
+    "browser_hmr_access != equipment_access",
+    "browser_client_polling != historian_authority",
+    "network_reachability != production_authorization"
   ],
   "reasoning_node_reality": {
     "classification": "controlled_synthetic_local_reasoning_substrate",
@@ -641,7 +651,7 @@
     "historian_emulation": {
       "status": "merged_on_main_runtime_verified",
       "classification": "controlled_synthetic_live_historian_emulation",
-      "source_baseline_main": "17bc6abbf402a2532b64a58f701f707833b4d671",
+      "source_baseline_main": "7a5bac902cfb3caa60d068d1d806c834379ece4a",
       "explicit_mode": "-UseEmulatedHistorian",
       "automatic_timescale_fallback": false,
       "service": {
@@ -794,7 +804,7 @@
   },
   "service_case_contract_reality": {
     "status": "executable_v1_contract_defined",
-    "source_baseline_main": "17bc6abbf402a2532b64a58f701f707833b4d671",
+    "source_baseline_main": "7a5bac902cfb3caa60d068d1d806c834379ece4a",
     "schema_versions": [
       "linealert.service-case.v1",
       "linealert.plant-reported-context.v1"
@@ -862,7 +872,7 @@
   "service_case_persistence_reality": {
     "status": "merged_local_runtime_capability",
     "classification": "local_synthetic_development_persistence",
-    "source_baseline_main": "17bc6abbf402a2532b64a58f701f707833b4d671",
+    "source_baseline_main": "7a5bac902cfb3caa60d068d1d806c834379ece4a",
     "service": {
       "host": "127.0.0.1",
       "port": 8768,
@@ -915,7 +925,7 @@
   "emulated_historian_reality": {
     "status": "merged_on_main_runtime_verified",
     "classification": "controlled_synthetic_live_historian_emulation",
-    "source_baseline_main": "17bc6abbf402a2532b64a58f701f707833b4d671",
+    "source_baseline_main": "7a5bac902cfb3caa60d068d1d806c834379ece4a",
     "runtime_identity": {
       "historian_backend": "sqlite_emulator",
       "persistence": "sqlite_local_emulated",
@@ -961,9 +971,9 @@
     ]
   },
   "reasoning_inputs_delivery_reality": {
-    "status": "implemented_in_current_increment",
+    "status": "merged_on_main_runtime_verified",
     "classification": "server_rendered_initial_readiness_plus_client_polling",
-    "source_baseline_main": "17bc6abbf402a2532b64a58f701f707833b4d671",
+    "source_baseline_main": "7a5bac902cfb3caa60d068d1d806c834379ece4a",
     "route": "/reasoning",
     "server_initial_read": {
       "source": "loopback_127_0_0_1_8767",
@@ -1002,5 +1012,52 @@
       "client_hydration_failure != historian_failure",
       "historian_retrieval != authorized_action"
     ]
+  },
+  "lan_dev_origin_reality": {
+    "status": "implemented_in_current_increment",
+    "classification": "bounded_nextjs_development_origin_allowance",
+    "source_baseline_main": "7a5bac902cfb3caa60d068d1d806c834379ece4a",
+    "observed_failure": {
+      "origin": "192.168.0.242",
+      "resource": "/_next/hmr",
+      "message": "Blocked cross-origin request to Next.js dev resource /_next/hmr from 192.168.0.242",
+      "historian_status_through_lan_origin": 200,
+      "historian_history_through_lan_origin": 200,
+      "historian_loopback_status": 200,
+      "classification": "ui_dev_origin_hydration_not_historian_failure"
+    },
+    "fix": {
+      "environment_variable": "LINEALERT_UI_ALLOWED_DEV_ORIGIN",
+      "automatic_source": "default_route_ipv4",
+      "current_derived_origin": "192.168.0.242",
+      "next_config_field": "allowedDevOrigins",
+      "wildcard_allowed": false,
+      "subnet_wide_allow": false
+    },
+    "network_boundary": {
+      "ui_port": 8766,
+      "historian_host": "127.0.0.1",
+      "historian_port": 8767,
+      "service_case_host": "127.0.0.1",
+      "service_case_port": 8768,
+      "historian_lan_binding_changed": false,
+      "service_case_lan_binding_changed": false
+    },
+    "boundaries": [
+      "lan_dev_origin_allowance != historian_lan_binding",
+      "lan_dev_origin_allowance != service_case_store_lan_binding",
+      "browser_hmr_access != equipment_access",
+      "browser_client_polling != historian_authority",
+      "network_reachability != production_authorization"
+    ],
+    "runtime_acceptance": {
+      "launcher_reported_allowed_origin": "192.168.0.242",
+      "hmr_websocket_url": "ws://192.168.0.242:8766/_next/hmr",
+      "hmr_request_origin": "http://192.168.0.242:8766",
+      "hmr_websocket_state": "Open",
+      "blocked_origin_warning_observed_in_acceptance": false,
+      "reasoning_initial_html_http_status": 200,
+      "reasoning_initial_html_live_emulation": true
+    }
   }
 }

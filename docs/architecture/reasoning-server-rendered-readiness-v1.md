@@ -7,7 +7,11 @@ recent evidence even before browser-side JavaScript hydrates.
 
 This increment was prompted by a LAN browser observation where the historian
 API and emulator were healthy, but the page remained at its client-side initial
-state:
+state. Subsequent runtime logging identified a blocked Next.js development/HMR
+origin for the LAN host; that underlying client-runtime issue is addressed by
+`docs/architecture/lan-dev-origin-v1.md`.
+
+The visible initial state was:
 
 - HISTORIAN: OFFLINE / FAIL CLOSED
 - FUNCTIONAL / TEMPORAL: NO LIVE HISTORY
