@@ -12,25 +12,25 @@
   "updated_on": "2026-09-28",
   "state_model": {
     "record_type": "repository_coordination_snapshot",
-    "captured_from_main": "a39007ab09ec1be4ff7fb051e524ae7bc2833227",
+    "captured_from_main": "17bc6abbf402a2532b64a58f701f707833b4d671",
     "current_reality_source": "live_github_and_explicit_user_direction",
     "semantics": "This is a time-bounded coordination snapshot. Live GitHub lifecycle, exact current branch head, CI, deployment, equipment documentation, and equipment evidence supersede cached claims.",
     "publication_policy": {
       "state_only_merge_requires_immediate_self_sync": false,
       "publication_pr_self_reference_required": false,
       "rule": "A state-only publication does not require another pull request merely to record its own merge. Create a corrective sync only when a substantive external lifecycle, authority, deployment, equipment, or scope fact changes or contradicts the published snapshot.",
-      "current_correction_reason": "PR #156 merged bounded local service-case persistence. This snapshot advances repository/runtime reality to that merged main before the explicit live emulated historian increment."
+      "current_correction_reason": "PR #157 merged the explicit live emulated historian. This snapshot advances repository reality to that merged main before the bounded Reasoning Inputs server-rendered readiness increment."
     }
   },
   "live_observation": {
-    "observed_at": "2026-09-28T23:30:36Z",
+    "observed_at": "2026-09-29T00:08:29Z",
     "default_branch": "main",
-    "default_branch_head": "a39007ab09ec1be4ff7fb051e524ae7bc2833227",
-    "default_branch_tree": "26b80541cd22313de25eb9b40ef1298a9be323d8",
+    "default_branch_head": "17bc6abbf402a2532b64a58f701f707833b4d671",
+    "default_branch_tree": "c813cd5e27ffdf801a2ee5bda572627b75f3fd7b",
     "latest_functional_merge": {
-      "pull_request": 156,
-      "title": "Add local service case persistence",
-      "merge_commit": "a39007ab09ec1be4ff7fb051e524ae7bc2833227"
+      "pull_request": 157,
+      "title": "Add live emulated historian",
+      "merge_commit": "17bc6abbf402a2532b64a58f701f707833b4d671"
     },
     "open_pull_requests_before_branch_creation": [],
     "active_sync_pull_request": null,
@@ -56,10 +56,10 @@
     },
     "main_ci": {
       "verification_scope": "merged_main_push",
-      "pull_request": 156,
-      "run_id": 36495833503,
-      "head_sha": "a39007ab09ec1be4ff7fb051e524ae7bc2833227",
-      "merge_commit": "a39007ab09ec1be4ff7fb051e524ae7bc2833227",
+      "pull_request": 157,
+      "run_id": 36500616625,
+      "head_sha": "17bc6abbf402a2532b64a58f701f707833b4d671",
+      "merge_commit": "17bc6abbf402a2532b64a58f701f707833b4d671",
       "conclusion": "success",
       "jobs": [
         "test (3.11)",
@@ -71,9 +71,9 @@
     },
     "public_pages": {
       "status": "observed_deployed_2026_09_28",
-      "workflow_run": 36495833532,
-      "source_commit": "a39007ab09ec1be4ff7fb051e524ae7bc2833227",
-      "source_tree": "26b80541cd22313de25eb9b40ef1298a9be323d8",
+      "workflow_run": 36500616599,
+      "source_commit": "17bc6abbf402a2532b64a58f701f707833b4d671",
+      "source_tree": "c813cd5e27ffdf801a2ee5bda572627b75f3fd7b",
       "plant_canvas": "https://anthonyedgar30000.github.io/linealert-core/triage/",
       "troubleshooting_guide": "https://anthonyedgar30000.github.io/linealert-core/troubleshooting-guide.html",
       "event_log": "https://anthonyedgar30000.github.io/linealert-core/event-log/",
@@ -89,10 +89,10 @@
     "equipment_control_path": "not_observed",
     "equipment_documentation": "synthetic demo profiles and planning material observed; no Labeler 2 OEM manual or commissioned machine package observed",
     "latest_merged_pull_request": {
-      "pull_request": 156,
-      "title": "Add local service case persistence",
-      "source_head": "569e1369e05538654b1b32f7181933c50fb716c3",
-      "merge_commit": "a39007ab09ec1be4ff7fb051e524ae7bc2833227"
+      "pull_request": 157,
+      "title": "Add live emulated historian",
+      "source_head": "c0c05d414fd007ff7c8f90154fe67eb67531f69f",
+      "merge_commit": "17bc6abbf402a2532b64a58f701f707833b4d671"
     },
     "recent_repository_increments": [
       {
@@ -169,6 +169,11 @@
         "pull_request": 156,
         "title": "Add local service case persistence",
         "merge_commit": "a39007ab09ec1be4ff7fb051e524ae7bc2833227"
+      },
+      {
+        "pull_request": 157,
+        "title": "Add live emulated historian",
+        "merge_commit": "17bc6abbf402a2532b64a58f701f707833b4d671"
       }
     ]
   },
@@ -589,7 +594,13 @@
     "emulated_condition_violation != physical_fault",
     "post_intervention_scenario != verified_maintenance_action",
     "successful_emulated_retrieval != explanation_truth",
-    "historian_retrieval != diagnosis"
+    "historian_retrieval != diagnosis",
+    "server_rendered_historian_snapshot != plant_history",
+    "server_rendered_readiness != diagnosis",
+    "rendered_emulated_history != verified_physical_state",
+    "successful_retrieval != explanation_truth",
+    "client_hydration_failure != historian_failure",
+    "historian_retrieval != authorized_action"
   ],
   "reasoning_node_reality": {
     "classification": "controlled_synthetic_local_reasoning_substrate",
@@ -628,9 +639,9 @@
     "local_model_integration": "not_implemented",
     "production_equipment_authority": "not_granted",
     "historian_emulation": {
-      "status": "implemented_in_current_increment",
+      "status": "merged_on_main_runtime_verified",
       "classification": "controlled_synthetic_live_historian_emulation",
-      "source_baseline_main": "a39007ab09ec1be4ff7fb051e524ae7bc2833227",
+      "source_baseline_main": "17bc6abbf402a2532b64a58f701f707833b4d671",
       "explicit_mode": "-UseEmulatedHistorian",
       "automatic_timescale_fallback": false,
       "service": {
@@ -783,7 +794,7 @@
   },
   "service_case_contract_reality": {
     "status": "executable_v1_contract_defined",
-    "source_baseline_main": "a39007ab09ec1be4ff7fb051e524ae7bc2833227",
+    "source_baseline_main": "17bc6abbf402a2532b64a58f701f707833b4d671",
     "schema_versions": [
       "linealert.service-case.v1",
       "linealert.plant-reported-context.v1"
@@ -851,7 +862,7 @@
   "service_case_persistence_reality": {
     "status": "merged_local_runtime_capability",
     "classification": "local_synthetic_development_persistence",
-    "source_baseline_main": "a39007ab09ec1be4ff7fb051e524ae7bc2833227",
+    "source_baseline_main": "17bc6abbf402a2532b64a58f701f707833b4d671",
     "service": {
       "host": "127.0.0.1",
       "port": 8768,
@@ -902,9 +913,9 @@
     ]
   },
   "emulated_historian_reality": {
-    "status": "implemented_in_current_increment",
+    "status": "merged_on_main_runtime_verified",
     "classification": "controlled_synthetic_live_historian_emulation",
-    "source_baseline_main": "a39007ab09ec1be4ff7fb051e524ae7bc2833227",
+    "source_baseline_main": "17bc6abbf402a2532b64a58f701f707833b4d671",
     "runtime_identity": {
       "historian_backend": "sqlite_emulator",
       "persistence": "sqlite_local_emulated",
@@ -947,6 +958,49 @@
       "successful_emulated_retrieval != explanation_truth",
       "historian_retrieval != diagnosis",
       "recommendation != authorized_action"
+    ]
+  },
+  "reasoning_inputs_delivery_reality": {
+    "status": "implemented_in_current_increment",
+    "classification": "server_rendered_initial_readiness_plus_client_polling",
+    "source_baseline_main": "17bc6abbf402a2532b64a58f701f707833b4d671",
+    "route": "/reasoning",
+    "server_initial_read": {
+      "source": "loopback_127_0_0_1_8767",
+      "status_path": "/api/status",
+      "history_path": "/api/history/functional-temporal?limit=8",
+      "cache": "no-store",
+      "timeout_seconds": 1.5,
+      "historian_write_path": false
+    },
+    "client_continuation": {
+      "status_path": "/api/historian/status",
+      "history_path": "/api/historian/functional-temporal?limit=8",
+      "same_origin": true,
+      "poll_interval_seconds": 2.5
+    },
+    "healthy_lan_initial_html_acceptance": {
+      "url": "http://192.168.0.242:8766/reasoning",
+      "http_status": 200,
+      "contains": [
+        "LIVE EMULATION",
+        "EMULATED SOURCE LIVE",
+        "Local emulated historian",
+        "sqlite_emulator"
+      ],
+      "does_not_contain": [
+        "OFFLINE \u00b7 FAIL CLOSED",
+        "WAITING"
+      ]
+    },
+    "failure_behavior": "server render emits EVIDENCE.HISTORIAN_UNAVAILABLE with zero records when the loopback historian cannot be read; no cached or invented history is substituted",
+    "boundaries": [
+      "server_rendered_historian_snapshot != plant_history",
+      "server_rendered_readiness != diagnosis",
+      "rendered_emulated_history != verified_physical_state",
+      "successful_retrieval != explanation_truth",
+      "client_hydration_failure != historian_failure",
+      "historian_retrieval != authorized_action"
     ]
   }
 }

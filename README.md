@@ -55,7 +55,9 @@ Labeler 2 history in local SQLite, and is explicitly surfaced as synthetic in
 the UI. It is not an automatic fallback for TimescaleDB and does not represent
 physical plant history. See
 `docs/architecture/live-emulated-historian-v1.md` for the evidence and
-authority boundary.
+authority boundary. The `/reasoning` route server-renders the initial historian
+readiness and recent bounded history before browser hydration, then continues
+client polling; see `docs/architecture/reasoning-server-rendered-readiness-v1.md`.
 
 The local process boundary is:
 
